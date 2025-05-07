@@ -9,12 +9,10 @@ const Stack = createStackNavigator();
 
 const RootNavigator = () => {
   return (
-    <NavigationContainer>
       <Stack.Navigator initialRouteName="SplashScreen" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="SplashScreen" component={SplashScreen} />
         <Stack.Screen name="MainTabs" component={MainTabs} />
       </Stack.Navigator>
-    </NavigationContainer>
   );
 };
 

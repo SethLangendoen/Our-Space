@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { blue } from 'react-native-reanimated/lib/typescript/Colors';
 
 export default function MySpacesScreen() {
   return (

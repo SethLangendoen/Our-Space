@@ -11,10 +11,16 @@ import AuthStack from './stacks/AuthStack';
 const Tab = createBottomTabNavigator();
 
 export default function MainTabs() {
-  const profileComplete = useUserProfileStatus();
 
-  // Wait until status is resolved
-  if (profileComplete === null) return null; // or a loading spinner
+
+  // add back later when you fix auth, since the hook uses the auth check
+  // const profileComplete = useUserProfileStatus();
+  // // Wait until status is resolved
+  // if (profileComplete === null) return null; // or a loading spinner
+
+    const profileComplete = null;
+
+
 
   return (
     <Tab.Navigator initialRouteName="Spaces">
@@ -22,7 +28,7 @@ export default function MainTabs() {
         name="Spaces"
         component={SpacesStack}
         options={{
-          tabBarIcon: ({ focused }) => (
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'} // Active vs Inactive icon
               size={28}
@@ -35,7 +41,7 @@ export default function MainTabs() {
         name="MySpaces"
         component={MySpacesStack}
         options={{
-          tabBarIcon: ({ focused }) => (
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
             <Ionicons
               name={focused ? 'cube' : 'cube-outline'} // Active vs Inactive icon
               size={28}
@@ -48,7 +54,7 @@ export default function MainTabs() {
         name="Chats"
         component={ChatsStack}
         options={{
-          tabBarIcon: ({ focused }) => (
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
             <Ionicons
               name={focused ? 'chatbubble' : 'chatbubble-outline'} // Active vs Inactive icon
               size={28}
@@ -61,7 +67,7 @@ export default function MainTabs() {
         name="Profile"
         component={profileComplete ? ProfileStack : AuthStack}
         options={{
-          tabBarIcon: ({ focused }) => (
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
             <Ionicons
               name={focused ? 'person' : 'person-outline'} // Active vs Inactive icon
               size={28}
