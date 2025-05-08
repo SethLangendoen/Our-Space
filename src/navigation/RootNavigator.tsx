@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import SplashScreen from 'src/screens/SplashScreen';
 import MainTabs from './MainTabs';
 
+
 const Stack = createStackNavigator();
 
 const RootNavigator = () => {

@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet, Image, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { RootStackParamList } from '../types/types';
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SplashScreen'>;
 
@@ -16,14 +16,16 @@ const SplashScreen = () => {
     const timeout = setTimeout(() => {
       // Use replace to ensure that the splash screen is not part of the navigation stack
       navigation.replace('MainTabs');
-    }, 2000); // 2 seconds delay for splash screen
+    }, 3000); // 2 seconds delay for splash screen
 
     return () => clearTimeout(timeout);
   }, [navigation]);
 
   return (
     <View style={styles.container}>
-      <Image source={require('../../assets/newLogoText.jpg')} style={styles.logoImage} />
+      {/* <Image source={require('../../assets/ourSpaceLogos/party.GIF')} style={styles.logoImage} /> */}
+      <Image source={require('../../assets/ourSpaceLogos/party.gif')} style={styles.logoImage} />
+
     </View>
   );
 };
@@ -40,8 +42,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoImage: {
-    width: width * 0.5,
-    aspectRatio: 1,
+    width: width * 0.6,       // Try a more reasonable width, like 40% of screen
+    height: width * 0.6,      // Explicit height to match
     resizeMode: 'contain',
   },
+  
 });
+
+

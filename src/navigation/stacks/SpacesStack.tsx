@@ -7,7 +7,7 @@ const Stack = createNativeStackNavigator();
 
 export default function SpacesStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SpacesMain" component={SpacesScreen} options={{ title: 'Spaces' }} />
       <Stack.Screen name="Filters" component={FiltersScreen} />
     </Stack.Navigator>

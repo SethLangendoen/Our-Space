@@ -1,3 +1,4 @@
+import { signUpWithEmail } from '../../firebase/auth';  // Adjust the path as needed
 import React, { useState } from 'react';
 import {
   View,
@@ -28,10 +29,27 @@ export default function CreateAccountScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleCreateAccount = () => {
-    // Handle Firebase or logic here
-    console.log('Creating account...');
+
+  const handleCreateAccount = async () => {
+    try {
+
+      // this causes an error: 
+      // const user = await signUpWithEmail(email, password);
+      // console.log('Account created:', user);
+
+      console.log('Account created:');
+
+      // Possibly navigate to another screen or enroll 2FA here
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Account creation failed:', error.message);
+      } else {
+        console.error('Unknown error during account creation:', error);
+      }
+    }
   };
+
+
 
   return (
     <View style={styles.container}>
@@ -125,7 +143,7 @@ const styles = StyleSheet.create({
   },
   backIcon: {
     position: 'absolute',
-    top: 60,
+    top: 20,
     left: 20,
     zIndex: 1,
   },

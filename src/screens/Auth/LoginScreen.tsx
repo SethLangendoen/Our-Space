@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   backIcon: {
     position: 'absolute',
-    top: 60,
+    top: 20,
     left: 20,
     zIndex: 1,
   },

@@ -1,40 +1,96 @@
+
+
+
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons'; // for custom icons
 import SpacesStack from './stacks/SpacesStack';
 import ProfileStack from './stacks/ProfileStack';
 import ChatsStack from './stacks/ChatsStack';
 import MySpacesStack from './stacks/MySpacesStack';
 import useUserProfileStatus from '../hooks/UseUserProfileStatus';
 import AuthStack from './stacks/AuthStack';
- 
+import { Image, View, Text } from 'react-native';
+
+import { TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+
+
 const Tab = createBottomTabNavigator();
 
+
 export default function MainTabs() {
-
-
-  // add back later when you fix auth, since the hook uses the auth check
   // const profileComplete = useUserProfileStatus();
-  // // Wait until status is resolved
-  // if (profileComplete === null) return null; // or a loading spinner
-
-    const profileComplete = null;
-
-
+  const profileComplete = null;
 
   return (
-    <Tab.Navigator initialRouteName="Spaces">
+    // <Tab.Navigator
+    //   initialRouteName="Spaces"
+    //   screenOptions={{
+    //     tabBarActiveTintColor: '#255C2F', // Active label color
+    //     tabBarInactiveTintColor: '#7B7B7B',  // Inactive label color
+    //     tabBarLabelStyle: {
+    //       fontSize: 12,
+    //       fontWeight: '600',
+    //       fontFamily: 'Helvetica Neue', // Replace with your custom font if loaded
+    //     },
+    //     tabBarStyle: {
+    //       backgroundColor: '#fff',
+    //       paddingBottom: 5,
+    //       height: 60,
+    //     },
+    //   }}
+    // >
+
+
+    <Tab.Navigator
+  initialRouteName="Spaces"
+
+screenOptions={{
+  tabBarActiveTintColor: '#255C2F',
+  tabBarInactiveTintColor: '#7B7B7B',
+  tabBarLabelStyle: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Helvetica Neue',
+  },
+  tabBarStyle: {
+    backgroundColor: '#fff',
+    paddingBottom: 5,
+    height: 60,
+  },
+  headerTitle: () => (
+    <Image
+      source={require('../../assets/ourSpaceLogos/ourSpaceHorizontal.png')}
+      style={{ width: 180, height: 160 }}
+      resizeMode="contain"
+    />
+  ),
+  headerTitleAlign: 'center',
+}}
+>
+
+
       <Tab.Screen
         name="Spaces"
         component={SpacesStack}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <Ionicons
-              name={focused ? 'home' : 'home-outline'} // Active vs Inactive icon
-              size={28}
-              color={focused ? '#6A5ACD' : '#000'} // Active vs Inactive color
+            <Image
+              source={
+                focused
+                  ? require('../../assets/bottomNavIcons/spacesFill.png')
+                  : require('../../assets/bottomNavIcons/spaces.png')
+              }
+              style={{
+                width: 28,
+                height: 28,
+                tintColor: focused ? undefined : '#000',
+              }}
             />
           ),
+          tabBarLabel: 'Spaces',
         }}
       />
       <Tab.Screen
@@ -42,12 +98,20 @@ export default function MainTabs() {
         component={MySpacesStack}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <Ionicons
-              name={focused ? 'cube' : 'cube-outline'} // Active vs Inactive icon
-              size={28}
-              color={focused ? '#6A5ACD' : '#000'} // Active vs Inactive color
+            <Image
+              source={
+                focused
+                  ? require('../../assets/bottomNavIcons/mySpacesFill.png')
+                  : require('../../assets/bottomNavIcons/mySpaces.png')
+              }
+              style={{
+                width: 28,
+                height: 28,
+                tintColor: focused ? undefined : '#000',
+              }}
             />
           ),
+          tabBarLabel: 'My Spaces',
         }}
       />
       <Tab.Screen
@@ -55,12 +119,20 @@ export default function MainTabs() {
         component={ChatsStack}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <Ionicons
-              name={focused ? 'chatbubble' : 'chatbubble-outline'} // Active vs Inactive icon
-              size={28}
-              color={focused ? '#6A5ACD' : '#000'} // Active vs Inactive color
+            <Image
+              source={
+                focused
+                  ? require('../../assets/bottomNavIcons/chatFill.png')
+                  : require('../../assets/bottomNavIcons/chat.png')
+              }
+              style={{
+                width: 28,
+                height: 28,
+                tintColor: focused ? undefined : '#000',
+              }}
             />
           ),
+          tabBarLabel: 'Chats',
         }}
       />
       <Tab.Screen
@@ -68,12 +140,20 @@ export default function MainTabs() {
         component={profileComplete ? ProfileStack : AuthStack}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <Ionicons
-              name={focused ? 'person' : 'person-outline'} // Active vs Inactive icon
-              size={28}
-              color={focused ? '#6A5ACD' : '#000'} // Active vs Inactive color
+            <Image
+              source={
+                focused
+                  ? require('../../assets/bottomNavIcons/profileFill.png')
+                  : require('../../assets/bottomNavIcons/profile.png')
+              }
+              style={{
+                width: 28,
+                height: 28,
+                tintColor: focused ? undefined : '#000',
+              }}
             />
           ),
+          tabBarLabel: 'Profile',
         }}
       />
     </Tab.Navigator>

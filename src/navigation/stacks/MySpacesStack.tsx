@@ -9,7 +9,7 @@ const Stack = createNativeStackNavigator();
 
 export default function MySpacesStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MySpacesMain" component={MySpacesScreen} options={{ title: 'My Spaces' }} />
       <Stack.Screen name="CreateSpace" component={CreateSpaceScreen} options={{ title: 'Create Space' }} />
     </Stack.Navigator>
