@@ -120,7 +120,7 @@ const radiusInMeters = 3000; // 3 km radius
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 50,
+    paddingTop: 15,
     paddingHorizontal: 16,
     backgroundColor: '#fff',
   },
