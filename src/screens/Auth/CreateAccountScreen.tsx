@@ -1,5 +1,12 @@
-import { signUpWithEmail } from '../../firebase/auth';  // Adjust the path as needed
 import React, { useState } from 'react';
+// import { signUpWithEmail } from '../../firebase/auth';  // Adjust the path as needed
+
+// we are attempting to create the function directly in thies file instead. 
+import { auth } from '../../firebase/config'; // from our config file. 
+import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+
+
+
 import {
   View,
   Text,
@@ -28,27 +35,58 @@ export default function CreateAccountScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
+
+
+  
+
+  // const handleCreateAccount = async () => {
+  //   try {
+
+  //     console.log(email, password)
+
+  //     // this causes an error: 
+  //     // here I want to use createUserWithEmailAndPassword
+
+
+  //     const user = await createUserWithEmailAndPassword(auth, email, password);
+  //     console.log('Account created:', user);
+
+  //     // console.log('Account created:');
+
+  //     // Possibly navigate to another screen or enroll 2FA here
+  //   } catch (error) {
+  //     if (error instanceof Error) {
+  //       console.error('Account creation failed:', error.message);
+  //     } else {
+  //       console.error('Unknown error during account creation:', error);
+  //     }
+  //   }
+  // };
 
   const handleCreateAccount = async () => {
+    setErrorMessage(''); // Clear previous errors
+  
     try {
-
-      // this causes an error: 
-      // const user = await signUpWithEmail(email, password);
-      // console.log('Account created:', user);
-
-      console.log('Account created:');
-
-      // Possibly navigate to another screen or enroll 2FA here
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error('Account creation failed:', error.message);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('Account created:', userCredential.user);
+  
+      // Optionally, navigate or show success UI here
+    } catch (error: any) {
+      if (error.code === 'auth/email-already-in-use') {
+        setErrorMessage('An account already exists with this email.');
+      } else if (error.code === 'auth/invalid-email') {
+        setErrorMessage('The email address is not valid.');
+      } else if (error.code === 'auth/weak-password') {
+        setErrorMessage('Password should be at least 6 characters.');
       } else {
-        console.error('Unknown error during account creation:', error);
+        setErrorMessage('An unexpected error occurred. Please try again.');
       }
+      console.error('Account creation failed:', error.message);
     }
   };
-
+  
 
 
   return (
@@ -115,6 +153,10 @@ export default function CreateAccountScreen() {
           />
         </TouchableOpacity>
       </View>
+
+      {errorMessage !== '' && (
+        <Text style={{ color: 'red', marginBottom: 12 }}>{errorMessage}</Text>
+      )}
 
       {/* Create Account Button */}
       <TouchableOpacity style={styles.createButton} onPress={handleCreateAccount}>

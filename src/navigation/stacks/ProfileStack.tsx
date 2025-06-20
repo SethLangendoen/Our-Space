@@ -5,6 +5,7 @@ import EditProfileScreen from '../../screens/profile/EditProfileScreen';
 // import SecurityScreen from '../../screens/Settings/SecurityScreen';
 import NotificationsScreen from '../../screens/profile/NotificationsScreen';
 import PrivacyScreen from '../../screens/profile/PrivacyScreen';
+import SettingsStack from './SettingsStack';
 
 const Stack = createNativeStackNavigator();
 
@@ -16,6 +17,11 @@ export default function ProfileStack() {
       {/* <Stack.Screen name="Security" component={SecurityScreen} options={{ title: 'Security' }} /> */}
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy' }} />
+      <Stack.Screen
+        name="SettingsStack"
+        component={SettingsStack}
+        options={{ headerShown: false }} // Let the nested SettingsStack handle its own headers
+      />
     </Stack.Navigator>
   );
 }

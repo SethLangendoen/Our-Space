@@ -1,7 +1,7 @@
 
 
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import SpacesStack from './stacks/SpacesStack';
 import ProfileStack from './stacks/ProfileStack';
@@ -10,6 +10,11 @@ import MySpacesStack from './stacks/MySpacesStack';
 import useUserProfileStatus from '../hooks/UseUserProfileStatus';
 import AuthStack from './stacks/AuthStack';
 import { Image, View, Text } from 'react-native';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase/config';
+
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { ParamListBase } from '@react-navigation/native';
 
 import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -22,26 +27,21 @@ const Tab = createBottomTabNavigator();
 
 export default function MainTabs() {
   // const profileComplete = useUserProfileStatus();
-  const profileComplete = null;
+  // const profileComplete = null;
+
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user); // true if user exists
+    });
+
+    return unsubscribe; // Cleanup listener on unmount
+  }, []);
+
+
 
   return (
-    // <Tab.Navigator
-    //   initialRouteName="Spaces"
-    //   screenOptions={{
-    //     tabBarActiveTintColor: '#255C2F', // Active label color
-    //     tabBarInactiveTintColor: '#7B7B7B',  // Inactive label color
-    //     tabBarLabelStyle: {
-    //       fontSize: 12,
-    //       fontWeight: '600',
-    //       fontFamily: 'Helvetica Neue', // Replace with your custom font if loaded
-    //     },
-    //     tabBarStyle: {
-    //       backgroundColor: '#fff',
-    //       paddingBottom: 5,
-    //       height: 60,
-    //     },
-    //   }}
-    // >
 
 
     <Tab.Navigator
@@ -57,8 +57,8 @@ screenOptions={{
   },
   tabBarStyle: {
     backgroundColor: '#fff',
-    paddingBottom: 5,
-    height: 60,
+    paddingBottom: 10,
+    height: 70,
   },
   headerTitle: () => (
     <Image
@@ -68,6 +68,7 @@ screenOptions={{
     />
   ),
   headerTitleAlign: 'center',
+  
 }}
 >
 
@@ -135,9 +136,11 @@ screenOptions={{
           tabBarLabel: 'Chats',
         }}
       />
-      <Tab.Screen
+
+
+      {/* <Tab.Screen
         name="Profile"
-        component={profileComplete ? ProfileStack : AuthStack}
+        component={isLoggedIn ? ProfileStack : AuthStack}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <Image
@@ -155,7 +158,48 @@ screenOptions={{
           ),
           tabBarLabel: 'Profile',
         }}
+      /> */}
+
+<Tab.Screen
+  name="Profile"
+  component={isLoggedIn ? ProfileStack : AuthStack}
+  options={({ navigation }: { navigation: BottomTabNavigationProp<ParamListBase> }) => ({
+    tabBarIcon: ({ focused }: { focused: boolean }) => (
+      <Image
+        source={
+          focused
+            ? require('../../assets/bottomNavIcons/profileFill.png')
+            : require('../../assets/bottomNavIcons/profile.png')
+        }
+        style={{ width: 28, height: 28, tintColor: focused ? undefined : '#000' }}
       />
+    ),
+    tabBarLabel: 'Profile',
+    headerRight: () => (
+<TouchableOpacity
+  onPress={() =>
+    navigation.navigate('Profile', {
+      screen: 'SettingsStack',
+      params: {
+        screen: 'SettingsScreen',
+      },
+    })
+  }
+  style={{ marginRight: 15 }}
+>
+        <Image
+          source={require('../../assets/settings.png')}
+          style={{ width: 24, height: 24 }}
+        />
+      </TouchableOpacity>
+    ),
+  })}
+/>
+
+
+
+
+      
     </Tab.Navigator>
   );
 }
