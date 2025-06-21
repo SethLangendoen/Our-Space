@@ -175,24 +175,23 @@ screenOptions={{
       />
     ),
     tabBarLabel: 'Profile',
-    headerRight: () => (
-<TouchableOpacity
-  onPress={() =>
-    navigation.navigate('Profile', {
-      screen: 'SettingsStack',
-      params: {
-        screen: 'SettingsScreen',
-      },
-    })
-  }
-  style={{ marginRight: 15 }}
->
-        <Image
-          source={require('../../assets/settings.png')}
-          style={{ width: 24, height: 24 }}
-        />
-      </TouchableOpacity>
-    ),
+    headerRight: () =>
+      isLoggedIn ? (
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('Profile', {
+              screen: 'SettingsStack',
+              params: { screen: 'SettingsScreen' },
+            })
+          }
+          style={{ marginRight: 15 }}
+        >
+          <Image
+            source={require('../../assets/settings.png')}
+            style={{ width: 24, height: 24 }}
+          />
+        </TouchableOpacity>
+      ) : null,
   })}
 />
 
@@ -200,6 +199,7 @@ screenOptions={{
 
 
       
+
     </Tab.Navigator>
   );
 }

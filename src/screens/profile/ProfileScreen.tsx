@@ -16,7 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { auth, db } from '../../firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { useIsFocused } from '@react-navigation/native'; // 👈 Add this
 
 import { Ionicons } from '@expo/vector-icons'; // 👈 or any other icon library
@@ -78,9 +78,34 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const isFocused = useIsFocused(); // 👈 Detect screen focus
+  const isFocused = useIsFocused(); 
+  const [listings, setListings] = useState<any[]>([]);
 
+  const fetchUserListings = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+  
+    try {
+      const q = query(collection(db, 'spaces'), where('userId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      const posts = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setListings(posts);
+    } catch (error) {
+      console.error('Error fetching user listings:', error);
+    }
+  };
 
+  useEffect(() => {
+    if (isFocused) {
+      fetchUserData();
+      fetchUserListings();
+    }
+  }, [isFocused]);
+  
+  
   // const fetchUserData = async () => {
   //   const user = auth.currentUser;
   //   if (!user) return;
@@ -229,9 +254,6 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        <View style={styles.tabContent}>
-          <Text>{activeTab} content goes here</Text>
-        </View>
 
 
         {activeTab === 'Badges' && (
@@ -248,6 +270,40 @@ export default function ProfileScreen() {
             ))}
           </View>
         )}
+
+
+{activeTab === 'Listings' && (
+  listings.length > 0 ? (
+    listings.map((post) => (
+      <View key={post.id} style={styles.postBox}>
+        <View style={styles.postHeader}>
+          <Text style={styles.postTitle}>{post.title}</Text>
+          {post.postType && (
+            <View style={[
+              styles.tag,
+              post.postType === 'Offering' ? styles.offeringTag : styles.requestingTag,
+            ]}>
+              <Text style={styles.tagText}>{post.postType}</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.postDesc}>{post.description}</Text>
+
+        <View style={styles.postFooter}>
+          <Text style={styles.postDate}>
+            {post.startDate} → {post.endDate}
+          </Text>
+          {post.price && (
+            <Text style={styles.priceText}>${post.price}</Text>
+          )}
+        </View>
+      </View>
+    ))
+  ) : (
+    <Text style={styles.message}>No listings found.</Text>
+  )
+)}
 
         
 
@@ -412,5 +468,78 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  postBox: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    padding: 15,
+    marginVertical: 10,
+    backgroundColor: '#f9f9f9',
+    width: '100%',
+  },
+  
+  postHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  
+  postTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  
+  tag: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  
+  offeringTag: {
+    backgroundColor: '#28a745', // green
+  },
+  
+  requestingTag: {
+    backgroundColor: '#dc3545', // red
+  },
+  
+  tagText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  
+  postDesc: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 5,
+  },
+  
+  postFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  
+  postDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  
+  priceText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#007bff', // blue
+  },
+  
+  message: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  
   
 });

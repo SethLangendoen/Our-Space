@@ -2,6 +2,16 @@
 
 
 import React, { useState } from 'react';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { auth, db } from '../../firebase/config';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useEffect } from 'react';
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
+import * as FileSystem from 'expo-file-system';
+// import { v4 as uuidv4 } from 'uuid'; // for unique image names
+import * as Crypto from 'expo-crypto';
+import { storage } from '../../firebase/config';
+
 // import { createPost } from '../../firebase/firestore/posts';
 // import { getAuth } from 'firebase/auth';
 
@@ -30,6 +40,124 @@ export default function CreateSpaceScreen() {
   const [height, setHeight] = useState('');
   const [storageType, setStorageType] = useState<'Indoor' | 'Outdoor' | 'Climate-Controlled' | null>(null);
   const [usageType, setUsageType] = useState<'Cars/Trucks' | 'RV' | 'Boats' | 'Personal' | 'Business' | null>(null);
+  const [postType, setPostType] = useState<'Offering' | 'Requesting' | null>(null);
+  const [price, setPrice] = useState('');
+  const [address, setAddress] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const HERE_APP_ID = 'pFKaPvfjrv5rKal9FLUM';
+  const HERE_API_KEY = 'tUaFheXRcT-OB0IJJnXIHemVIYMOHALHYXDYV32XG4E';
+  
+  async function geocodeAddress(fullAddress: string) {
+    try {
+      const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(fullAddress)}&apiKey=${HERE_API_KEY}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch geocode data');
+      }
+      const data = await response.json();
+  
+      if (data.items && data.items.length > 0) {
+        const location = data.items[0].position;
+        return {
+          lat: location.lat,
+          lng: location.lng,
+        };
+      } else {
+        throw new Error('No geocode results found');
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      throw error;
+    }
+  }
+  
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      setIsLoggedIn(true);
+      setUserId(user.uid);
+    } else {
+      setIsLoggedIn(false);
+      setUserId(null);
+    }
+  });
+
+  return unsubscribe;
+}, []);
+
+
+const generateUUID = async () => {
+  const randomBytes = await Crypto.getRandomBytesAsync(16);
+  const hex = Array.from(randomBytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `${hex.substr(0, 8)}-${hex.substr(8, 4)}-4${hex.substr(13, 3)}-a${hex.substr(16, 3)}-${hex.substr(19, 12)}`;
+};
+
+const getFileExtension = (uri: string) => {
+  const match = uri.match(/\.(\w+)(\?.*)?$/);
+  return match ? match[1] : 'jpg'; // default fallback
+};
+
+
+// const uploadImageAsync = async (uri: string, userId: string): Promise<string> => {
+//   try {
+//     const response = await fetch(uri);
+//     const blob = await response.blob();
+//     console.log('Blob size:', blob.size);
+
+//     const storage = getStorage();
+//     const ext = getFileExtension(uri);
+//     const uuid = await generateUUID();
+//     const filename = `${userId}/${uuid}.${ext}`;
+//     const imageRef = ref(storage, filename);
+
+//     await uploadBytes(imageRef, blob);
+//     const downloadURL = await getDownloadURL(imageRef);
+//     return downloadURL;
+//   } catch (error) {
+//     console.error('Upload error:', error);
+//     throw error;
+//   }
+// };
+
+const uploadImageAsync = async (uri: string, userId: string): Promise<string> => {
+  try {
+    
+    const response = await fetch(uri);
+    console.log('fetch response: ', response)
+    const blob = await response.blob();
+    console.log(blob.size,'Blob Size: ', blob.type, 'Blob Type: ')
+
+    const ext = getFileExtension(uri);
+    const uuid = await generateUUID();
+    console.log('User ID:', userId)
+    const filename = `postPhotos/${userId}/${uuid}.${ext}`;
+    console.log('File name: ' , filename)
+    const imageRef = ref(storage, filename);
+
+    const metadata = {
+      contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+    };
+
+    await uploadBytes(imageRef, blob);
+    const downloadURL = await getDownloadURL(imageRef);
+    return downloadURL;
+    
+
+
+  } catch (error) {
+    console.error('Upload error catch:', error);
+    throw error;
+  }
+
+
+};
+
+
 
   const pickImage = async () => {
     if (images.length >= MAX_IMAGES) return;
@@ -40,6 +168,8 @@ export default function CreateSpaceScreen() {
 
     if (!result.canceled && result.assets?.length > 0) {
       const uri = result.assets[0].uri;
+      console.log('Uploading URI:', uri);
+
       setImages([...images, uri]);
       if (!mainImage) setMainImage(uri);
     }
@@ -56,40 +186,114 @@ export default function CreateSpaceScreen() {
   };
 
 
+  // const handleCreatePost = async () => {
+  //   if (!userId) {
+  //     alert('You must be logged in to create a post.');
+  //     return;
+  //   }
+  
+  //   if (
+  //     !title || !description || !startDate || !endDate || !width || !length ||
+  //     !height || !storageType || !usageType || !postType || !price || images.length === 0
+  //   ) {
+  //     alert('Please fill out all fields and add at least one image.');
+  //     return;
+  //   }
+  
+  //   try {
+  //     // Upload images to Firebase Storage
+  //     const uploadedImageURLs: string[] = [];
+  
+  //     for (const uri of images) {
+  //       const url = await uploadImageAsync(uri, userId);
+  //       uploadedImageURLs.push(url);
+  //     }
+  
+  //     const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
+  
+  //     const postData = {
+  //       title,
+  //       description,
+  //       startDate,
+  //       endDate,
+  //       dimensions: { width, length, height },
+  //       storageType,
+  //       usageType,
+  //       mainImage: mainImageURL,
+  //       images: uploadedImageURLs,
+  //       createdAt: Timestamp.now(),
+  //       userId,
+  //       postType,
+  //       price,
+  //     };
+  
+  //     await addDoc(collection(db, 'spaces'), postData);
+  //     alert('Post created successfully!');
+  //     // Optionally reset form here
+  //   } catch (error: any) {
+  //       console.error('Error creating post:', error.code, error.message, error.customData);
+  //     alert(`Upload error: ${error.message}`);
+  //   }
+  // };
+
   const handleCreatePost = async () => {
-	// const auth = getAuth();
-	// const user = auth.currentUser;
+    if (!userId) {
+      alert('You must be logged in to create a post.');
+      return;
+    }
   
-	// if (!user) {
-	//   alert('You must be logged in to create a post.');
-	//   return;
-	// }
+    if (
+      !title || !description || !startDate || !endDate || !width || !length ||
+      !height || !storageType || !usageType || !postType || !price || images.length === 0 ||
+      !address || !postalCode
+    ) {
+      alert('Please fill out all fields, add an address, postal code, and at least one image.');
+      return;
+    }
   
-	// const postData = {
-	//   title,
-	//   description,
-	//   startDate,
-	//   endDate,
-	//   width,
-	//   length,
-	//   height,
-	//   storageType,
-	//   usageType,
-	//   mainImage,
-	//   images,
-	//   userId: user.uid,
-	// };
+    try {
+      // Geocode the address + postal code to get coordinates
+      const fullAddress = `${address}, ${postalCode}`;
+      const coordinates = await geocodeAddress(fullAddress);
   
-	// try {
-	//   const postId = await createPost(user.uid, postData);
-	//   alert(`Post created with ID: ${postId}`);
-	//   // You can navigate away or reset form here
-	// } catch (error) {
-	//   alert('Failed to create post. Please try again.');
-	//   console.error(error);
-	// }
+      // Upload images to Firebase Storage
+      const uploadedImageURLs: string[] = [];
+  
+      for (const uri of images) {
+        const url = await uploadImageAsync(uri, userId);
+        uploadedImageURLs.push(url);
+      }
+  
+      const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
+  
+      const postData = {
+        title,
+        description,
+        startDate,
+        endDate,
+        dimensions: { width, length, height },
+        storageType,
+        usageType,
+        mainImage: mainImageURL,
+        images: uploadedImageURLs,
+        createdAt: Timestamp.now(),
+        userId,
+        postType,
+        price,
+        address: fullAddress,
+        location: coordinates,  // { lat: ..., lng: ... }
+      };
+  
+      await addDoc(collection(db, 'spaces'), postData);
+      alert('Post created successfully!');
+      // Optionally reset form here
+    } catch (error: any) {
+      console.error('Error creating post:', error.code, error.message, error.customData);
+      alert(`Error: ${error.message}`);
+    }
   };
   
+
 
 
   return (
@@ -106,6 +310,33 @@ export default function CreateSpaceScreen() {
         ))}
       </View>
 
+
+
+
+            
+<View style={styles.tabContainer}>
+  {['Offering', 'Requesting'].map((type) => (
+    <TouchableOpacity
+      key={type}
+      style={[
+        styles.tabButton,
+        postType === type && styles.activeTabButton,
+      ]}
+      onPress={() => setPostType(type as 'Offering' | 'Requesting')}
+    >
+      <Text
+        style={[
+          styles.tabText,
+          postType === type && styles.activeTabText,
+        ]}
+      >
+        {type}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</View>
+
+
       <TextInput
         style={styles.input}
         placeholder="Title"
@@ -119,6 +350,30 @@ export default function CreateSpaceScreen() {
         value={description}
         onChangeText={setDescription}
       />
+
+<TextInput
+  style={styles.input}
+  placeholder="Address"
+  value={address}
+  onChangeText={setAddress}
+/>
+
+<TextInput
+  style={styles.input}
+  placeholder="Postal Code"
+  value={postalCode}
+  onChangeText={setPostalCode}
+/>
+
+
+<TextInput
+  style={styles.input}
+  placeholder="Price ($)"
+  value={price}
+  onChangeText={setPrice}
+  keyboardType="numeric"
+/>
+
       <TextInput
         style={styles.input}
         placeholder="Start Date (YYYY-MM-DD)"
@@ -202,9 +457,10 @@ export default function CreateSpaceScreen() {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.submitButton}>
+      <TouchableOpacity style={styles.submitButton} onPress={handleCreatePost}>
         <Text style={styles.submitText}>Create Space</Text>
       </TouchableOpacity>
+
     </ScrollView>
   );
 }
