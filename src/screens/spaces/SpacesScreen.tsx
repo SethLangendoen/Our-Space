@@ -105,41 +105,59 @@ useFocusEffect(
           </MapView>
 
           {/* Bottom panel showing selected space */}
+
+
           {selectedSpace && (
-            <View style={styles.bottomPanel}>
-              <TouchableOpacity onPress={() => setSelectedSpace(null)} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
 
-              {selectedSpace.mainImage && (
-                <Image source={{ uri: selectedSpace.mainImage }} style={styles.mainImage} resizeMode="cover" />
-              )}
 
-              <View style={styles.titleRow}>
-                <Text style={styles.title}>{selectedSpace.title || 'No Title'}</Text>
-                {selectedSpace.postType && (
-                  <View
-                    style={[
-                      styles.tag,
-                      selectedSpace.postType === 'Offering' ? styles.offeringTag : styles.requestingTag,
-                    ]}
-                  >
-                    <Text style={styles.tagText}>{selectedSpace.postType}</Text>
-                  </View>
-                )}
-              </View>
+<TouchableOpacity
+  style={styles.bottomPanel}
+  activeOpacity={0.9}
+  onPress={() => {
+    navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id });
+    setSelectedSpace(null); // Optional: clear selection after navigating
+  }}
+>
+  <TouchableOpacity onPress={() => setSelectedSpace(null)} style={styles.closeButton}>
+    <Ionicons name="close" size={24} color="#333" />
+  </TouchableOpacity>
 
-              {selectedSpace.description && (
-                <Text style={styles.description}>{selectedSpace.description}</Text>
-              )}
+  {selectedSpace.mainImage && (
+    <Image source={{ uri: selectedSpace.mainImage }} style={styles.mainImage} resizeMode="cover" />
+  )}
 
-              {selectedSpace.price && (
-                <Text style={styles.price}>${parseFloat(selectedSpace.price).toFixed(2)}</Text>
-              )}
-            </View>
+  <View style={styles.titleRow}>
+    <Text style={styles.title}>{selectedSpace.title || 'No Title'}</Text>
+    {selectedSpace.postType && (
+      <View
+        style={[
+          styles.tag,
+          selectedSpace.postType === 'Offering' ? styles.offeringTag : styles.requestingTag,
+        ]}
+      >
+        <Text style={styles.tagText}>{selectedSpace.postType}</Text>
+      </View>
+    )}
+  </View>
+
+  {selectedSpace.description && (
+    <Text style={styles.description}>{selectedSpace.description}</Text>
+  )}
+
+  {selectedSpace.price && (
+    <Text style={styles.price}>${parseFloat(selectedSpace.price).toFixed(2)}</Text>
+  )}
+</TouchableOpacity>
+
+
+
           )}
         </>
       
+
+
+
+
       ) : (
         
 <FlatList
@@ -196,44 +214,6 @@ useFocusEffect(
   );
 }
 
-
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     paddingTop: 15,
-//     paddingHorizontal: 16,
-//     backgroundColor: '#fff',
-//   },
-//   header: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     marginBottom: 16,
-//   },
-//   toggleButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: 6,
-//     backgroundColor: '#eef',
-//     padding: 8,
-//     borderRadius: 6,
-//   },
-//   toggleText: {
-//     fontSize: 16,
-//   },
-//   card: {
-//     padding: 20,
-//     marginVertical: 8,
-//     backgroundColor: '#f9f9f9',
-//     borderRadius: 8,
-//   },
-//   mapView: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-// });
 
 
 const styles = StyleSheet.create({

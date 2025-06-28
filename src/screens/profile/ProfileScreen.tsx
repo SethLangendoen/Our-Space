@@ -12,6 +12,7 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -41,38 +42,90 @@ type ProfileScreenNavigationProp = NativeStackNavigationProp<
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<'Listings' | 'Reviews' | 'Badges'>('Listings');
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+
   const badgeList = [
     {
-      id: 'beginner',
-      title: 'Beginner Badge',
-      // icon: require('../../../assets/badges/beginner.png'),
-      description: 'Complete your profile and add your first listing.',
+      id: '5StarStreak',
+      title: '5 Star Streak',
+      description: 'Maintain 5-star reviews for 5 consecutive stays.',
+      isCompleted: false,
+      iconCompleted: require('../../../assets/badges/complete/5StarStreak.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/5StarStreak.png'),
     },
     {
-      id: 'trusted',
-      title: 'Trusted Host',
-      // icon: require('../../../assets/badges/trusted.png'),
-      description: 'Receive at least 3 positive reviews from guests.',
+      id: '10XHost',
+      title: '10X Host',
+      description: 'Host 10 unique guests on your listings.',
+      isCompleted: false,
+      iconCompleted: require('../../../assets/badges/complete/10XHost.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/10XHost.png'),
     },
     {
-      id: 'superhost',
-      title: 'Superhost',
-      // icon: require('../../../assets/badges/superhost.png'),
-      description: 'Host consistently for 6+ months with great ratings.',
+      id: '100DayMVP',
+      title: '100 Day MVP',
+      description: 'Be active on the platform for 100 days.',
+      isCompleted: true,
+      iconCompleted: require('../../../assets/badges/complete/100DayMVP.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/100DayMVP.png'),
     },
     {
-      id: 'responsive',
-      title: 'Responsive Communicator',
-      // icon: require('../../../assets/badges/responsive.png'),
-      description: 'Respond to 90% of messages within 24 hours.',
+      id: 'firstHost',
+      title: 'First Host',
+      description: 'Successfully host your first guest.',
+      isCompleted: false,
+      iconCompleted: require('../../../assets/badges/complete/firstHost.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/firstHost.png'),
     },
     {
-      id: 'community',
-      title: 'Community Star',
-      // icon: require('../../../assets/badges/community.png'),
-      description: 'Participate in community discussions and events.',
+      id: 'firstStash',
+      title: 'First Stash',
+      description: 'Complete your first stash listing.',
+      isCompleted: false,
+      iconCompleted: require('../../../assets/badges/complete/firstStash.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/firstStash.png'),
+    },
+    {
+      id: 'fullHouse',
+      title: 'Full House',
+      description: 'Have 100% occupancy for a full week.',
+      isCompleted: false,
+      iconCompleted: require('../../../assets/badges/complete/fullHouse.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/fullHouse.png'),
+    },
+    {
+      id: 'respectedRoyalty',
+      title: 'Respected Royalty',
+      description: 'Earn the respect of fellow hosts and guests.',
+      isCompleted: false,
+      iconCompleted: require('../../../assets/badges/complete/respectedRoyalty.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/respectedRoyalty.png'),
+    },
+    {
+      id: 'socialStar',
+      title: 'Social Star',
+      description: 'Engage actively on social platforms.',
+      isCompleted: false,
+      iconCompleted: require('../../../assets/badges/complete/socialStar.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/socialStar.png'),
+    },
+    {
+      id: 'speedyReplier',
+      title: 'Speedy Replier',
+      description: 'Respond to guest inquiries in under an hour.',
+      isCompleted: false,
+      iconCompleted: require('../../../assets/badges/complete/speedyReplier.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/speedyReplier.png'),
+    },
+    {
+      id: 'verifiedHero',
+      title: 'Verified Hero',
+      description: 'Verify your identity and payment method.',
+      isCompleted: false,
+      iconCompleted: require('../../../assets/badges/complete/verifiedHero.png'),
+      iconIncomplete: require('../../../assets/badges/incomplete/verifiedHero.png'),
     },
   ];
+  
   
   const [name, setName] = useState<string>('');
   const [bio, setBio] = useState<string>('');
@@ -106,32 +159,6 @@ export default function ProfileScreen() {
   }, [isFocused]);
   
   
-  // const fetchUserData = async () => {
-  //   const user = auth.currentUser;
-  //   if (!user) return;
-
-  //   setLoading(true); // Optional: show loading spinner on re-focus
-
-  //   try {
-  //     const userRef = doc(db, 'users', user.uid);
-  //     const userSnap = await getDoc(userRef);
-
-  //     if (userSnap.exists()) {
-  //       const data = userSnap.data();
-  //       const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
-  //       setName(fullName || 'No Name');
-  //       setBio(data.bio || '');
-  //     } else {
-  //       setName(user.email || '');
-  //       setBio('');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching profile:', error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const fetchUserData = async () => {
     const user = auth.currentUser;
     if (!user) return;
@@ -186,6 +213,8 @@ export default function ProfileScreen() {
 
 
   return (
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+
     <View style={styles.container}>
 
       {/* <View style={styles.headerBackground} /> */}
@@ -243,6 +272,7 @@ export default function ProfileScreen() {
         </View>
 
 
+
         <View style={styles.tabContainer}>
           {['Listings', 'Reviews', 'Badges'].map((tab) => (
             <Pressable key={tab} onPress={() => setActiveTab(tab as any)} style={styles.tab}>
@@ -254,62 +284,76 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-
-
         {activeTab === 'Badges' && (
-          <View style={styles.badgeList}>
-            {badgeList.map((badge) => (
-              <TouchableOpacity
-                key={badge.id}
-                style={styles.badgeItem}
-                onPress={() => Alert.alert(badge.title, badge.description)}
-              >
-                {/* <Image source={badge.icon} style={styles.badgeIcon} /> */}
-                <Text style={styles.badgeTitle}>{badge.title}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-
-{activeTab === 'Listings' && (
-  listings.length > 0 ? (
-    listings.map((post) => (
-      <View key={post.id} style={styles.postBox}>
-        <View style={styles.postHeader}>
-          <Text style={styles.postTitle}>{post.title}</Text>
-          {post.postType && (
-            <View style={[
-              styles.tag,
-              post.postType === 'Offering' ? styles.offeringTag : styles.requestingTag,
-            ]}>
-              <Text style={styles.tagText}>{post.postType}</Text>
-            </View>
-          )}
-        </View>
-
-        <Text style={styles.postDesc}>{post.description}</Text>
-
-        <View style={styles.postFooter}>
-          <Text style={styles.postDate}>
-            {post.startDate} → {post.endDate}
-          </Text>
-          {post.price && (
-            <Text style={styles.priceText}>${post.price}</Text>
-          )}
-        </View>
-      </View>
-    ))
-  ) : (
-    <Text style={styles.message}>No listings found.</Text>
-  )
+  <View style={styles.badgeList}>
+    {badgeList
+      .filter((badge) => !badge.isCompleted)
+      .slice(0, 10) // show up to 10 incomplete badges
+      .map((badge) => (
+        <TouchableOpacity
+          key={badge.id}
+          style={styles.badgeSingleItem}
+          onPress={() => Alert.alert(badge.title, badge.description)}
+        >
+          <Image
+            source={badge.iconIncomplete}
+            style={styles.badgeIcon}
+          />
+          <Text style={styles.badgeTitle}>{badge.title}</Text>
+        </TouchableOpacity>
+      ))}
+  </View>
 )}
+
+
+
+
+
+
+
+
+
+      {activeTab === 'Listings' && (
+        listings.length > 0 ? (
+          listings.map((post) => (
+            <View key={post.id} style={styles.postBox}>
+              <View style={styles.postHeader}>
+                <Text style={styles.postTitle}>{post.title}</Text>
+                {post.postType && (
+                  <View style={[
+                    styles.tag,
+                    post.postType === 'Offering' ? styles.offeringTag : styles.requestingTag,
+                  ]}>
+                    <Text style={styles.tagText}>{post.postType}</Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.postDesc}>{post.description}</Text>
+
+              <View style={styles.postFooter}>
+                <Text style={styles.postDate}>
+                  {post.startDate} → {post.endDate}
+                </Text>
+                {post.price && (
+                  <Text style={styles.priceText}>${post.price}</Text>
+                )}
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.message}>No listings found.</Text>
+        )
+      )}
+
 
         
 
 
       </View>
     </View>
+    </ScrollView>
+
   );
 }
 
@@ -447,27 +491,84 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+
+
+  // badgeList: {
+  //   width: '100%',
+  //   paddingHorizontal: 20,
+  // },
+  // badgeItem: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   paddingVertical: 12,
+  //   borderBottomWidth: 1,
+  //   borderBottomColor: '#eee',
+  // },
+  // badgeIcon: {
+  //   width: 40,
+  //   height: 40,
+  //   marginRight: 16,
+  //   resizeMode: 'contain',
+  // },
+  // badgeTitle: {
+  //   fontSize: 16,
+  //   fontWeight: '500',
+  // },
+
+  // badgeList: {
+  //   paddingTop: 20,
+  //   paddingHorizontal: 10,
+  // },
+  
+  // badgeRow: {
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  //   marginBottom: 20,
+  // },
+  
+  // badgeItem: {
+  //   flex: 1,
+  //   alignItems: 'center',
+  //   marginHorizontal: 5,
+  // },
+  
+  // badgeIcon: {
+  //   width: 60,
+  //   height: 60,
+  //   marginBottom: 5,
+  // },
+  // badgeTitle: {
+  //   textAlign: 'center',
+  //   fontSize: 12,
+  // },
+
   badgeList: {
-    width: '100%',
+    paddingTop: 20,
     paddingHorizontal: 20,
   },
-  badgeItem: {
+  
+  badgeSingleItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  
   badgeIcon: {
-    width: 40,
-    height: 40,
+    width: 160,
+    height: 160,
     marginRight: 16,
     resizeMode: 'contain',
   },
+  
   badgeTitle: {
     fontSize: 16,
     fontWeight: '500',
   },
+  
+
+
   postBox: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -540,6 +641,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
+  scrollContent: {
+    paddingBottom: 0, // so content doesn't get cut off
+  },
+  
+
+  
+  
   
   
 });
