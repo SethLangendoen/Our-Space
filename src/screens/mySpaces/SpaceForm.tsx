@@ -458,7 +458,7 @@ const handleSubmit = async () => {
 
     <Text style={styles.sectionTitle}>Delivery Method:</Text>
 <View style={styles.optionRow}>
-  {['Pickup', 'Delivery'].map(option => {
+  {['Pickup', 'Delivery' ].map(option => {
     const selected = deliveryMethod.includes(option);
     return (
       <TouchableOpacity

@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { auth, db } from '../../firebase/config'; // Adjust path as needed
+import { doc, deleteDoc } from 'firebase/firestore';
 
 type Navigation = {
   navigate: (screen: string) => void;
@@ -24,13 +26,29 @@ export default function SettingsScreen() {
   ];
 
   const handleLogout = () => {
-    // Example logout alert, replace with actual logout logic
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', onPress: () => console.log('User logged out') },
+      { 
+        text: 'Logout', 
+        onPress: async () => {
+          try {
+            await auth.signOut();
+            console.log('User logged out');
+            // Optionally navigate to login screen here
+            // navigation.navigate('LoginScreen'); 
+          } catch (error) {
+            console.error('Logout failed:', error);
+            Alert.alert('Error', 'Failed to log out. Please try again.');
+          }
+        } 
+      },
     ]);
   };
+  
 
+  /* HANDLE THIS FUNCTIONALITY LATER ON 
+  - Prior to account deletion, a user must not have ongoing contracts with others. Those must be resolved. 
+  */ 
   const handleDeleteAccount = () => {
     Alert.alert('Delete Account', 'Are you sure you want to delete your account? This action is irreversible.', [
       { text: 'Cancel', style: 'cancel' },

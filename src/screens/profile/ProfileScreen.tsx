@@ -28,6 +28,7 @@ const { width } = Dimensions.get('window');
 type ProfileStackParamList = {
   ProfileMain: undefined;
   EditProfile: undefined;
+  SpaceDetail: { spaceId: string };  // <-- add this line
 
 };
 
@@ -312,7 +313,7 @@ export default function ProfileScreen() {
 
 
 
-
+{/* 
       {activeTab === 'Listings' && (
         listings.length > 0 ? (
           listings.map((post) => (
@@ -344,18 +345,70 @@ export default function ProfileScreen() {
         ) : (
           <Text style={styles.message}>No listings found.</Text>
         )
-      )}
+      )} */}
 
 
-        
+
+{activeTab === 'Listings' && (
+  listings.length > 0 ? (
+    listings.map((item) => (
+      <TouchableOpacity
+        key={item.id}
+        style={styles.card}
+        onPress={() => navigation.navigate('SpaceDetail', { spaceId: item.id })}
+      >
+        {/* Main Image */}
+        {item.mainImage && (
+          <Image
+            source={{ uri: item.mainImage }}
+            style={styles.mainImage}
+            resizeMode="cover"
+          />
+        )}
+
+        {/* Title and Tag Row */}
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{item.title || 'No Title'}</Text>
+          {item.postType && (
+            <View
+              style={[
+                styles.tag,
+                item.postType === 'Offering' ? styles.offeringTag : styles.requestingTag,
+              ]}
+            >
+              <Text style={styles.tagText}>{item.postType}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Description */}
+        {item.description && <Text style={styles.description}>{item.description}</Text>}
+
+        {/* Price */}
+        {item.price && (
+          <Text style={styles.price}>${parseFloat(item.price).toFixed(2)}</Text>
+        )}
+      </TouchableOpacity>
+    ))
+  ) : (
+    <Text style={styles.message}>No listings found.</Text>
+  )
+)}
 
 
+
+
+
+      
       </View>
     </View>
     </ScrollView>
 
   );
 }
+
+
+
 
 
 
@@ -409,23 +462,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   
-  // statsRow: {
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   width: '60%',
-  //   marginTop: 16,
-  // },
-  // statBox: {
-  //   alignItems: 'center',
-  // },
-  // statNumber: {
-  //   fontSize: 18,
-  //   fontWeight: 'bold',
-  // },
-  // statLabel: {
-  //   fontSize: 12,
-  //   color: '#666',
-  // },
 
   name: {
     fontSize: 20,
@@ -491,56 +527,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-
-
-  // badgeList: {
-  //   width: '100%',
-  //   paddingHorizontal: 20,
-  // },
-  // badgeItem: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   paddingVertical: 12,
-  //   borderBottomWidth: 1,
-  //   borderBottomColor: '#eee',
-  // },
-  // badgeIcon: {
-  //   width: 40,
-  //   height: 40,
-  //   marginRight: 16,
-  //   resizeMode: 'contain',
-  // },
-  // badgeTitle: {
-  //   fontSize: 16,
-  //   fontWeight: '500',
-  // },
-
-  // badgeList: {
-  //   paddingTop: 20,
-  //   paddingHorizontal: 10,
-  // },
-  
-  // badgeRow: {
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   marginBottom: 20,
-  // },
-  
-  // badgeItem: {
-  //   flex: 1,
-  //   alignItems: 'center',
-  //   marginHorizontal: 5,
-  // },
-  
-  // badgeIcon: {
-  //   width: 60,
-  //   height: 60,
-  //   marginBottom: 5,
-  // },
-  // badgeTitle: {
-  //   textAlign: 'center',
-  //   fontSize: 12,
-  // },
 
   badgeList: {
     paddingTop: 20,
@@ -645,6 +631,43 @@ const styles = StyleSheet.create({
     paddingBottom: 0, // so content doesn't get cut off
   },
   
+  card: {
+    padding: 20,
+    marginVertical: 8,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+  },
+  mainImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1, // To allow title to take available space
+  },
+
+
+  description: {
+    marginTop: 6,
+    fontSize: 14,
+    color: '#555',
+  },
+  price: {
+    marginTop: 6,
+    fontWeight: '600',
+    fontSize: 16,
+    color: '#333',
+  },
+
+
 
   
   

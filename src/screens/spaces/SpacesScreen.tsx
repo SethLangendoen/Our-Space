@@ -98,7 +98,6 @@ useFocusEffect(
                   key={space.id}
                   coordinate={{ latitude: space.location.lat, longitude: space.location.lng }}
                   title={space.title}
-                  description={space.description}
                   onPress={() => setSelectedSpace(space)}
                 />
               ))}

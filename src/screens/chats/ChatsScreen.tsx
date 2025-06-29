@@ -1,10 +1,170 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  getDoc,
+  doc,
+} from 'firebase/firestore';
+import { auth, db } from '../../firebase/config';
+
+interface Chat {
+  id: string;
+  users: string[];
+  lastMessage?: string;
+  updatedAt?: any;
+}
+
+interface User {
+  firstName?: string;
+  lastName?: string;
+  profileImage?: string;
+}
 
 export default function ChatsScreen() {
+  const navigation = useNavigation();
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [userDataMap, setUserDataMap] = useState<{ [key: string]: User }>({});
+
+  // Fetch user data for a given userId and cache it
+  const fetchUserById = async (userId: string) => {
+    if (userDataMap[userId]) return; // already have it cached
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        setUserDataMap((prev) => ({
+          ...prev,
+          [userId]: userDoc.data() as User,
+        }));
+      }
+    } catch (error) {
+      console.warn('Failed to fetch user data:', error);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setCurrentUser(user.uid);
+
+        const q = query(
+          collection(db, 'chats'),
+          where('users', 'array-contains', user.uid)
+        );
+
+        const unsubscribeChats = onSnapshot(q, (snapshot) => {
+          const chatsData: Chat[] = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...(doc.data() as Omit<Chat, 'id'>),
+          }));
+
+          setChats(chatsData);
+          setLoading(false);
+
+          // For each chat, fetch other user info to show name + pfp
+          chatsData.forEach((chat) => {
+            const otherUserId = chat.users.find((u) => u !== user.uid);
+            if (otherUserId) fetchUserById(otherUserId);
+          });
+        });
+
+        return () => unsubscribeChats();
+      } else {
+        setCurrentUser(null);
+        setLoading(false);
+        setChats([]);
+        setUserDataMap({});
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  const renderChat = ({ item }: { item: Chat }) => {
+    const otherUserId = item.users.find((u) => u !== currentUser) || '';
+    const user = userDataMap[otherUserId];
+
+    return (
+      <TouchableOpacity
+        style={styles.chatItem}
+        onPress={() =>
+          navigation.navigate('MessagesScreen' as never, {
+            chatId: item.id,
+            otherUser: otherUserId,
+          } as never)
+        }
+      >
+        <View style={styles.userRow}>
+          <Image
+            source={
+              user?.profileImage
+                ? { uri: user.profileImage }
+                : require('../../../assets/blankProfile.png')
+            }
+            style={styles.userImage}
+          />
+          <View style={styles.userTextContainer}>
+            <Text style={styles.userName}>
+              {user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Loading...'}
+            </Text>
+            <Text
+              style={styles.lastMessage}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.lastMessage || 'No messages yet.'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.infoText}>
+          Please log in or create an account to use the chat feature.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Chats Screen</Text>
+      {chats.length === 0 ? (
+        <View style={styles.center}>
+          <Text style={styles.infoText}>No chats yet. Start a conversation!</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={chats}
+          keyExtractor={(item) => item.id}
+          renderItem={renderChat}
+        />
+      )}
     </View>
   );
 }
@@ -12,10 +172,45 @@ export default function ChatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    padding: 16,
+  },
+  chatItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  userRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  text: {
-    fontSize: 18,
+  userImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+    backgroundColor: '#ddd',
+  },
+  userTextContainer: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  lastMessage: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });
