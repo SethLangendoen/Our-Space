@@ -12,6 +12,8 @@ type RootStackParamList = {
   MySpacesScreen: undefined;
   CreateSpaceScreen: undefined;
   EditSpaceScreen: { spaceId: string };
+  ContractDetailScreen: { postId: string };
+
 };
 
 type MySpacesScreenNavigationProp = NativeStackNavigationProp<
@@ -66,12 +68,33 @@ export default function MySpacesScreen() {
     }, [userId])
   );
 
-  const renderContent = () => {
-    const filteredPosts = userPosts; // Add filtering logic later if needed
-    switch (selectedTab) {
+
+
+
+const renderContent = () => {
+
+	const awaitingPosts = userPosts.filter(post => {
+		const contracts = post.contracts as { [key: string]: any } | undefined;
+		// Awaiting means no contracts or contracts object is empty
+		return !contracts || Object.keys(contracts).length === 0;
+	  });
+	
+	  const ongoingPosts = userPosts.filter((post) => {
+		const contracts = post.contracts as { [key: string]: any } | undefined;
+		if (!contracts) return false;
+	  
+		return Object.values(contracts).some((contract) =>
+		  ['requested', 'accepted', 'confirmed'].includes(contract.state)
+		);
+	  });
+	  
+  
+	switch (selectedTab) {
+
+
       case 'Awaiting':
-        return filteredPosts.length > 0 ? (
-          filteredPosts.map((post) => (
+        return awaitingPosts.length > 0 ? (
+          awaitingPosts.map((post) => (
             <TouchableOpacity
               key={post.id}
               onPress={() =>
@@ -118,20 +141,55 @@ export default function MySpacesScreen() {
         );
 
 
-      default:
-        return (
-			<View style={styles.placeholderImage}>
-		<Text style={styles.message}>Ongoing Space Contracts will show up here </Text>
-		<Image
-		source={require('../../../assets/mySpaces/ongoingContract.png')}
-		style={styles.awaitingImage}
-		resizeMode="contain"
-		/>
-			</View>
 
-		)
-    }
+	  case 'Ongoing':
+		return ongoingPosts.length > 0 ? (
+		  ongoingPosts.map((post) => (
+			<TouchableOpacity
+			  key={post.id}
+			  onPress={() => navigation.navigate('ContractDetailScreen', { postId: post.id })}
+			  style={styles.postBox}
+			>
+			  <View style={styles.postHeader}>
+				<Text style={styles.postTitle}>{post.title}</Text>
+				<View
+				  style={[
+					styles.tag,
+					post.contract?.state === 'confirmed'
+					  ? styles.confirmedTag
+					  : post.contract?.state === 'accepted'
+					  ? styles.acceptedTag
+					  : styles.requestedTag,
+				  ]}
+				>
+				  <Text style={styles.tagText}>{post.contract?.state}</Text>
+				</View>
+			  </View>
+			  <Text style={styles.postDesc}>{post.description}</Text>
+			  <View style={styles.postFooter}>
+				<Text style={styles.postDate}>
+				  {post.availability?.startDate} → {post.availability?.endDate}
+				</Text>
+				{post.price && <Text style={styles.priceText}>${post.price}</Text>}
+			  </View>
+			</TouchableOpacity>
+		  ))
+		) : (
+		  <View style={styles.placeholderImage}>
+			<Text style={styles.message}>Ongoing Space Contracts will show up here</Text>
+			<Image
+			  source={require('../../../assets/mySpaces/ongoingContract.png')}
+			  style={styles.awaitingImage}
+			  resizeMode="contain"
+			/>
+		  </View>
+		);
+  
+	  default:
+		return null;
+	}
   };
+  
 
   return (
     <View style={styles.container}>
@@ -282,5 +340,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
+  requestedTag: {
+	backgroundColor: '#FFD700',
+  },
+  acceptedTag: {
+	backgroundColor: '#00BFFF',
+  },
+  confirmedTag: {
+	backgroundColor: '#32CD32',
+  },
+
+  
 });
 

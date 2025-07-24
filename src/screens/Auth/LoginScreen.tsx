@@ -29,24 +29,39 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
 
 
 
   const handleLogin = async () => {
-    // TODO: Add Firebase auth logic here
-    console.log('Logging in...');
+    setErrorMessage(''); // Reset error
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Account created:', userCredential.user);
-
-      // Optionally, navigate or show success UI here
+      console.log('Logged in:', userCredential.user);
+      // Navigate to a different screen or show success UI if needed
     } catch (error: any) {
-      
-      console.error('Account creation failed:', error.message);
+  
+      // Firebase error handling
+      switch (error.code) {
+        case 'auth/invalid-email':
+          setErrorMessage('The email address is not valid.');
+          break;
+        case 'auth/user-disabled':
+          setErrorMessage('This user has been disabled.');
+          break;
+        case 'auth/user-not-found':
+          setErrorMessage('No account found with this email.');
+          break;
+        case 'auth/wrong-password':
+          setErrorMessage('Incorrect password.');
+          break;
+        default:
+          setErrorMessage('Login failed. Please try again.');
+      }
     }
-
   };
+  
 
 
 
@@ -95,6 +110,11 @@ export default function LoginScreen() {
           />
         </TouchableOpacity>
       </View>
+
+      {errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
+
 
       {/* Forgot Password */}
       <Text
@@ -191,6 +211,13 @@ const styles = StyleSheet.create({
     color: '#6A5ACD',
     fontWeight: '500',
   },
+  errorText: {
+    color: 'red',
+    marginBottom: 12,
+    textAlign: 'left',
+    fontSize: 14,
+  },
+  
 });
 
 

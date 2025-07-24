@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 
 // we are attempting to create the function directly in thies file instead. 
 import { auth } from '../../firebase/config'; // from our config file. 
-import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
 
 
 
@@ -40,39 +40,22 @@ export default function CreateAccountScreen() {
 
 
   
-
-  // const handleCreateAccount = async () => {
-  //   try {
-
-  //     console.log(email, password)
-
-  //     // this causes an error: 
-  //     // here I want to use createUserWithEmailAndPassword
-
-
-  //     const user = await createUserWithEmailAndPassword(auth, email, password);
-  //     console.log('Account created:', user);
-
-  //     // console.log('Account created:');
-
-  //     // Possibly navigate to another screen or enroll 2FA here
-  //   } catch (error) {
-  //     if (error instanceof Error) {
-  //       console.error('Account creation failed:', error.message);
-  //     } else {
-  //       console.error('Unknown error during account creation:', error);
-  //     }
-  //   }
-  // };
-
   const handleCreateAccount = async () => {
     setErrorMessage(''); // Clear previous errors
   
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('Account created:', userCredential.user);
+      const user = userCredential.user;
+      console.log('Account created:', user);
   
-      // Optionally, navigate or show success UI here
+      if (user) {
+        await sendEmailVerification(user);
+        console.log('Verification email sent.');
+        setErrorMessage('A verification email has been sent. Please check your inbox.');
+  
+        // Optional: Sign the user out until they verify
+        await signOut(auth);
+      }
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
         setErrorMessage('An account already exists with this email.');
@@ -83,9 +66,30 @@ export default function CreateAccountScreen() {
       } else {
         setErrorMessage('An unexpected error occurred. Please try again.');
       }
-      console.error('Account creation failed:', error.message);
     }
   };
+  
+
+  // const handleCreateAccount = async () => {
+  //   setErrorMessage(''); // Clear previous errors
+  
+  //   try {
+  //     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  //     console.log('Account created:', userCredential.user);
+  
+  //     // Optionally, navigate or show success UI here
+  //   } catch (error: any) {
+  //     if (error.code === 'auth/email-already-in-use') {
+  //       setErrorMessage('An account already exists with this email.');
+  //     } else if (error.code === 'auth/invalid-email') {
+  //       setErrorMessage('The email address is not valid.');
+  //     } else if (error.code === 'auth/weak-password') {
+  //       setErrorMessage('Password should be at least 6 characters.');
+  //     } else {
+  //       setErrorMessage('An unexpected error occurred. Please try again.');
+  //     }
+  //   }
+  // };
   
 
 

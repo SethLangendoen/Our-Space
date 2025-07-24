@@ -26,8 +26,11 @@ export default function EditSpaceScreen() {
   };
 
   return spaceData ? (
-    <SpaceForm mode="edit" initialData={spaceData} onSubmit={handleEdit} />
-  ) : (
-    <Text>Loading...</Text>
-  );
+	<SpaceForm
+	mode="edit"
+	initialData={{ ...spaceData, postId: spaceId }}
+	onSubmit={handleEdit}
+	/>  ) : (
+		<Text>Loading...</Text>
+	);
 }

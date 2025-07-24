@@ -2,18 +2,19 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
 import { AuthError } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
 import MapView, { Marker } from 'react-native-maps';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 
 type RootStackParamList = {
   Spaces: undefined;
   Filters: undefined;
   SpaceDetail: { spaceId: string };
-  UserProfileScreen: { userId: string };
+  UserProfile: { userId: string };
 
 };
 
@@ -28,7 +29,15 @@ type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
   const [userData, setUserData] = useState<any | null>(null);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
-  
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [booking, setBooking] = useState(false);
+  const [showStart, setShowStart] = useState(false);
+  const [showEnd, setShowEnd] = useState(false);
+  const [reservationDescription, setReservationDescription] = useState('');
+
+
+
  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
 useEffect(() => {
@@ -46,7 +55,7 @@ useEffect(() => {
 		const docSnap = await getDoc(docRef);
 		if (docSnap.exists()) {
 		  const spaceData = docSnap.data();
-		  setSpace(spaceData);
+      setSpace({ ...spaceData, id: docSnap.id }); // <-- add id here
   
 		  // Fetch the user who posted the space
 		  if (spaceData.userId) {
@@ -177,6 +186,58 @@ useEffect(() => {
 
 
 
+    
+    const handleReservation = async () => {
+      if (!currentUser || !startDate || !endDate || !space?.id || currentUser === space.userId) return;
+    
+      try {
+        setBooking(true);
+    
+        const postRef = doc(db, 'spaces', space.id);
+    
+        // 🔒 Check if this user has already requested
+        const docSnap = await getDoc(postRef);
+        const existingContracts = docSnap.exists() ? docSnap.data().contracts || {} : {};
+    
+        if (existingContracts[currentUser]) {
+          Alert.alert('Already Requested', 'You have already requested a reservation for this space.');
+          setBooking(false);
+          return;
+        }
+    
+        const contractData = {
+          userId: currentUser,
+          requestedAt: Timestamp.now(),
+          startDate: Timestamp.fromDate(startDate),
+          endDate: Timestamp.fromDate(endDate),
+          state: 'requested',
+          description: reservationDescription, // ✅ Add this line
+        };
+        
+    
+        // ✅ Save new contract in `contracts` map
+        await setDoc(
+          postRef,
+          {
+            [`contracts.${currentUser}`]: contractData,
+          },
+          { merge: true }
+        );
+    
+        Alert.alert('Reservation Requested', 'The space owner will review your request.');
+      } catch (err) {
+        console.error('Reservation Error:', err);
+        Alert.alert('Error', 'Could not submit reservation.');
+      } finally {
+        setBooking(false);
+      }
+    };
+    
+    
+
+
+
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       {/* Images Carousel / Stack */}
@@ -231,7 +292,7 @@ useEffect(() => {
   style={styles.userRow}
   onPress={() => {
     if (space?.userId) {
-      navigation.navigate('UserProfileScreen', { userId: space.userId });
+      navigation.navigate('UserProfile', { userId: space.userId });
     }
   }}
 >
@@ -277,12 +338,12 @@ useEffect(() => {
       {space.description && <Text style={styles.description}>{space.description}</Text>}
 
       {space.price && (
-        <Text style={styles.price}>Price: ${parseFloat(space.price).toFixed(2)}</Text>
+        <Text style={styles.price}>${parseFloat(space.price).toFixed(2)} {space.billingFrequency} </Text>
       )}
 
-      <Text style={styles.label}>
+      {/* <Text style={styles.label}>
         Date Created: <Text style={styles.value}>{formatDate(space.createdAt)}</Text>
-      </Text>
+      </Text> */}
 
       <Text style={styles.label}>
         Dates Available: <Text style={styles.value}>{space.datesAvailable || 'N/A'}</Text>
@@ -305,9 +366,10 @@ useEffect(() => {
       </Text>
 
 
-	  <Text style={styles.label}>
-  Billing Frequency: <Text style={styles.value}>{space.billingFrequency || 'N/A'}</Text>
-</Text>
+	  {/* <Text style={styles.label}>
+      Billing Frequency: <Text style={styles.value}>{space.billingFrequency || 'N/A'}</Text>
+    </Text> */}
+
 
 <Text style={styles.label}>
   Accessibility: <Text style={styles.value}>{space.accessibility || 'N/A'}</Text>
@@ -345,6 +407,7 @@ useEffect(() => {
 
 
 {currentUser !== space.userId && (
+  <>
   <View style={styles.messageBox}>
     <TextInput
       style={styles.messageInput}
@@ -369,7 +432,84 @@ useEffect(() => {
     >
       <Text style={styles.sendText}>{sending ? 'Sending...' : 'Send'}</Text>
     </TouchableOpacity>
+
   </View>
+
+
+
+
+
+
+<View style={styles.bookingContainer}>
+<Text style={styles.bookingTitle}>Book Reservation</Text>
+
+<TouchableOpacity
+  style={styles.dateInput}
+  onPress={() => setShowStart(true)}
+>
+  <Text>{startDate ? startDate.toDateString() : 'Select Start Date'}</Text>
+</TouchableOpacity>
+
+{showStart && (
+  <DateTimePicker
+    value={startDate || new Date()}
+    mode="date"
+    display="default"
+    onChange={(event, selectedDate) => {
+      setShowStart(false);
+      if (selectedDate) setStartDate(selectedDate);
+    }}
+  />
+)}
+
+<TouchableOpacity
+  style={styles.dateInput}
+  onPress={() => setShowEnd(true)}
+>
+  <Text>{endDate ? endDate.toDateString() : 'Select End Date'}</Text>
+</TouchableOpacity>
+
+{showEnd && (
+  <DateTimePicker
+    value={endDate || new Date()}
+    mode="date"
+    display="default"
+    onChange={(event, selectedDate) => {
+      setShowEnd(false);
+      if (selectedDate) setEndDate(selectedDate);
+    }}
+  />
+)}
+
+<TextInput
+  style={styles.descriptionInput}
+  placeholder="Describe the items you are storing"
+  value={reservationDescription}
+  onChangeText={setReservationDescription}
+  multiline
+/>
+
+
+<TouchableOpacity
+  style={[
+    styles.confirmButton,
+    (!startDate || !endDate || booking) && styles.disabledButton,
+  ]}
+  disabled={!startDate || !endDate || booking}
+  onPress={handleReservation}
+>
+  <Text style={styles.confirmText}>
+    {booking ? 'Booking...' : 'Confirm Reservation'}
+  </Text>
+</TouchableOpacity>
+</View>
+
+
+
+</>
+
+
+
 )}
 
 
@@ -400,7 +540,7 @@ const styles = StyleSheet.create({
   requestingTag: { backgroundColor: '#F44336' },
   tagText: { color: '#fff', fontWeight: '600' },
   description: { fontSize: 16, color: '#444', marginBottom: 12 },
-  price: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
+  price: { fontSize: 18, fontWeight: '600', marginBottom: 12},
   label: { fontSize: 16, fontWeight: '600', marginTop: 10, color: '#333' },
   value: { fontWeight: 'normal', color: '#555' },
 
@@ -425,6 +565,20 @@ const styles = StyleSheet.create({
 	fontWeight: '600',
 	marginRight: 10, // gives space before the tag
   },
+
+  descriptionInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#f9f9f9',
+    minHeight: 80,
+    marginBottom: 16,
+    textAlignVertical: 'top', // 👈 makes text start at the top
+  },
+  
+  
   
   inlineTag: {
 	paddingVertical: 4,  // Try lowering this to 2 or even 0 if needed
@@ -489,6 +643,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
+  bookingContainer: {
+    marginTop: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+  },
+  bookingTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  dateInput: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  confirmButton: {
+    backgroundColor: '#334E35',
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  confirmText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+
   
   
   

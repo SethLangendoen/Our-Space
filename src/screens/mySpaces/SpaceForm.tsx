@@ -2,7 +2,7 @@
 
 
 import React, { useState } from 'react';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect } from 'react';
@@ -12,6 +12,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
 import { storage } from '../../firebase/config';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Alert } from 'react-native'; // Add this import if not already present
 
 // import { createPost } from '../../firebase/firestore/posts';
 // import { getAuth } from 'firebase/auth';
@@ -27,6 +28,7 @@ import {
   Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
 
 const MAX_IMAGES = 5;
 
@@ -62,6 +64,8 @@ const [security, setSecurity] = useState(initialData?.security || []);
 const [deliveryMethod, setDeliveryMethod] = useState(initialData?.deliveryMethod || []);
 const [images, setImages] = useState<string[]>(initialData?.images || []);
 const [mainImage, setMainImage] = useState<string | null>(initialData?.mainImage || null);
+
+const navigation = useNavigation();
 
 // For availability
 const [startDateNegotiable, setStartDateNegotiable] = useState(initialData?.availability?.startDate === 'Negotiable');
@@ -264,6 +268,41 @@ const handleSubmit = async () => {
 	  console.error('Form submission error:', error);
 	  alert(`Error: ${error.message}`);
 	}
+  };
+  
+
+
+
+  const handleDeletePost = () => {
+	if (!initialData?.postId) {
+	  alert('No post ID found.');
+	  return;
+	}
+  
+	Alert.alert(
+	  'Delete Post',
+	  'Are you sure you want to delete this post? This action cannot be undone.',
+	  [
+		{
+		  text: 'Cancel',
+		  style: 'cancel',
+		},
+		{
+		  text: 'Delete',
+		  style: 'destructive',
+		  onPress: async () => {
+			try {
+			  await deleteDoc(doc(db, 'spaces', initialData.postId));
+			  alert('Post deleted successfully.');
+			  navigation.goBack();
+			} catch (error: any) {
+			  console.error('Delete error:', error);
+			  alert('Failed to delete the post. Please try again.');
+			}
+		  },
+		},
+	  ]
+	);
   };
   
 
@@ -638,6 +677,16 @@ const handleSubmit = async () => {
 			{mode === 'edit' ? 'Update Space' : 'Create Space'}
 		</Text>
 	</TouchableOpacity>
+
+	{mode === 'edit' && initialData?.postId && (
+		<TouchableOpacity
+			style={[styles.submitButton, { backgroundColor: 'red', marginTop: 10 }]}
+			onPress={handleDeletePost}
+		>
+			<Text style={[styles.submitText, { color: 'white' }]}>Delete Post</Text>
+		</TouchableOpacity>
+	)}
+
 
 
     </ScrollView>
