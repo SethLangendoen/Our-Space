@@ -693,12 +693,147 @@ const handleSubmit = async () => {
   );
 }
 
+
+
+
+// const styles = StyleSheet.create({
+//   container: {
+//     padding: 20,
+//   },
+//   addPhotoButton: {
+//     backgroundColor: '#000',
+//     padding: 12,
+//     borderRadius: 6,
+//     alignItems: 'center',
+//     marginBottom: 10,
+//   },
+//   addPhotoText: {
+//     color: '#fff',
+//   },
+//   imageGrid: {
+//     flexDirection: 'row',
+//     flexWrap: 'wrap',
+//     marginBottom: 15,
+//   },
+//   image: {
+//     width: 70,
+//     height: 70,
+//     borderRadius: 6,
+//     margin: 5,
+//     borderWidth: 2,
+//     borderColor: 'transparent',
+//   },
+//   mainImage: {
+//     borderColor: '#007bff',
+//   },
+//   input: {
+//     borderWidth: 1,
+//     borderColor: '#ccc',
+//     borderRadius: 6,
+//     padding: 10,
+//     marginBottom: 10,
+//   },
+//   sizeContainer: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     marginBottom: 10,
+//   },
+//   sizeInput: {
+//     flex: 1,
+//     borderWidth: 1,
+//     borderColor: '#ccc',
+//     borderRadius: 6,
+//     padding: 10,
+//     marginHorizontal: 0,
+//   },
+//   sectionTitle: {
+//     fontWeight: 'bold',
+//     fontSize: 16,
+//     marginBottom: 6,
+//     marginTop: 10,
+//   },
+
+
+// tabContainer: {
+//   flexDirection: 'row',
+//   flexWrap: 'wrap',
+//   justifyContent: 'space-around',
+//   marginBottom: 20,
+// },
+// tabButton: {
+//   paddingVertical: 10,
+//   paddingHorizontal: 15,
+//   borderRadius: 8,
+//   borderWidth: 1,
+//   borderColor: '#7b7b7b',
+//   backgroundColor: 'transparent',
+//   margin: 4,
+// },
+// activeTabButton: {
+//   backgroundColor: '#000',
+//   borderColor: '#000',
+
+// },
+// tabText: {
+//   color: '#7b7b7b',
+//   fontWeight: '500',
+// },
+// activeTabText: {
+//   color: '#fff',
+// },
+
+
+
+//   submitButton: {
+//     backgroundColor: '#000',
+//     paddingVertical: 15,
+//     borderRadius: 6,
+//     alignItems: 'center',
+//     marginTop: 10,
+//   },
+//   submitText: {
+//     color: '#fff',
+//     fontWeight: 'bold',
+//   },
+//   optionRow: {
+//     flexDirection: 'row',
+//     flexWrap: 'wrap',
+//     marginBottom: 2,
+//   },
+  
+//   optionButton: {
+//     paddingVertical: 10,
+//     paddingHorizontal: 15,
+//     borderRadius: 8,
+//     borderWidth: 1,
+//     borderColor: '#ccc',
+//     marginRight: 8,
+//     marginBottom: 2,
+//   },
+  
+//   optionText: {
+//     fontWeight: '500',
+//     color: '#333',
+//   },
+  
+//   optionSelected: {
+//     backgroundColor: '#000',
+//     borderColor: '#000',
+//   },
+  
+//   optionSelectedText: {
+//     color: '#fff',
+//   },
+  
+// });
+
 const styles = StyleSheet.create({
   container: {
     padding: 20,
+    backgroundColor: '#FFFCF1', // Wheat/Cream background for softness
   },
   addPhotoButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#0F6B5B', // Emerald Green primary action
     padding: 12,
     borderRadius: 6,
     alignItems: 'center',
@@ -706,6 +841,8 @@ const styles = StyleSheet.create({
   },
   addPhotoText: {
     color: '#fff',
+    fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
   },
   imageGrid: {
     flexDirection: 'row',
@@ -721,14 +858,18 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   mainImage: {
-    borderColor: '#007bff',
+    borderColor: '#0F6B5B', // Emerald Green highlight for selected image
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#DDD',
     borderRadius: 6,
     padding: 10,
     marginBottom: 10,
+    backgroundColor: '#FFF',
+    fontFamily: 'Poppins-Regular',
+    fontSize: 16,
+    color: '#1F1F1F',
   },
   sizeContainer: {
     flexDirection: 'row',
@@ -738,51 +879,56 @@ const styles = StyleSheet.create({
   sizeInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#DDD',
     borderRadius: 6,
     padding: 10,
     marginHorizontal: 0,
+    backgroundColor: '#FFF',
+    fontFamily: 'Poppins-Regular',
+    fontSize: 16,
+    color: '#1F1F1F',
   },
   sectionTitle: {
-    fontWeight: 'bold',
+    fontWeight: '700',
     fontSize: 16,
     marginBottom: 6,
     marginTop: 10,
+    color: '#0F6B5B', // Emerald Green for section headings
+    fontFamily: 'Poppins-Bold',
   },
 
-
-tabContainer: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  justifyContent: 'space-around',
-  marginBottom: 20,
-},
-tabButton: {
-  paddingVertical: 10,
-  paddingHorizontal: 15,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: '#7b7b7b',
-  backgroundColor: 'transparent',
-  margin: 4,
-},
-activeTabButton: {
-  backgroundColor: '#000',
-  borderColor: '#000',
-
-},
-tabText: {
-  color: '#7b7b7b',
-  fontWeight: '500',
-},
-activeTabText: {
-  color: '#fff',
-},
-
-
+  tabContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  tabButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#629447', // Earthy Green for border on tabs
+    backgroundColor: 'transparent',
+    margin: 4,
+  },
+  activeTabButton: {
+    backgroundColor: '#0F6B5B', // Emerald Green active background
+    borderColor: '#0F6B5B',
+  },
+  tabText: {
+    color: '#629447', // Earthy Green text for inactive tabs
+    fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
+  },
+  activeTabText: {
+    color: '#fff', // White text for active tab
+    fontWeight: '700',
+    fontFamily: 'Poppins-Bold',
+  },
 
   submitButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#0F6B5B', // Emerald Green primary button
     paddingVertical: 15,
     borderRadius: 6,
     alignItems: 'center',
@@ -790,36 +936,37 @@ activeTabText: {
   },
   submitText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontFamily: 'Poppins-Bold',
   },
+
   optionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 2,
   },
-  
   optionButton: {
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#DDD',
     marginRight: 8,
     marginBottom: 2,
+    backgroundColor: 'transparent',
   },
-  
   optionText: {
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '600',
+    color: '#1F1F1F',
+    fontFamily: 'Poppins-SemiBold',
   },
-  
   optionSelected: {
-    backgroundColor: '#000',
-    borderColor: '#000',
+    backgroundColor: '#0F6B5B', // Emerald Green selected background
+    borderColor: '#0F6B5B',
   },
-  
   optionSelectedText: {
     color: '#fff',
+    fontWeight: '700',
+    fontFamily: 'Poppins-Bold',
   },
-  
 });

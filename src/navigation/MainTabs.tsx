@@ -138,28 +138,6 @@ screenOptions={{
       />
 
 
-      {/* <Tab.Screen
-        name="Profile"
-        component={isLoggedIn ? ProfileStack : AuthStack}
-        options={{
-          tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <Image
-              source={
-                focused
-                  ? require('../../assets/bottomNavIcons/profileFill.png')
-                  : require('../../assets/bottomNavIcons/profile.png')
-              }
-              style={{
-                width: 28,
-                height: 28,
-                tintColor: focused ? undefined : '#000',
-              }}
-            />
-          ),
-          tabBarLabel: 'Profile',
-        }}
-      /> */}
-
 <Tab.Screen
   name="Profile"
   component={isLoggedIn ? ProfileStack : AuthStack}

@@ -180,12 +180,11 @@ export default function CreateAccountScreen() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFCF1', // Wheat/Cream background
   },
   backIcon: {
     position: 'absolute',
@@ -205,19 +204,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 20,
+    color: '#0F6B5B', // Emerald Green for headline
+    fontFamily: 'Poppins-Bold',
   },
   authButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'white', // Mustard Yellow CTA
     marginBottom: 12,
     justifyContent: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#DDD',
   },
   authText: {
     marginLeft: 8,
     fontSize: 16,
+    color: '#black',
+    fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
   },
   divider: {
     flexDirection: 'row',
@@ -227,31 +233,37 @@ const styles = StyleSheet.create({
   line: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ccc',
+    backgroundColor: '#CCC',
   },
   orText: {
     marginHorizontal: 12,
     color: '#999',
     fontWeight: '500',
+    fontFamily: 'Poppins-Regular',
   },
   label: {
     fontSize: 14,
     marginBottom: 6,
     fontWeight: '500',
+    color: '#1F1F1F',
+    fontFamily: 'Poppins-Regular',
   },
   input: {
     padding: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#DDD',
     borderRadius: 8,
     marginBottom: 16,
+    fontSize: 16,
+    fontFamily: 'Poppins-Regular',
+    backgroundColor: '#FFF',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   createButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#0F6B5B', // Emerald Green
     padding: 16,
     borderRadius: 10,
     alignItems: 'center',
@@ -261,15 +273,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Poppins-Bold',
   },
   footer: {
     textAlign: 'center',
     marginTop: 20,
     fontSize: 14,
     color: '#555',
+    fontFamily: 'Poppins-Regular',
   },
   loginText: {
-    color: '#6A5ACD',
+    color: '#F3AF1D', // Mustard yellow accent
     fontWeight: '500',
+    fontFamily: 'Poppins-SemiBold',
   },
 });

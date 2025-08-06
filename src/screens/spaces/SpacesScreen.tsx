@@ -492,74 +492,159 @@ export default function SpacesScreen() {
   );
 }
 
-// --- Styles ---
+// // --- Styles ---
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     paddingTop: 15,
+//     paddingHorizontal: 16,
+//     backgroundColor: '#fff',
+//   },
+//   header: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     marginBottom: 16,
+//   },
+//   toggleButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 6,
+//     backgroundColor: '#eef',
+//     padding: 8,
+//     borderRadius: 6,
+//   },
+//   toggleText: {
+//     fontSize: 16,
+//   },
+//   mapView: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   customMarkerContainer: {
+//     alignItems: 'center',
+//   },
+//   pinBackground: {
+//     width: 50,
+//     height: 50,
+//     resizeMode: 'contain', // Ensure the image scales properly
+//   },
+//   pinIcon: {
+//     width: 24,
+//     height: 24,
+//     position: 'absolute',
+//     top: 4,
+//     resizeMode: 'contain', // Ensure the icon scales properly
+//   },
+//   bottomPanel: {
+//     position: 'absolute',
+//     bottom: 0,
+//     width: width,
+//     backgroundColor: '#f9f9f9',
+//     padding: 20,
+//     borderTopLeftRadius: 12,
+//     borderTopRightRadius: 12,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: -2 },
+//     shadowOpacity: 0.2,
+//     shadowRadius: 4,
+//     elevation: 5,
+//   },
+//   closeButton: {
+//     position: 'absolute',
+//     right: 12,
+//     top: 12,
+//     zIndex: 10,
+//   },
+//   loadingContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+// });
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 15,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFCF1', // Wheat/Cream background
   },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
+
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#eef',
-    padding: 8,
-    borderRadius: 6,
+    backgroundColor: '#DFF5D1', // Light tint of earthy green
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
+
   toggleText: {
     fontSize: 16,
+    fontFamily: 'Poppins-Medium',
+    color: '#0F6B5B', // Emerald green
   },
+
   mapView: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   customMarkerContainer: {
     alignItems: 'center',
   },
+
   pinBackground: {
     width: 50,
     height: 50,
-    resizeMode: 'contain', // Ensure the image scales properly
+    resizeMode: 'contain',
   },
+
   pinIcon: {
     width: 24,
     height: 24,
     position: 'absolute',
     top: 4,
-    resizeMode: 'contain', // Ensure the icon scales properly
+    resizeMode: 'contain',
   },
+
   bottomPanel: {
     position: 'absolute',
     bottom: 0,
     width: width,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FFFFFF',
     padding: 20,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 4,
   },
+
   closeButton: {
     position: 'absolute',
     right: 12,
     top: 12,
     zIndex: 10,
   },
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFFCF1',
   },
 });

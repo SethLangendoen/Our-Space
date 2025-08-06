@@ -143,11 +143,90 @@ export default function LoginScreen() {
   );
 }
 
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     padding: 24,
+//     backgroundColor: '#fff',
+//   },
+//   backIcon: {
+//     position: 'absolute',
+//     top: 20,
+//     left: 20,
+//     zIndex: 1,
+//   },
+//   logo: {
+//     width: 64,
+//     height: 64,
+//     alignSelf: 'center',
+//     marginTop: 80,
+//     marginBottom: 16,
+//   },
+//   title: {
+//     fontSize: 24,
+//     fontWeight: '700',
+//     textAlign: 'center',
+//     marginBottom: 20,
+//   },
+//   label: {
+//     fontSize: 14,
+//     marginBottom: 6,
+//     fontWeight: '500',
+//   },
+//   input: {
+//     padding: 12,
+//     borderWidth: 1,
+//     borderColor: '#ddd',
+//     borderRadius: 8,
+//     marginBottom: 16,
+//   },
+//   passwordContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//   },
+//   forgotPassword: {
+//     alignSelf: 'flex-end',
+//     marginBottom: 20,
+//     color: '#6A5ACD',
+//     fontWeight: '500',
+//   },
+//   loginButton: {
+//     backgroundColor: '#000',
+//     padding: 16,
+//     borderRadius: 10,
+//     alignItems: 'center',
+//   },
+//   loginText: {
+//     color: '#fff',
+//     fontSize: 16,
+//     fontWeight: '600',
+//   },
+//   footer: {
+//     textAlign: 'center',
+//     marginTop: 20,
+//     fontSize: 14,
+//     color: '#555',
+//   },
+//   signupText: {
+//     color: '#6A5ACD',
+//     fontWeight: '500',
+//   },
+//   errorText: {
+//     color: 'red',
+//     marginBottom: 12,
+//     textAlign: 'left',
+//     fontSize: 14,
+//   },
+  
+// });
+
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFCF1', // Wheat/Cream background for warmth and consistency
   },
   backIcon: {
     position: 'absolute',
@@ -167,18 +246,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 20,
+    color: '#0F6B5B', // Emerald Green for headlines
+    fontFamily: 'Poppins-Bold',
   },
   label: {
     fontSize: 14,
     marginBottom: 6,
     fontWeight: '500',
+    color: '#1F1F1F', // Near black for body text readability
+    fontFamily: 'Poppins-Regular',
   },
   input: {
     padding: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#DDD',
     borderRadius: 8,
     marginBottom: 16,
+    backgroundColor: '#FFF',
+    fontSize: 16,
+    fontFamily: 'Poppins-Regular',
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -187,41 +273,42 @@ const styles = StyleSheet.create({
   forgotPassword: {
     alignSelf: 'flex-end',
     marginBottom: 20,
-    color: '#6A5ACD',
-    fontWeight: '500',
+    color: '#F3AF1D', // Mustard Yellow for CTA highlight
+    fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
   },
   loginButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#0F6B5B', // Emerald Green primary button
     padding: 16,
     borderRadius: 10,
     alignItems: 'center',
   },
   loginText: {
-    color: '#fff',
+    color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'Poppins-Bold',
   },
   footer: {
     textAlign: 'center',
     marginTop: 20,
     fontSize: 14,
     color: '#555',
+    fontFamily: 'Poppins-Regular',
   },
   signupText: {
-    color: '#6A5ACD',
-    fontWeight: '500',
+    color: '#F3AF1D', // Mustard Yellow accent for signup text
+    fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
   },
   errorText: {
-    color: 'red',
+    color: '#F44336', // Use a consistent, accessible red tone
     marginBottom: 12,
     textAlign: 'left',
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
   },
-  
 });
-
-
-
 
 
 

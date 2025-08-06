@@ -5,7 +5,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MySpacesScreen from '../../screens/mySpaces/MySpacesScreen';
 import CreateSpaceScreen from '../../screens/mySpaces/CreateSpaceScreen';
 import EditSpaceScreen from '../../screens/mySpaces/EditSpaceScreen'; // ✅ Import it
-import ContractDetailScreen from '../../screens/mySpaces/ContractDetailScreen'
+import RequestDetailScreen from '../../screens/mySpaces/RequestDetailScreen';
+import ConfirmedReservationScreen from '../../screens/mySpaces/ConfirmedReservationScreen';
+
+
 
 const Stack = createNativeStackNavigator();
 
@@ -15,10 +18,9 @@ export default function MySpacesStack() {
       <Stack.Screen name="MySpacesMain" component={MySpacesScreen} options={{ title: 'My Spaces' }} />
       <Stack.Screen name="CreateSpaceScreen" component={CreateSpaceScreen} options={{ title: 'Create Space' }} />
       <Stack.Screen name="EditSpaceScreen" component={EditSpaceScreen} options={{ title: 'Edit Space' }} />
-      <Stack.Screen
-        name="ContractDetailScreen"
-        component={ContractDetailScreen}
-      />
+
+      <Stack.Screen name="RequestDetailScreen" component={RequestDetailScreen} />
+      <Stack.Screen name="ConfirmedReservationScreen" component={ConfirmedReservationScreen} />
 
     </Stack.Navigator>
   );
