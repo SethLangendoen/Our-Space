@@ -16,7 +16,7 @@ const SplashScreen = () => {
     const timeout = setTimeout(() => {
       // Use replace to ensure that the splash screen is not part of the navigation stack
       navigation.replace('Onboarding');
-    }, 3000); // 2 seconds delay for splash screen
+    }, 2000); 
 
     return () => clearTimeout(timeout);
   }, [navigation]);
@@ -34,20 +34,6 @@ export default SplashScreen;
 
 const { width } = Dimensions.get('window');
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   logoImage: {
-//     width: width * 0.6,       // Try a more reasonable width, like 40% of screen
-//     height: width * 0.6,      // Explicit height to match
-//     resizeMode: 'contain',
-//   },
-  
-// });
 
 
 const styles = StyleSheet.create({

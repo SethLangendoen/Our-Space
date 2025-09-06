@@ -172,7 +172,7 @@ export default function SpacesScreen() {
 
   const getPinBackground = useCallback((postType?: 'Offering' | 'Requesting') => {
     return postType === 'Requesting'
-      ? require('../../../assets/pins/redPin.png')
+      ? require('../../../assets/pins/yellowPin.png')
       : require('../../../assets/pins/greenPin.png');
   }, []);
 
@@ -233,77 +233,6 @@ export default function SpacesScreen() {
     }
   }, [filters]); // ✅ depends on context filters now
 
-  // // --- Data Fetching Logic ---
-  // const fetchAndFilterSpaces = useCallback(async () => {
-  //   setLoading(true);
-  //   try {
-  //     const querySnapshot = await getDocs(collection(db, 'spaces'));
-  //     let allSpaces: Space[] = querySnapshot.docs.map(doc => {
-  //       const data = doc.data() as Omit<Space, 'id'>;
-  //       return {
-  //         id: doc.id,
-  //         ...data,
-  //       };
-  //     });
-
-  //     const filters = route.params?.filters;
-
-  //     if (filters) {
-  //       let filtered = [...allSpaces];
-
-  //       // Filter by postType
-  //       if (filters.postType && filters.postType !== 'Both') {
-  //         filtered = filtered.filter((space) => space.postType === filters.postType);
-  //       }
-
-  //       if (filters.location && filters.radius) {
-  //         const { lat, lng } = filters.location;
-  //         const radius = filters.radius;
-                  
-  //         filtered = filtered.filter((space): space is Space & { location: { lat: number; lng: number } } => {
-  //           if (!space.location || typeof space.location.lat !== 'number' || typeof space.location.lng !== 'number') {
-  //             return false;
-  //           }
-  //           const distance = getDistanceFromLatLonInKm(
-  //             lat, // ✅ No TS error now
-  //             lng,
-  //             space.location.lat,
-  //             space.location.lng
-  //           );
-  //           return distance <= radius;
-  //         });
-        
-  //         setSearchInfo({
-  //           address: filters.address || 'Unknown Address',
-  //           radius: filters.radius,
-  //           location: filters.location, // Already valid
-  //         });
-  //       } else {
-  //         setSearchInfo(null);
-  //       }
-        
-
-
-
-
-
-  //       setSpaces(filtered);
-  //     } else {
-  //       setSpaces(allSpaces);
-  //       setSearchInfo(null);
-  //     }
-
-
-
-  //   } catch (error) {
-  //     console.error('Error fetching and filtering spaces:', error);
-  //     setSpaces([]);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }, [route.params?.filters, getPinBackground, getUsageIcon]);
-
-
 
 
 
@@ -336,9 +265,7 @@ export default function SpacesScreen() {
           </View>
         )}
 
-        {/* <TouchableOpacity onPress={() => navigation.navigate('Filters')}>
-          <Ionicons name="filter" size={24} color="#333" />
-        </TouchableOpacity> */}
+
 
         <TouchableOpacity onPress={() => navigation.navigate('Filters', { currentFilters: route.params?.filters })}>
           <Ionicons name="filter" size={24} color="#333" />
@@ -418,28 +345,20 @@ export default function SpacesScreen() {
               )
               .map(space => {
                 const pinBackground = getPinBackground(space.postType);
-                const icon = getUsageIcon(space.usageType);
 
                 return (
-                  <Marker
-                    key={space.id}
-                    coordinate={{
-                      latitude: space.location.lat, 
-                      longitude: space.location.lng, 
-                    }}
-                    title={space.title}
-                    onPress={() => setSelectedSpace(space)}
-                  >
-                    <View style={styles.customMarkerContainer}>
-                      <Image source={pinBackground} style={styles.pinBackground} />
-                      {icon && (
-                        <Image
-                          source={icon}
-                          style={styles.pinIcon}
-                        />
-                      )}
-                    </View>
-                  </Marker>
+                <Marker
+                  key={space.id}
+                  coordinate={{
+                    latitude: space.location.lat,
+                    longitude: space.location.lng,
+                  }}
+                  title={space.title}
+                  onPress={() => setSelectedSpace(space)}
+                >
+                  <Image source={getPinBackground(space.postType)} style={styles.pinBackground} />
+                </Marker>
+
                 );
               })}
           </MapView>
@@ -492,77 +411,6 @@ export default function SpacesScreen() {
   );
 }
 
-// // --- Styles ---
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     paddingTop: 15,
-//     paddingHorizontal: 16,
-//     backgroundColor: '#fff',
-//   },
-//   header: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     marginBottom: 16,
-//   },
-//   toggleButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: 6,
-//     backgroundColor: '#eef',
-//     padding: 8,
-//     borderRadius: 6,
-//   },
-//   toggleText: {
-//     fontSize: 16,
-//   },
-//   mapView: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   customMarkerContainer: {
-//     alignItems: 'center',
-//   },
-//   pinBackground: {
-//     width: 50,
-//     height: 50,
-//     resizeMode: 'contain', // Ensure the image scales properly
-//   },
-//   pinIcon: {
-//     width: 24,
-//     height: 24,
-//     position: 'absolute',
-//     top: 4,
-//     resizeMode: 'contain', // Ensure the icon scales properly
-//   },
-//   bottomPanel: {
-//     position: 'absolute',
-//     bottom: 0,
-//     width: width,
-//     backgroundColor: '#f9f9f9',
-//     padding: 20,
-//     borderTopLeftRadius: 12,
-//     borderTopRightRadius: 12,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: -2 },
-//     shadowOpacity: 0.2,
-//     shadowRadius: 4,
-//     elevation: 5,
-//   },
-//   closeButton: {
-//     position: 'absolute',
-//     right: 12,
-//     top: 12,
-//     zIndex: 10,
-//   },
-//   loadingContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-// });
 
 const styles = StyleSheet.create({
   container: {

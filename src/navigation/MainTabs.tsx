@@ -20,6 +20,8 @@ import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
+import AppHeader from '../components/AppHeader';
+import { NONAME } from 'dns';
 
 
 const Tab = createBottomTabNavigator();
@@ -45,32 +47,25 @@ export default function MainTabs() {
 
 
     <Tab.Navigator
-  initialRouteName="Spaces"
+      initialRouteName="Spaces"
+      screenOptions={{
+        tabBarActiveTintColor: '#255C2F',
+        tabBarInactiveTintColor: '#7B7B7B',
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+          fontFamily: 'Helvetica Neue',
+        },
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          paddingBottom: 10,
+          height: 70,
+        },
+        // header: () => <AppHeader />,   // 👈 swap out for custom header
+        headerShown: false, // hides header for all screens in this navigator
 
-screenOptions={{
-  tabBarActiveTintColor: '#255C2F',
-  tabBarInactiveTintColor: '#7B7B7B',
-  tabBarLabelStyle: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Helvetica Neue',
-  },
-  tabBarStyle: {
-    backgroundColor: '#fff',
-    paddingBottom: 10,
-    height: 70,
-  },
-  headerTitle: () => (
-    <Image
-      source={require('../../assets/ourSpaceLogos/ourSpaceHorizontal.png')}
-      style={{ width: 180, height: 160 }}
-      resizeMode="contain"
-    />
-  ),
-  headerTitleAlign: 'center',
-  
-}}
->
+      }}
+    >
 
 
       <Tab.Screen

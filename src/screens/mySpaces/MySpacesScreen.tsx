@@ -9,6 +9,8 @@ import { auth, db } from '../../firebase/config';
 import { collection, query, where, getDocs, or, and } from 'firebase/firestore';
 import ReservationCard from './ReservationCard';  // adjust path if needed
 import { doc, getDoc } from 'firebase/firestore';
+import { Dimensions } from 'react-native';
+const { width, height } = Dimensions.get('window');
 
 // type RootStackParamList = {
 //   MySpacesScreen: undefined;
@@ -105,67 +107,6 @@ export default function MySpacesScreen() {
     };
   }
 
-
-
-
-// const fetchUserReservations = async () => {
-//   if (!userId) return;
-
-//   try {
-//     const q = query(
-//       collection(db, 'reservations'),
-//       or(where('requesterId', '==', userId), where('ownerId', '==', userId))
-//     );
-
-//     const snapshot = await getDocs(q);
-//     const reservations = snapshot.docs.map((doc) => ({
-//       id: doc.id,
-//       ...doc.data(),
-//     }));
-//     console.log("Fetched reservations:", reservations);
-
-//     setUserReservations(reservations);
-//   } catch (error) {
-//     console.error('Error fetching user reservations:', error);
-//   }
-// };
-
-// const fetchUserReservations = async () => {
-//   if (!userId) return;
-
-//   try {
-//     const requesterQuery = query(
-//       collection(db, 'reservations'),
-//       where('requesterId', '==', userId)
-//     );
-//     const ownerQuery = query(
-//       collection(db, 'reservations'),
-//       where('ownerId', '==', userId)
-//     );
-
-//     const [requesterSnapshot, ownerSnapshot] = await Promise.all([
-//       getDocs(requesterQuery),
-//       getDocs(ownerQuery),
-//     ]);
-
-//     // Map docs
-//     const requesterReservations = requesterSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-//     const ownerReservations = ownerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-//     // Combine and remove duplicates if needed
-//     const combined = [...requesterReservations, ...ownerReservations];
-    
-//     // Optionally remove duplicates (if reservation can appear in both)
-//     const uniqueReservations = combined.filter((res, index, self) =>
-//       index === self.findIndex((r) => r.id === res.id)
-//     );
-
-//     console.log("Fetched reservations:", uniqueReservations);
-//     setUserReservations(uniqueReservations);
-//   } catch (error) {
-//     console.error('Error fetching user reservations:', error);
-//   }
-// };
 
 
 const fetchUserReservations = async () => {
@@ -337,9 +278,9 @@ const renderContent = () => {
             })
           ) : (
             <View style={styles.placeholderImage}>
-              <Text style={styles.message}>No requested reservations yet</Text>
+              <Text style={styles.message}>Space requests will show up here</Text>
               <Image
-                source={require('../../../assets/mySpaces/awaitingPosts.png')}
+                source={require('../../../assets/mySpaces/requests.png')}
                 style={styles.awaitingImage}
                 resizeMode="contain"
               />
@@ -416,150 +357,31 @@ const renderContent = () => {
 
       <View style={styles.content}>{renderContent()}</View>
 
-      <TouchableOpacity
-        style={[
-          styles.createButton,
-          !isLoggedIn && { backgroundColor: '#aaa' },
-        ]}
-        onPress={() => {
-          if (isLoggedIn) {
-            navigation.navigate('CreateSpaceScreen');
-          } else {
-            alert('Please log in to create a post.');
-          }
-        }}
-        disabled={!isLoggedIn}
-      >
-        <Text style={styles.createButtonText}>Create Post</Text>
-      </TouchableOpacity>
+ 
+      {selectedTab === 'Awaiting' && (
+    <TouchableOpacity
+      style={[
+        styles.createButton,
+        !isLoggedIn && { backgroundColor: '#aaa' },
+      ]}
+      onPress={() => {
+        if (isLoggedIn) {
+          navigation.navigate('CreateSpaceScreen');
+        } else {
+          alert('Please log in to create a post.');
+        }
+      }}
+      disabled={!isLoggedIn}
+    >
+      <Text style={styles.createButtonText}>Create Post</Text>
+    </TouchableOpacity>
+  )}
+
     </View>
   );
 }
 
 
-
-
-
-
-
-
-
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, padding: 16 },
-//   tabContainer: {
-// 	flexDirection: 'row',
-// 	width: '100%',
-//   },
-  
-//   tabButton: {
-// 	flex: 1,                     
-// 	alignItems: 'center',  
-// 	paddingVertical: 12,
-// 	backgroundColor: '#eee',
-// 	borderBottomWidth: 2,
-// 	borderColor: 'transparent',
-// 	borderRadius: 5,
-// 	margin: 5
-//   },
-  
-
-
-//   activeTabButton: {
-//     backgroundColor: '#000',
-//   },
-//   tabText: {
-//     color: '#333',
-//   },
-//   activeTabText: {
-//     color: '#fff',
-//   },
-//   content: {
-//     flex: 1,
-//   },
-//   postBox: {
-//     backgroundColor: '#f8f8f8',
-//     padding: 12,
-//     marginBottom: 10,
-//     borderRadius: 8,
-//   },
-//   postHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//   },
-//   postTitle: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-//   postDesc: {
-//     marginVertical: 6,
-//   },
-//   postFooter: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//   },
-//   postDate: {
-//     color: '#666',
-//   },
-//   priceText: {
-//     fontWeight: 'bold',
-//   },
-//   tag: {
-//     paddingHorizontal: 4,
-//     paddingVertical: 4,
-//     borderRadius: 4,
-//   },
-//   offeringTag: {
-//     backgroundColor: '#d1e7dd',
-//   },
-//   requestingTag: {
-//     backgroundColor: '#f8d7da',
-//   },
-//   tagText: {
-//     fontSize: 12,
-//     fontWeight: '600',
-//   },
-//   message: {
-//     textAlign: 'center',
-//     marginTop: 100,
-// 	marginBottom: 40,
-//     fontStyle: 'italic',
-//     color: '#999',
-//   },
-//   createButton: {
-//     backgroundColor: '#000',
-//     paddingVertical: 14,
-//     borderRadius: 6,
-//     alignItems: 'center',
-//     marginTop: 10,
-//   },
-//   createButtonText: {
-//     color: '#fff',
-//     fontWeight: 'bold',
-//   },
-//   awaitingImage: {
-//     width: 200,
-//     height: 200,
-//     opacity: 0.9,
-//   },
-//   placeholderImage: {
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     padding: 20,
-//   },
-//   requestedTag: {
-// 	backgroundColor: '#FFD700',
-//   },
-//   acceptedTag: {
-// 	backgroundColor: '#00BFFF',
-//   },
-//   confirmedTag: {
-// 	backgroundColor: '#32CD32',
-//   },
-
-  
-// });
 
 
 const styles = StyleSheet.create({
@@ -692,9 +514,8 @@ const styles = StyleSheet.create({
   message: {
     textAlign: 'center',
     marginTop: 100,
-    marginBottom: 40,
-    fontStyle: 'italic',
-    fontSize: 14,
+    marginBottom: 10,
+    fontSize: 20,
     color: '#999999',
     fontFamily: 'Poppins-Regular',
   },
@@ -714,10 +535,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
+  // awaitingImage: {
+  //   width: 200,
+  //   height: 200,
+  //   opacity: 0.9,
+  // },
+
   awaitingImage: {
-    width: 200,
-    height: 200,
+    width: width ,
+    height: height * .5,
     opacity: 0.9,
+    resizeMode: 'contain', // optional depending on your layout
   },
 
   placeholderImage: {

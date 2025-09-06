@@ -13,6 +13,8 @@ import * as Crypto from 'expo-crypto';
 import { storage } from '../../firebase/config';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Alert } from 'react-native'; // Add this import if not already present
+// import { Calendar } from 'react-native-calendars';
+import BlockedCalendar from '../../components/BlockedCalendar';
 
 // import { createPost } from '../../firebase/firestore/posts';
 // import { getAuth } from 'firebase/auth';
@@ -53,7 +55,7 @@ const [width, setWidth] = useState(initialData?.dimensions?.width || '');
 const [length, setLength] = useState(initialData?.dimensions?.length || '');
 const [height, setHeight] = useState(initialData?.dimensions?.height || '');
 const [storageType, setStorageType] = useState(initialData?.storageType || null);
-const [usageType, setUsageType] = useState(initialData?.usageType || null);
+const [usageType, setUsageType] = useState<string[]>(initialData?.usageType || []);
 const [postType, setPostType] = useState(initialData?.postType || null);
 const [price, setPrice] = useState(initialData?.price || '');
 const [address, setAddress] = useState(initialData?.address?.split(',')[0] || '');
@@ -64,25 +66,43 @@ const [security, setSecurity] = useState(initialData?.security || []);
 const [deliveryMethod, setDeliveryMethod] = useState(initialData?.deliveryMethod || []);
 const [images, setImages] = useState<string[]>(initialData?.images || []);
 const [mainImage, setMainImage] = useState<string | null>(initialData?.mainImage || null);
+// const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[]>(
+//   initialData?.blockedTimes || []
+// );
+
+
+const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[]>(
+  initialData?.blockedTimes || []
+);
+
+
+
+
+
+
+
 
 const navigation = useNavigation();
 
+
+
+
 // For availability
-const [startDateNegotiable, setStartDateNegotiable] = useState(initialData?.availability?.startDate === 'Negotiable');
-const [endDateNegotiable, setEndDateNegotiable] = useState(initialData?.availability?.endDate === 'Negotiable');
-const [startDate, setStartDate] = useState(
-  initialData?.availability?.startDate && initialData?.availability?.startDate !== 'Negotiable'
-    ? new Date(initialData.availability.startDate)
-    : null
-);
-const [endDate, setEndDate] = useState(
-  initialData?.availability?.endDate && initialData?.availability?.endDate !== 'Negotiable'
-    ? new Date(initialData.availability.endDate)
-    : null
-);
+// const [startDateNegotiable, setStartDateNegotiable] = useState(initialData?.availability?.startDate === 'Negotiable');
+// const [endDateNegotiable, setEndDateNegotiable] = useState(initialData?.availability?.endDate === 'Negotiable');
+// const [startDate, setStartDate] = useState(
+//   initialData?.availability?.startDate && initialData?.availability?.startDate !== 'Negotiable'
+//     ? new Date(initialData.availability.startDate)
+//     : null
+// );
+// const [endDate, setEndDate] = useState(
+//   initialData?.availability?.endDate && initialData?.availability?.endDate !== 'Negotiable'
+//     ? new Date(initialData.availability.endDate)
+//     : null
+// );
 
 
-
+1
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -126,6 +146,25 @@ useEffect(() => {
 
   return unsubscribe;
 }, []);
+
+
+
+
+function getRangeDates(start: string, end: string): string[] {
+  const result = [];
+  let current = new Date(start);
+  const last = new Date(end);
+
+  while (current <= last) {
+    result.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
+  }
+  return result;
+}
+
+
+
+
 
 
 const generateUUID = async () => {
@@ -213,14 +252,14 @@ const handleSubmit = async () => {
 	  return;
 	}
   
-	if (
-	  !title || !description || (!startDateNegotiable && !startDate) || (!endDateNegotiable && !endDate) ||
-	  !width || !length || !height || !storageType || !usageType || !postType || !price ||
-	  images.length === 0 || !address || !postalCode || !billingFrequency || !accessibility || deliveryMethod.length === 0
-	) {
-	  alert('Please fill out all required fields.');
-	  return;
-	}
+	// if (
+	//   !title || !description || (!startDateNegotiable && !startDate) || (!endDateNegotiable && !endDate) ||
+	//   !width || !length || !height || !storageType || usageType.length === 0 || !postType || !price ||
+	//   images.length === 0 || !address || !postalCode || !billingFrequency || !accessibility || deliveryMethod.length === 0
+	// ) {
+	//   alert('Please fill out all required fields.');
+	//   return;
+	// }
   
 	try {
 	  const fullAddress = `${address}, ${postalCode}`;
@@ -256,10 +295,8 @@ const handleSubmit = async () => {
 		billingFrequency,
 		accessibility,
 		security,
-		availability: {
-		  startDate: startDateNegotiable ? 'Negotiable' : startDate,
-		  endDate: endDateNegotiable ? 'Negotiable' : endDate,
-		},
+
+    blockedTimes: blockedTimes,
 		deliveryMethod
 	  };
   
@@ -464,7 +501,7 @@ const handleSubmit = async () => {
 {/* Security (Checkboxes) */}
 <Text style={styles.sectionTitle}>Security:</Text>
 <View style={styles.optionRow}>
-  {['Video Surveillance', 'Pinpad/Keys'].map(option => {
+{['Video Surveillance', 'Pinpad/Keys', 'Gated Area', 'Smoke Detectors'].map(option => {
     const selected = security.includes(option);
     return (
       <TouchableOpacity
@@ -543,131 +580,42 @@ const handleSubmit = async () => {
 
 <Text style={styles.sectionTitle}>Usage Type</Text>
 <View style={styles.optionRow}>
-  {['Cars/Trucks', 'RV', 'Boats', 'Personal', 'Business'].map((type) => (
+
+{['Cars/Trucks', 'RV', 'Boats', 'Personal', 'Business'].map((type) => {
+  const selected = usageType.includes(type);
+  return (
     <TouchableOpacity
       key={type}
-      style={[
-        styles.optionButton,
-        usageType === type && styles.optionSelected,
-      ]}
-      onPress={() => setUsageType(type as typeof usageType)}
+      style={[styles.optionButton, selected && styles.optionSelected]}
+      onPress={() =>
+        setUsageType(prev =>
+          selected ? prev.filter(t => t !== type) : [...prev, type]
+        )
+      }
     >
-      <Text
-        style={[
-          styles.optionText,
-          usageType === type && styles.optionSelectedText,
-        ]}
-      >
+      <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
         {type}
       </Text>
     </TouchableOpacity>
-  ))}
+  );
+})}
+
 </View>
 
 
+<Text style={styles.sectionTitle}>Blocked Times</Text>
+
+<BlockedCalendar
+  blockedTimes={blockedTimes}
+  onAddBlockedTime={(time) => setBlockedTimes([...blockedTimes, time])}
+  onRemoveBlockedTime={(index) =>
+    setBlockedTimes(blockedTimes.filter((_, i) => i !== index))
+  }
+  editable={true}
+/>
 
 
 
-
-<View>
-      {/* Availability Start */}
-      <Text style={{ fontWeight: 'bold', marginTop: 10 }}>Start Date:</Text>
-      <TouchableOpacity
-  onPress={() => setStartDateNegotiable(!startDateNegotiable)}
-  style={[
-    styles.optionButton,
-    startDateNegotiable && styles.optionSelected,
-    { marginBottom: 10 },
-  ]}
->
-  <Text
-    style={[
-      styles.optionText,
-      startDateNegotiable && styles.optionSelectedText,
-    ]}
-  >
-    {startDateNegotiable ? '☑️ ' : '⬜️ '}Negotiable
-  </Text>
-</TouchableOpacity>
-
-      {!startDateNegotiable && (
-        <>
-          <TouchableOpacity
-            onPress={() => setShowStartPicker(true)}
-            style={{
-              borderWidth: 1,
-              padding: 10,
-              marginBottom: 10,
-              borderRadius: 6,
-            }}
-          >
-            <Text>{startDate ? startDate.toISOString().split('T')[0] : 'Select Start Date'}</Text>
-          </TouchableOpacity>
-
-          {showStartPicker && (
-            <DateTimePicker
-              value={startDate || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              onChange={(event, selectedDate) => {
-                setShowStartPicker(false);
-                if (selectedDate) setStartDate(selectedDate);
-              }}
-            />
-          )}
-        </>
-      )}
-
-      {/* Availability End */}
-      <Text style={{ fontWeight: 'bold', marginTop: 10 }}>End Date:</Text>
-      <TouchableOpacity
-  onPress={() => setEndDateNegotiable(!endDateNegotiable)}
-  style={[
-    styles.optionButton,
-    endDateNegotiable && styles.optionSelected,
-    { marginBottom: 10 },
-  ]}
->
-  <Text
-    style={[
-      styles.optionText,
-      endDateNegotiable && styles.optionSelectedText,
-    ]}
-  >
-    {endDateNegotiable ? '☑️ ' : '⬜️ '}Negotiable
-  </Text>
-</TouchableOpacity>
-
-
-
-      {!endDateNegotiable && (
-        <>
-          <TouchableOpacity
-            onPress={() => setShowEndPicker(true)}
-            style={{
-              borderWidth: 1,
-              padding: 10,
-              marginBottom: 10,
-              borderRadius: 6,
-            }}
-          >
-            <Text>{endDate ? endDate.toISOString().split('T')[0] : 'Select End Date'}</Text>
-          </TouchableOpacity>
-
-          {showEndPicker && (
-            <DateTimePicker
-              value={endDate || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              onChange={(event, selectedDate) => {
-                setShowEndPicker(false);
-                if (selectedDate) setEndDate(selectedDate);
-              }}
-            />
-          )}
-        </>
-      )}
-    </View>
 
 
 
@@ -695,137 +643,6 @@ const handleSubmit = async () => {
 
 
 
-
-// const styles = StyleSheet.create({
-//   container: {
-//     padding: 20,
-//   },
-//   addPhotoButton: {
-//     backgroundColor: '#000',
-//     padding: 12,
-//     borderRadius: 6,
-//     alignItems: 'center',
-//     marginBottom: 10,
-//   },
-//   addPhotoText: {
-//     color: '#fff',
-//   },
-//   imageGrid: {
-//     flexDirection: 'row',
-//     flexWrap: 'wrap',
-//     marginBottom: 15,
-//   },
-//   image: {
-//     width: 70,
-//     height: 70,
-//     borderRadius: 6,
-//     margin: 5,
-//     borderWidth: 2,
-//     borderColor: 'transparent',
-//   },
-//   mainImage: {
-//     borderColor: '#007bff',
-//   },
-//   input: {
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     borderRadius: 6,
-//     padding: 10,
-//     marginBottom: 10,
-//   },
-//   sizeContainer: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     marginBottom: 10,
-//   },
-//   sizeInput: {
-//     flex: 1,
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     borderRadius: 6,
-//     padding: 10,
-//     marginHorizontal: 0,
-//   },
-//   sectionTitle: {
-//     fontWeight: 'bold',
-//     fontSize: 16,
-//     marginBottom: 6,
-//     marginTop: 10,
-//   },
-
-
-// tabContainer: {
-//   flexDirection: 'row',
-//   flexWrap: 'wrap',
-//   justifyContent: 'space-around',
-//   marginBottom: 20,
-// },
-// tabButton: {
-//   paddingVertical: 10,
-//   paddingHorizontal: 15,
-//   borderRadius: 8,
-//   borderWidth: 1,
-//   borderColor: '#7b7b7b',
-//   backgroundColor: 'transparent',
-//   margin: 4,
-// },
-// activeTabButton: {
-//   backgroundColor: '#000',
-//   borderColor: '#000',
-
-// },
-// tabText: {
-//   color: '#7b7b7b',
-//   fontWeight: '500',
-// },
-// activeTabText: {
-//   color: '#fff',
-// },
-
-
-
-//   submitButton: {
-//     backgroundColor: '#000',
-//     paddingVertical: 15,
-//     borderRadius: 6,
-//     alignItems: 'center',
-//     marginTop: 10,
-//   },
-//   submitText: {
-//     color: '#fff',
-//     fontWeight: 'bold',
-//   },
-//   optionRow: {
-//     flexDirection: 'row',
-//     flexWrap: 'wrap',
-//     marginBottom: 2,
-//   },
-  
-//   optionButton: {
-//     paddingVertical: 10,
-//     paddingHorizontal: 15,
-//     borderRadius: 8,
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     marginRight: 8,
-//     marginBottom: 2,
-//   },
-  
-//   optionText: {
-//     fontWeight: '500',
-//     color: '#333',
-//   },
-  
-//   optionSelected: {
-//     backgroundColor: '#000',
-//     borderColor: '#000',
-//   },
-  
-//   optionSelectedText: {
-//     color: '#fff',
-//   },
-  
-// });
 
 const styles = StyleSheet.create({
   container: {
@@ -969,4 +786,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Poppins-Bold',
   },
+  blockedTimeItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 5,
+    padding: 10,
+    borderWidth: 1,
+    borderRadius: 6,
+  },
+  
 });

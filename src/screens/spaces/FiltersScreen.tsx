@@ -45,7 +45,7 @@ type RootStackParamList = {
   SpaceDetail: { spaceId: string };
 };
 
-
+ 
 
 // Define the navigation prop for THIS screen
 type FiltersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Filters'>;
@@ -78,6 +78,51 @@ export default function FiltersScreen() {
   const postTypesOptions: ('Offering' | 'Requesting' | 'Both')[] = ['Offering', 'Requesting', 'Both'];
 
 
+  const [selectedUsageTypes, setSelectedUsageTypes] = useState<string[]>([]);
+  const usageTypeOptions = [
+    'Vehicle Storage',
+    'Business Storage',
+    'Personal Storage',
+    'Boat Storage',
+    'RV Storage',
+    'Seasonal Storage',
+    'Equipment Storage',
+  ];
+  const toggleUsageType = (type: string) => {
+    setSelectedUsageTypes((prev) =>
+      prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
+    );
+  };
+
+
+  const [selectedSecurity, setSelectedSecurity] = useState<string[]>([]);
+  const securityOptions = ['Gated Area', 'Video Surveillance', 'Pinpad/Keys', 'Smoke Detectors'];
+  const toggleSecurity = (type: string) => {
+    setSelectedSecurity((prev) =>
+      prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
+    );
+  };
+  
+  const [selectedAccessibility, setSelectedAccessibility] = useState<string[]>([]);
+const accessibilityOptions = ['24/7 Access', 'Ground Floor', 'Ramp Access', 'Drive-Up Access'];
+const toggleAccessibility = (type: string) => {
+  setSelectedAccessibility((prev) =>
+    prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
+  );
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
   const toggleCategory = (id: string) => {
     setSelectedCategories((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -100,21 +145,7 @@ export default function FiltersScreen() {
 
   
 
-  // useEffect(() => {
-  //   const currentFilters = route.params?.currentFilters;
-  
-  //   if (currentFilters) {
-  //     setSelectedCategories(currentFilters.categories || []);
-  //     setMaxPrice(currentFilters.maxPrice || '');
-  //     setStartDate(currentFilters.startDate || '');
-  //     setEndDate(currentFilters.endDate || '');
-  //     setRadius(currentFilters.radius ?? 10);
-  //     setPickupDropoff(currentFilters.pickupDropoff ?? false);
-  //     setPostType(currentFilters.postType ?? 'Both');
-  //     setSelectedLocation(currentFilters.location ?? null);
-  //     setLocationAddress(currentFilters.address || '');
-  //   }
-  // }, []);
+
   
   useEffect(() => {
     if (filters) {
@@ -130,45 +161,6 @@ export default function FiltersScreen() {
     }
   }, []);
 
-
-  // Function to handle applying filters and navigating
-  // const handleApplyFilters = useCallback(() => {
-  //   // Construct the filters object based on current state
-  //   const filters = {
-  //     categories: selectedCategories.length > 0 ? selectedCategories : undefined,
-  //     maxPrice: maxPrice || undefined, // Use undefined if empty string
-  //     startDate: startDate || undefined,
-  //     endDate: endDate || undefined,
-  //     radius: radius, // Radius always has a number value, no need for || undefined
-  //     pickupDropoff: pickupDropoff || undefined, // Only pass if true, otherwise undefined
-  //     postType: postType === 'Both' ? undefined : postType, // Pass undefined if 'Both'
-  //     location: selectedLocation || undefined, // Pass undefined if null
-  //     address: locationAddress || undefined, // Pass undefined if empty string
-  //   };
-
-  //   // Determine the params to pass to Spaces screen.
-  //   // If all filter values are undefined/empty, pass `undefined` as the params object
-  //   // to match `RootStackParamList` for `Spaces`.
-  //   const paramsToPass = Object.values(filters).some(value =>
-  //     value !== undefined && value !== null && value !== '' &&
-  //     !(Array.isArray(value) && value.length === 0) // Handle empty arrays
-  //   ) ? { filters } : undefined;
-
-
-  //   // FIX 2: navigation.navigate is now correctly accessed
-  //   navigation.navigate('SpacesMain', paramsToPass);
-  // }, [
-  //   navigation,
-  //   selectedCategories,
-  //   maxPrice,
-  //   startDate,
-  //   endDate,
-  //   radius,
-  //   pickupDropoff,
-  //   postType,
-  //   selectedLocation,
-  //   locationAddress, // Add locationAddress to dependencies
-  // ]);
 
   const handleApplyFilters = () => {
     const newFilters = {
@@ -254,27 +246,83 @@ export default function FiltersScreen() {
       </View>
 
 
-      {/* CATEGORY SLIDER */}
-      <Text style={styles.sectionTitle}>What are you storing?</Text>
-      <FlatList
-        horizontal
-        data={categories}
-        keyExtractor={(item) => item.id}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryList}
-        renderItem={({ item }) => {
-          const isSelected = selectedCategories.includes(item.id);
-          return (
-            <TouchableOpacity
-              onPress={() => toggleCategory(item.id)}
-              style={[styles.categoryItem, isSelected && styles.selectedCategory]}
-            >
-              <Image source={item.image} style={styles.categoryImage} />
-              <Text style={styles.categoryLabel}>{item.label}</Text>
-            </TouchableOpacity>
-          );
+      <Text style={styles.sectionTitle}>Usage Type</Text>
+<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+  {usageTypeOptions.map((type) => {
+    const selected = selectedUsageTypes.includes(type);
+    return (
+      <TouchableOpacity
+        key={type}
+        onPress={() => toggleUsageType(type)}
+        style={{
+          paddingVertical: 6,
+          paddingHorizontal: 12,
+          borderWidth: 1,
+          borderRadius: 20,
+          backgroundColor: selected ? '#007AFF' : '#fff',
+          borderColor: selected ? '#007AFF' : '#ccc',
+          marginBottom: 6,
         }}
-      />
+      >
+        <Text style={{ color: selected ? '#fff' : '#333' }}>{type}</Text>
+      </TouchableOpacity>
+    );
+  })}
+</View>
+
+
+
+<Text style={styles.sectionTitle}>Security Features</Text>
+<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+  {securityOptions.map((type) => {
+    const selected = selectedSecurity.includes(type);
+    return (
+      <TouchableOpacity
+        key={type}
+        onPress={() => toggleSecurity(type)}
+        style={{
+          paddingVertical: 6,
+          paddingHorizontal: 12,
+          borderWidth: 1,
+          borderRadius: 20,
+          backgroundColor: selected ? '#007AFF' : '#fff',
+          borderColor: selected ? '#007AFF' : '#ccc',
+          marginBottom: 6,
+        }}
+      >
+        <Text style={{ color: selected ? '#fff' : '#333' }}>{type}</Text>
+      </TouchableOpacity>
+    );
+  })}
+</View>
+
+
+<Text style={styles.sectionTitle}>Accessibility</Text>
+<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+  {accessibilityOptions.map((type) => {
+    const selected = selectedAccessibility.includes(type);
+    return (
+      <TouchableOpacity
+        key={type}
+        onPress={() => toggleAccessibility(type)}
+        style={{
+          paddingVertical: 6,
+          paddingHorizontal: 12,
+          borderWidth: 1,
+          borderRadius: 20,
+          backgroundColor: selected ? '#007AFF' : '#fff',
+          borderColor: selected ? '#007AFF' : '#ccc',
+          marginBottom: 6,
+        }}
+      >
+        <Text style={{ color: selected ? '#fff' : '#333' }}>{type}</Text>
+      </TouchableOpacity>
+    );
+  })}
+</View>
+
+
+
 
       {/* MAX PRICE */}
       <Text style={styles.sectionTitle}>Max Price ($)</Text>
@@ -379,6 +427,10 @@ export default function FiltersScreen() {
     </ScrollView>
   );
 }
+
+
+
+
 
 const styles = StyleSheet.create({
   scrollContainer: {

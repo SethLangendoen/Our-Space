@@ -1,151 +1,5 @@
 
 
-// import React, { useRef, useState } from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   Image,
-//   TouchableOpacity,
-//   FlatList,
-//   Dimensions,
-// } from 'react-native';
-// import { useNavigation } from '@react-navigation/native';
-// import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-// const { width } = Dimensions.get('window');
-
-// type RootStackParamList = {
-//   SplashScreen: undefined;
-//   Onboarding: undefined;
-//   Auth: undefined;
-//   MainTabs: undefined;
-// };
-
-// type Slide = {
-//   key: string;
-//   title: string;
-//   description: string;
-//   image: any;
-//   isFinal?: boolean;
-// };
-
-// type OnboardingScreenNavigationProp = NativeStackNavigationProp<
-//   RootStackParamList,
-//   'Onboarding'
-// >;
-
-// const onboardingSlides: Slide[] = [
-//   {
-//     key: '1',
-//     title: 'Welcome to OurSpace!',
-//     description: 'Your trusted app for renting and listing storage spaces.',
-//     image: require('../../assets/Onboarding/onboarding1.png'),
-//   },
-//   {
-//     key: '2',
-//     title: 'List Your Space',
-//     description: 'Earn passive income by renting your unused space.',
-//     image: require('../../assets/Onboarding/onboarding2.png'),
-//   },
-//   {
-//     key: '3',
-//     title: 'Find Nearby Storage',
-//     description: 'Need space? Easily search for secure storage near you.',
-//     image: require('../../assets/Onboarding/onboarding1.png'),
-//   },
-//   {
-//     key: '4',
-//     title: 'Safe and Secure',
-//     description: 'Verified users and secure payments through the app.',
-//     image: require('../../assets/Onboarding/onboarding1.png'),
-//     isFinal: true,
-//   },
-// ];
-
-// const OnboardingScreen = () => {
-//   const navigation = useNavigation<OnboardingScreenNavigationProp>();
-//   const flatListRef = useRef<FlatList<Slide>>(null);
-//   const [currentIndex, setCurrentIndex] = useState(0);
-
-//   const handleNext = () => {
-//     if (flatListRef.current && currentIndex < onboardingSlides.length - 1) {
-//       flatListRef.current.scrollToIndex({ index: currentIndex + 1 });
-//     }
-//   };
-
-//   const renderItem = ({ item, index }: { item: Slide; index: number }) => (
-//     <View style={styles.slide}>
-//       <View style={styles.topContent}>
-//         <Text style={styles.title}>{item.title}</Text>
-//         <Text style={styles.description}>{item.description}</Text>
-//         <Image source={item.image} style={styles.image} />
-//       </View>
-
-//       {/* {currentIndex === index && ( */}
-//         <View style={styles.buttonContainer}>
-//           {item.isFinal ? (
-//             <>
-//               <TouchableOpacity
-//                 style={styles.button}
-//                 onPress={() => navigation.navigate('Auth')}
-//               >
-//                 <Text style={styles.buttonText}>Sign Up</Text>
-//               </TouchableOpacity>
-//               <TouchableOpacity
-//                 style={[styles.button, styles.secondaryButton]}
-//                 onPress={() => navigation.navigate('MainTabs')}
-//               >
-//                 <Text style={styles.secondaryButtonText}>Explore First</Text>
-//               </TouchableOpacity>
-//             </>
-//           ) : index === 0 ? (
-//             <TouchableOpacity style={styles.button} onPress={handleNext}>
-//               <Text style={styles.buttonText}>Get Started</Text>
-//             </TouchableOpacity>
-//           ) : (
-//             <TouchableOpacity style={styles.button} onPress={handleNext}>
-//               <Text style={styles.buttonText}>Next</Text>
-//             </TouchableOpacity>
-//           )}
-//         </View>
-//       {/* )} */}
-//     </View>
-//   );
-
-//   return (
-//     <View style={styles.container}>
-//       <FlatList
-//         ref={flatListRef}
-//         data={onboardingSlides}
-//         renderItem={renderItem}
-//         keyExtractor={(item) => item.key}
-//         horizontal
-//         pagingEnabled
-//         showsHorizontalScrollIndicator={false}
-//         onMomentumScrollEnd={(e) => {
-//           const index = Math.round(e.nativeEvent.contentOffset.x / width);
-//           setCurrentIndex(index);
-//         }}
-//       />
-
-//         <View style={styles.dotsContainer}>
-//           {onboardingSlides.map((_, i) => (
-//             <View
-//               key={i}
-//               style={[
-//                 styles.dot,
-//                 { opacity: i === currentIndex ? 1 : 0.3 },
-//               ]}
-//             />
-//           ))}
-//         </View>
-//     </View>
-//   );
-// };
-
-// export default OnboardingScreen;
-
 
 
 import React, { useRef, useState, useEffect } from 'react';
@@ -187,27 +41,45 @@ type OnboardingScreenNavigationProp = NativeStackNavigationProp<
 const onboardingSlides: Slide[] = [
   {
     key: '1',
-    title: 'Welcome To Our Space!',
+    title: 'Welcome to Our Space!',
     description: 'Discover the easiest way to store your stuff or earn from unused space - right in your neighbourhood',
     image: require('../../assets/Onboarding/onboarding1.png'),
   },
   {
     key: '2',
-    title: 'Find Storage Near You',
+    title: 'Find storage near you',
     description: 'Quickly search, compare, and book trusted spaces nearby.',
     image: require('../../assets/Onboarding/onboarding2.png'),
   },
   {
     key: '3',
-    title: 'Earn Money From Your Unused Space',
-    description: 'List your garage, basement, closet, shed and more - start earning in minutes',
-    image: require('../../assets/Onboarding/onboarding1.png'),
+    title: 'Earn money from your unused space.',
+    description: 'List your garage, basement, closet, shed and more - start earning in minutes.',
+    image: require('../../assets/Onboarding/onboarding3.png'),
   },
   {
     key: '4',
-    title: 'Safe and Secure',
-    description: 'Verified users and secure payments through the app.',
-    image: require('../../assets/Onboarding/onboarding1.png'),
+    title: 'Affordable, local, and personal.',
+    description: 'No more overpriced, far-away storage units. OURSPACE brings the community together.',
+    image: require('../../assets/Onboarding/onboarding5.png'),
+  },
+  {
+    key: '5',
+    title: 'Secure and stress-free.',
+    description: 'In-app messaging, payments, reviews, and insurance options keep everyone protected',
+    image: require('../../assets/Onboarding/onboarding6.png'),
+  },
+  {
+    key: '6',
+    title: 'Get started and earn a bonus.',
+    description: 'List your first space or book storage to unlock launch rewards',
+    image: require('../../assets/Onboarding/onboarding7.png'),
+  },
+  {
+    key: '7',
+    title: 'You are all set!',
+    description: 'Join the OURSPACE community and make storage simpler.',
+    image: require('../../assets/Onboarding/onboarding8.png'),
     isFinal: true,
   },
 ];
@@ -461,30 +333,31 @@ const styles = StyleSheet.create({
 	  flex: 1,
 	  alignItems: 'center',
 	  justifyContent: 'flex-start',
-	  paddingTop: 60,
+	  paddingTop: 100,
 	},
 	title: {
-	  fontSize: 36,
+	  fontSize: 46,
 	  fontFamily: 'Poppins-Bold',
 	  fontWeight: '700',
 	  color: '#0F6B5B', // Emerald Green
 	  marginBottom: 12,
-	  textAlign: 'center',
+	  textAlign: 'left',
 	},
 	description: {
-	  fontSize: 16,
-	  fontFamily: 'Poppins-Regular',
+	  fontSize: 20,
+	  fontFamily: 'Poppins-bold',
 	  fontWeight: '400',
 	  color: '#1F1F1F', // Near-black for paragraph text
-	  textAlign: 'center',
-	  marginBottom: 40,
+	  textAlign: 'left',
+	  marginBottom: 0,
 	  lineHeight: 24,
 	},
 	image: {
-	  width: width - 60,
-	  height: width - 60,
+	  width: width,
+	  height: width,
 	  resizeMode: 'contain',
-	  marginVertical: 20,
+	  marginVertical: 0,
+	  
 	},
 	buttonContainer: {
 	  width: '100%',

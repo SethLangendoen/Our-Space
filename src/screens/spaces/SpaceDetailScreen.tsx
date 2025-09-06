@@ -358,13 +358,7 @@ useEffect(() => {
         <Text style={styles.price}>${parseFloat(space.price).toFixed(2)} {space.billingFrequency} </Text>
       )}
 
-      {/* <Text style={styles.label}>
-        Date Created: <Text style={styles.value}>{formatDate(space.createdAt)}</Text>
-      </Text> */}
 
-      {/* <Text style={styles.label}>
-        Dates Available: <Text style={styles.value}>{space.datesAvailable || 'N/A'}</Text>
-      </Text> */}
 
 	  <Text style={styles.label}>
 		Location:{' '}
@@ -379,18 +373,20 @@ useEffect(() => {
       </Text>
 
       <Text style={styles.label}>
-        Usage Type: <Text style={styles.value}>{space.usageType || 'N/A'}</Text>
-      </Text>
+  Usage Type: <Text style={styles.value}>
+    {Array.isArray(space.usageType) && space.usageType.length > 0
+      ? space.usageType.join(', ')
+      : 'N/A'}
+  </Text>
+</Text>
 
 
-	  {/* <Text style={styles.label}>
-      Billing Frequency: <Text style={styles.value}>{space.billingFrequency || 'N/A'}</Text>
-    </Text> */}
 
 
 <Text style={styles.label}>
   Accessibility: <Text style={styles.value}>{space.accessibility || 'N/A'}</Text>
 </Text>
+
 
 {space.security?.length > 0 && (
   <Text style={styles.label}>
@@ -421,114 +417,6 @@ useEffect(() => {
     {space.dimensions?.width || '?'}ft (W) × {space.dimensions?.length || '?'}ft (L) × {space.dimensions?.height || '?'}ft (H)
   </Text>
 </Text>
-
-
-{/* 
-{currentUser !== space.userId && (
-  <>
-  <View style={styles.messageBox}>
-    <TextInput
-      style={styles.messageInput}
-      placeholder="Write a message..."
-      value={message}
-      onChangeText={setMessage}
-      multiline
-    />
-    <TouchableOpacity
-      onPress={() => {
-        if (!currentUser) {
-          Alert.alert('Login Required', 'You must log in or create an account to message users.');
-          return;
-        }
-        sendMessage();
-      }}
-      disabled={!message.trim() || sending}
-      style={[
-        styles.sendButton,
-        (!message.trim() || sending) ? styles.disabledButton : null,
-      ]}
-    >
-      <Text style={styles.sendText}>{sending ? 'Sending...' : 'Send'}</Text>
-    </TouchableOpacity>
-
-  </View>
-
-
-
-
-
-
-<View style={styles.bookingContainer}>
-<Text style={styles.bookingTitle}>Book Reservation</Text>
-
-<TouchableOpacity
-  style={styles.dateInput}
-  onPress={() => setShowStart(true)}
->
-  <Text>{startDate ? startDate.toDateString() : 'Select Start Date'}</Text>
-</TouchableOpacity>
-
-{showStart && (
-  <DateTimePicker
-    value={startDate || new Date()}
-    mode="date"
-    display="default"
-    onChange={(event, selectedDate) => {
-      setShowStart(false);
-      if (selectedDate) setStartDate(selectedDate);
-    }}
-  />
-)}
-
-<TouchableOpacity
-  style={styles.dateInput}
-  onPress={() => setShowEnd(true)}
->
-  <Text>{endDate ? endDate.toDateString() : 'Select End Date'}</Text>
-</TouchableOpacity>
-
-{showEnd && (
-  <DateTimePicker
-    value={endDate || new Date()}
-    mode="date"
-    display="default"
-    onChange={(event, selectedDate) => {
-      setShowEnd(false);
-      if (selectedDate) setEndDate(selectedDate);
-    }}
-  />
-)}
-
-<TextInput
-  style={styles.descriptionInput}
-  placeholder="Describe the items you are storing"
-  value={reservationDescription}
-  onChangeText={setReservationDescription}
-  multiline
-/>
-
-
-<TouchableOpacity
-  style={[
-    styles.confirmButton,
-    (!startDate || !endDate || booking) && styles.disabledButton,
-  ]}
-  disabled={!startDate || !endDate || booking}
-  onPress={handleReservation}
->
-  <Text style={styles.confirmText}>
-    {booking ? 'Booking...' : 'Confirm Reservation'}
-  </Text>
-</TouchableOpacity>
-</View>
-
-
-
-</>
-
-)} */}
-
-
 
 
 {!currentUser ? (
@@ -641,174 +529,6 @@ useEffect(() => {
 
 
 
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-//   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-//   imageCarousel: { maxHeight: 200, marginBottom: 16 },
-//   image: { width: 320, height: 200, borderRadius: 8, marginRight: 12 },
-//   title: { fontSize: 28, fontWeight: 'bold', marginBottom: 8 },
-//   tag: {
-//     alignSelf: 'flex-start',
-//     paddingVertical: 6,
-//     paddingHorizontal: 12,
-//     borderRadius: 20,
-//     marginBottom: 12,
-//   },
-//   offeringTag: { backgroundColor: '#4CAF50' },
-//   requestingTag: { backgroundColor: '#F44336' },
-//   tagText: { color: '#fff', fontWeight: '600' },
-//   description: { fontSize: 16, color: '#444', marginBottom: 12 },
-//   price: { fontSize: 18, fontWeight: '600', marginBottom: 12},
-//   label: { fontSize: 16, fontWeight: '600', marginTop: 10, color: '#333' },
-//   value: { fontWeight: 'normal', color: '#555' },
-
-//   userRow: {
-// 	flexDirection: 'row',
-// 	alignItems: 'center', 
-// 	marginBottom: 16,
-//   width: '100%'
-//   },
-  
-  
-//   userImage: {
-// 	width: 40,
-// 	height: 40,
-// 	borderRadius: 20,
-// 	marginRight: 10,
-// 	backgroundColor: '#ccc',
-//   },
-  
-//   userName: {
-// 	fontSize: 16,
-// 	fontWeight: '600',
-// 	marginRight: 10, // gives space before the tag
-//   },
-
-//   descriptionInput: {
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     borderRadius: 8,
-//     padding: 12,
-//     fontSize: 16,
-//     backgroundColor: '#f9f9f9',
-//     minHeight: 80,
-//     marginBottom: 16,
-//     textAlignVertical: 'top', // 👈 makes text start at the top
-//   },
-  
-  
-  
-//   inlineTag: {
-// 	paddingVertical: 4,  // Try lowering this to 2 or even 0 if needed
-// 	paddingHorizontal: 10,
-// 	marginLeft: 'auto',
-// 	borderRadius: 12,
-// 	justifyContent: 'center', // Optional: helps if you're seeing odd spacing
-// 	alignSelf: 'center',      // ✅ forces it to center in parent row
-//   },
-//   messageBox: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     paddingHorizontal: 10,
-//     paddingVertical: 8,
-//     borderTopWidth: 1,
-//     borderColor: '#ddd',
-//     backgroundColor: '#fff',
-//     gap: 8,
-//   },
-  
-//   messageInput: {
-//     flex: 1,
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     borderRadius: 20,
-//     paddingHorizontal: 14,
-//     paddingVertical: 10,
-//     fontSize: 16,
-//     backgroundColor: '#f9f9f9',
-//     maxHeight: 120,
-//   },
-  
-//   sendButton: {
-//     backgroundColor: '#007AFF',
-//     borderRadius: 20,
-//     paddingVertical: 10,
-//     paddingHorizontal: 16,
-//   },
-  
-//   disabledButton: {
-//     backgroundColor: '#aaa',
-//   },
-  
-//   sendText: {
-//     color: 'white',
-//     fontWeight: '600',
-//     fontSize: 16,
-//   },
-//   mapContainer: {
-//     marginVertical: 8,
-//     alignItems: 'center',
-//   },
-//   map: {
-//     width: '100%',
-//     height: 100,
-//     borderRadius: 12,
-//   },
-//   postalCode: {
-//     marginTop: 8,
-//     fontSize: 16,
-//     color: '#555',
-//     fontWeight: '600',
-//     textAlign: 'center',
-//   },
-//   bookingContainer: {
-//     marginTop: 20,
-//     padding: 16,
-//     borderWidth: 1,
-//     borderColor: '#ddd',
-//     borderRadius: 10,
-//   },
-//   bookingTitle: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     marginBottom: 10,
-//   },
-//   dateInput: {
-//     padding: 12,
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     borderRadius: 8,
-//     marginBottom: 12,
-//   },
-//   confirmButton: {
-//     backgroundColor: '#334E35',
-//     padding: 14,
-//     borderRadius: 8,
-//     alignItems: 'center',
-//   },
-//   confirmText: {
-//     color: 'white',
-//     fontWeight: '600',
-//   },
-//   noticeBox: {
-//     padding: 15,
-//     backgroundColor: '#f8f8f8',
-//     borderRadius: 10,
-//     marginTop: 20,
-//     marginHorizontal: 20,
-//     alignItems: 'center',
-//   },
-//   noticeText: {
-//     fontSize: 16,
-//     color: '#555',
-//     textAlign: 'center',
-//   },
-  
-  
-  
-  
-// });
 
 
 
