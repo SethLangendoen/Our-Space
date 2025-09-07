@@ -9,7 +9,7 @@ import { FilterProvider } from './src/context/FilterContext'; // ✅
 export default function App() {
   return (
 
-    <FilterProvider> {/* for globally saving the spaces filter */}
+    <FilterProvider> 
       <NavigationContainer>
         <RootNavigator />
       </NavigationContainer>

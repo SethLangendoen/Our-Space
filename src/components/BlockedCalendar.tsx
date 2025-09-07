@@ -4,19 +4,28 @@ import { Calendar } from 'react-native-calendars';
 
 type BlockedTime = { start: string; end: string };
 
-interface BlockedCalendarProps {
-  blockedTimes: BlockedTime[];
-  onAddBlockedTime?: (time: BlockedTime) => void;
-  onRemoveBlockedTime?: (index: number) => void;
-  editable?: boolean;
-}
 
-const BlockedCalendar: React.FC<BlockedCalendarProps> = ({
-  blockedTimes,
-  onAddBlockedTime,
-  onRemoveBlockedTime,
-  editable = false,
-}) => {
+
+interface BlockedCalendarProps {
+	blockedTimes: BlockedTime[];
+	onAddBlockedTime?: (time: BlockedTime) => void;
+	onRemoveBlockedTime?: (index: number) => void;
+	onSelectRange?: (range: { start: Date | null; end: Date | null }) => void; // ✅ allow null
+	editable?: boolean;
+  }
+  
+
+
+
+
+
+  const BlockedCalendar: React.FC<BlockedCalendarProps> = ({
+	blockedTimes,
+	onAddBlockedTime,
+	onRemoveBlockedTime,
+	onSelectRange,  
+	editable = false,
+  }) => {
   const [rangeStart, setRangeStart] = useState<string | null>(null);
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
 
@@ -60,30 +69,97 @@ const BlockedCalendar: React.FC<BlockedCalendarProps> = ({
     });
   }
 
+
+
+
+
   return (
     <View>
       <Calendar
         markingType="period"
         markedDates={markedDates}
-        onDayPress={(day) => {
-          if (!editable) return;
 
-          if (!rangeStart) {
-            setRangeStart(day.dateString);
-            setRangeEnd(null);
-          } else if (!rangeEnd) {
-            if (day.dateString < rangeStart) {
-              setRangeEnd(rangeStart);
-              setRangeStart(day.dateString);
-            } else {
-              setRangeEnd(day.dateString);
-            }
-          } else {
-            // Reset selection if already both set
-            setRangeStart(day.dateString);
-            setRangeEnd(null);
-          }
-        }}
+
+
+
+		// onDayPress={(day) => {
+		// 	// If we already have a full range and user clicks a new start date, reset
+		// 	if (rangeStart && rangeEnd) {
+		// 	  setRangeStart(day.dateString);
+		// 	  setRangeEnd(null);
+		// 	  onSelectRange?.({ start: null, end: null }); // Reset parent state too
+		// 	  return;
+		// 	}
+		  
+		// 	// Normal selection logic
+		// 	if (!rangeStart) {
+		// 	  setRangeStart(day.dateString);
+		// 	  setRangeEnd(null);
+		// 	  onSelectRange?.({ start: null, end: null }); // reset parent
+		// 	} else if (!rangeEnd) {
+		// 	  if (day.dateString < rangeStart) {
+		// 		setRangeEnd(rangeStart);
+		// 		setRangeStart(day.dateString);
+		// 	  } else {
+		// 		setRangeEnd(day.dateString);
+		// 	  }
+		// 	  // Notify parent only when both start & end exist
+		// 	  if (rangeStart && day.dateString) {
+		// 		const start = new Date(rangeStart < day.dateString ? rangeStart : day.dateString);
+		// 		const end = new Date(rangeStart > day.dateString ? rangeStart : day.dateString);
+		// 		onSelectRange?.({ start, end });
+		// 	  }
+		// 	}
+		//   }}
+
+
+		onDayPress={(day) => {
+			// Reset if full range already exists
+			if (rangeStart && rangeEnd) {
+			  setRangeStart(day.dateString);
+			  setRangeEnd(null);
+			  onSelectRange?.({ start: null, end: null });
+			  return;
+			}
+		  
+			// Temporary new range calculation
+			let newStart = rangeStart || day.dateString;
+			let newEnd = !rangeStart || rangeStart === day.dateString ? null : day.dateString;
+		  
+			// Swap if end is before start
+			if (newEnd && newEnd < newStart) {
+			  [newStart, newEnd] = [newEnd, newStart];
+			}
+		  
+			// If newEnd exists, check if range overlaps blocked dates
+			if (newEnd) {
+			  const tempRange = getRangeDates(newStart, newEnd);
+			  const overlapsBlocked = tempRange.some(date => markedDates[date]?.color === '#FF6B6B');
+			  if (overlapsBlocked) {
+				Alert.alert('Blocked Date', 'Your selected range overlaps a blocked date.');
+				setRangeStart(null);
+				setRangeEnd(null);
+				onSelectRange?.({ start: null, end: null });
+				return;
+			  }
+			}
+		  
+			// Normal selection logic
+			if (!rangeStart) {
+			  setRangeStart(day.dateString);
+			  setRangeEnd(null);
+			  onSelectRange?.({ start: null, end: null });
+			} else if (!rangeEnd) {
+			  setRangeEnd(day.dateString);
+			  const start = new Date(newStart);
+			  const end = new Date(newEnd!);
+			  onSelectRange?.({ start, end });
+			}
+		  }}
+		  
+		  
+
+
       />
 
       {editable && (

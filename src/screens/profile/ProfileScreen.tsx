@@ -17,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { auth, db } from '../../firebase/config';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import SpaceCard from '../../components/SpaceCard';
-
+const { height: screenHeight } = Dimensions.get('window');
 const { width } = Dimensions.get('window');
 
 type ProfileStackParamList = {
@@ -187,7 +187,10 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
+    <ScrollView 
+    style={styles.scrollView} 
+    contentContainerStyle={styles.scrollContent}
+    >
       <View style={styles.container}>
         <View style={styles.headerSection}>
           <View style={styles.statsRow}>
@@ -268,6 +271,8 @@ export default function ProfileScreen() {
               <Text style={styles.message}>No listings found.</Text>
             )
           )}
+
+
         </View>
       </View>
     </ScrollView>
@@ -279,6 +284,10 @@ export default function ProfileScreen() {
 
 
 const styles = StyleSheet.create({
+
+
+
+
   container: {
     flex: 1,
     backgroundColor: '#FFFCF1', // soft wheat background
@@ -484,7 +493,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 
-  scrollContent: {
-    paddingBottom: 20,
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#FFFCF1', // wheat background covers scroll too
   },
+  
+  scrollContent: {
+    paddingBottom: 0,
+    minHeight: screenHeight,
+
+  },
+  
 });

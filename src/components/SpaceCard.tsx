@@ -99,10 +99,23 @@ const SpaceCard = ({ item, onPress }: SpaceCardProps) => {
 
 
 const styles = StyleSheet.create({
+  // card: {
+  //   padding: 15,
+  //   marginVertical: 10,
+  //   backgroundColor: '#FFFFFF', // White card on wheat background
+  //   borderRadius: 12,
+  //   shadowColor: '#000',
+  //   shadowOpacity: 0.05,
+  //   shadowOffset: { width: 0, height: 1 },
+  //   shadowRadius: 3,
+  //   elevation: 2,
+  // },
+
   card: {
+    width: '100%',
     padding: 15,
     marginVertical: 10,
-    backgroundColor: '#FFFFFF', // White card on wheat background
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOpacity: 0.05,
@@ -110,12 +123,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  
 
   mainImage: {
     width: '100%',
+    // width: 100,
+
     height: 150,
     borderRadius: 10,
     marginBottom: 12,
+    resizeMode: 'cover', // makes sure it fills nicely
+
   },
 
   titleRow: {

@@ -7,7 +7,12 @@ import { auth, db } from '../../firebase/config';
 import { AuthError } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
 import MapView, { Marker } from 'react-native-maps';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import BlockedCalendar from 'src/components/BlockedCalendar';
+// import DateTimePicker from '@react-native-community/datetimepicker';
+
+
+
+
 
 
 type RootStackParamList = {
@@ -35,6 +40,15 @@ type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
   const [showStart, setShowStart] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
   const [reservationDescription, setReservationDescription] = useState('');
+
+  const [selectedRange, setSelectedRange] = useState<{ start: Date | null; end: Date | null }>({
+    start: null,
+    end: null,
+  });
+
+  useEffect(() => {
+    console.log('selectedRange changed:', selectedRange);
+  }, [selectedRange]);
 
 
 
@@ -187,15 +201,75 @@ useEffect(() => {
 
 
 
+    // const handleReservation = async () => {
+    //   if (!currentUser || !selectedRange.start || !selectedRange.end || !space?.id || currentUser === space.userId) return;
+    
+    //   try {
+    //     setBooking(true);
+    
+    //     const postRef = doc(db, 'spaces', space.id);
+    
+    //     // Prevent duplicate
+    //     const docSnap = await getDoc(postRef);
+    //     const existingContracts = docSnap.exists() ? docSnap.data().contracts || {} : {};
+    
+    //     if (existingContracts[currentUser]) {
+    //       Alert.alert('Already Requested', 'You have already requested a reservation for this space.');
+    //       setBooking(false);
+    //       return;
+    //     }
+    
+    //     const contractData = {
+    //       userId: currentUser,
+    //       requestedAt: Timestamp.now(),
+    //       startDate: Timestamp.fromDate(selectedRange.start),
+    //       endDate: Timestamp.fromDate(selectedRange.end),
+    //       state: 'requested',
+    //       description: reservationDescription,
+    //     };
+    
+    //     await setDoc(
+    //       postRef,
+    //       { [`contracts.${currentUser}`]: contractData },
+    //       { merge: true }
+    //     );
+    
+    //     await addDoc(collection(db, 'reservations'), {
+    //       spaceId: space.id,
+    //       spaceTitle: space.title || '',
+    //       requesterId: currentUser,
+    //       ownerId: space.userId,
+    //       startDate: Timestamp.fromDate(selectedRange.start),
+    //       endDate: Timestamp.fromDate(selectedRange.end),
+    //       description: reservationDescription,
+    //       createdAt: serverTimestamp(),
+    //       status: 'requested',
+    //     });
+    
+    //     Alert.alert('Reservation Requested', 'The space owner will review your request.');
+    //     setReservationDescription('');
+    //     setSelectedRange({ start: null, end: null });
+    
+    //   } catch (err) {
+    //     console.error('Reservation Error:', err);
+    //     Alert.alert('Error', 'Could not submit reservation.');
+    //   } finally {
+    //     setBooking(false);
+    //   }
+    // };
+    
+
+
+
     const handleReservation = async () => {
-      if (!currentUser || !startDate || !endDate || !space?.id || currentUser === space.userId) return;
+      if (!currentUser || !selectedRange.start || !selectedRange.end || !space?.id || currentUser === space.userId) return;
     
       try {
         setBooking(true);
     
         const postRef = doc(db, 'spaces', space.id);
     
-        // Check if already requested
+        // Prevent duplicate
         const docSnap = await getDoc(postRef);
         const existingContracts = docSnap.exists() ? docSnap.data().contracts || {} : {};
     
@@ -208,29 +282,26 @@ useEffect(() => {
         const contractData = {
           userId: currentUser,
           requestedAt: Timestamp.now(),
-          startDate: Timestamp.fromDate(startDate),
-          endDate: Timestamp.fromDate(endDate),
+          startDate: Timestamp.fromDate(selectedRange.start),
+          endDate: Timestamp.fromDate(selectedRange.end),
           state: 'requested',
           description: reservationDescription,
         };
     
-        // 🔁 Merge into space's `contracts` map
         await setDoc(
           postRef,
-          {
-            [`contracts.${currentUser}`]: contractData,
-          },
+          { [`contracts.${currentUser}`]: contractData },
           { merge: true }
         );
     
-        // 🆕 Add to global `reservations` collection
-        await addDoc(collection(db, 'reservations'), {
+        // Create reservation
+        const reservationRef = await addDoc(collection(db, 'reservations'), {
           spaceId: space.id,
           spaceTitle: space.title || '',
           requesterId: currentUser,
           ownerId: space.userId,
-          startDate: Timestamp.fromDate(startDate),
-          endDate: Timestamp.fromDate(endDate),
+          startDate: Timestamp.fromDate(selectedRange.start),
+          endDate: Timestamp.fromDate(selectedRange.end),
           description: reservationDescription,
           createdAt: serverTimestamp(),
           status: 'requested',
@@ -238,8 +309,43 @@ useEffect(() => {
     
         Alert.alert('Reservation Requested', 'The space owner will review your request.');
         setReservationDescription('');
-        setStartDate(null);
-        setEndDate(null);
+        setSelectedRange({ start: null, end: null });
+    
+        // ---------------------------
+        // Send automatic reference message
+        // ---------------------------
+        const senderId = currentUser;
+        const receiverId = space.userId;
+        const chatId = [senderId, receiverId].sort().join('_');
+        const chatRef = doc(db, 'chats', chatId);
+    
+        const chatSnap = await getDoc(chatRef);
+        if (!chatSnap.exists()) {
+          await setDoc(chatRef, {
+            users: [senderId, receiverId],
+            lastMessage: `Requested ${space.title}`,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          await updateDoc(chatRef, {
+            lastMessage: `Requested ${space.title}`,
+            updatedAt: serverTimestamp(),
+          });
+        }
+    
+        // Add the "rendered reservation request" message
+        await addDoc(collection(chatRef, 'messages'), {
+          senderId,
+          createdAt: serverTimestamp(),
+          isReference: true,
+          referenceData: {
+            title: space.title,
+            image: space.images?.[0] || null, // optional main image
+            reservationId: reservationRef.id, // links to RequestDetailScreen
+          },
+        });
+    
+        console.log('Reservation request message sent to chat.');
     
       } catch (err) {
         console.error('Reservation Error:', err);
@@ -249,6 +355,78 @@ useEffect(() => {
       }
     };
     
+
+
+
+
+
+    // const handleReservation = async () => {
+    //   if (!currentUser || !startDate || !endDate || !space?.id || currentUser === space.userId) return;
+    
+    //   try {
+    //     setBooking(true);
+    
+    //     const postRef = doc(db, 'spaces', space.id);
+    
+    //     // Check if already requested
+    //     const docSnap = await getDoc(postRef);
+    //     const existingContracts = docSnap.exists() ? docSnap.data().contracts || {} : {};
+    
+    //     if (existingContracts[currentUser]) {
+    //       Alert.alert('Already Requested', 'You have already requested a reservation for this space.');
+    //       setBooking(false);
+    //       return;
+    //     }
+    
+    //     const contractData = {
+    //       userId: currentUser,
+    //       requestedAt: Timestamp.now(),
+    //       startDate: Timestamp.fromDate(startDate),
+    //       endDate: Timestamp.fromDate(endDate),
+    //       state: 'requested',
+    //       description: reservationDescription,
+    //     };
+    
+    //     // 🔁 Merge into space's `contracts` map
+    //     await setDoc(
+    //       postRef,
+    //       {
+    //         [`contracts.${currentUser}`]: contractData,
+    //       },
+    //       { merge: true }
+    //     );
+    
+    //     // 🆕 Add to global `reservations` collection
+    //     await addDoc(collection(db, 'reservations'), {
+    //       spaceId: space.id,
+    //       spaceTitle: space.title || '',
+    //       requesterId: currentUser,
+    //       ownerId: space.userId,
+    //       startDate: Timestamp.fromDate(startDate),
+    //       endDate: Timestamp.fromDate(endDate),
+    //       description: reservationDescription,
+    //       createdAt: serverTimestamp(),
+    //       status: 'requested',
+    //     });
+    
+    //     Alert.alert('Reservation Requested', 'The space owner will review your request.');
+    //     setReservationDescription('');
+    //     setStartDate(null);
+    //     setEndDate(null);
+    
+    //   } catch (err) {
+    //     console.error('Reservation Error:', err);
+    //     Alert.alert('Error', 'Could not submit reservation.');
+    //   } finally {
+    //     setBooking(false);
+    //   }
+    // };
+    
+
+
+
+
+
     
  
 
@@ -419,21 +597,84 @@ useEffect(() => {
 </Text>
 
 
+
 {!currentUser ? (
   <View style={styles.noticeBox}>
-    <Text style={styles.noticeText}>Log in to book space reservations or message the owner.</Text>
+    <Text style={styles.noticeText}>
+      Log in to book space reservations or message the owner.
+    </Text>
   </View>
 ) : currentUser === space.userId ? (
   <View style={styles.noticeBox}>
     <Text style={styles.noticeText}>You are viewing your own post.</Text>
   </View>
 ) : (
+
+
   <>
-    {/* Message Box */}
-    <View style={styles.messageBox}>
+
+    {/* Reservation Section */}
+    <View style={styles.bookingContainer}>
+      <Text style={styles.bookingTitle}>Book Reservation</Text>
+
+      <BlockedCalendar
+        blockedTimes={space.blockedTimes || []}
+        onSelectRange={(range) => setSelectedRange(range)}
+        editable={false}
+      />
+
+<View style={styles.dateSummary}>
+  <Text style={styles.dateText}>
+    Start: {selectedRange.start ? selectedRange.start.toDateString() : 'Not selected'}
+  </Text>
+  <Text style={styles.dateText}>
+    End: {selectedRange.end ? selectedRange.end.toDateString() : 'Not selected'}
+  </Text>
+</View>
+
+
+
+      <TextInput
+        style={styles.descriptionInput}
+        placeholder="Describe the items you are storing"
+        value={reservationDescription}
+        onChangeText={setReservationDescription}
+        multiline
+      />
+
+            
+      <TouchableOpacity
+        style={[
+          styles.confirmButton,
+          (
+            !selectedRange.start || 
+            !selectedRange.end || 
+            !reservationDescription.trim() || 
+            booking
+          ) && styles.disabledButton,
+        ]}
+        disabled={
+          !selectedRange.start || 
+          !selectedRange.end || 
+          !reservationDescription.trim() || 
+          booking
+        }
+        onPress={handleReservation}
+      >
+        <Text style={styles.confirmText}>
+          {booking ? 'Booking...' : 'Confirm Reservation'}
+        </Text>
+      </TouchableOpacity>
+
+
+
+    </View>
+
+        {/* Message Box */}
+        <View style={styles.messageBox}>
       <TextInput
         style={styles.messageInput}
-        placeholder="Write a message..."
+        placeholder="Ask a question before booking..."
         value={message}
         onChangeText={setMessage}
         multiline
@@ -450,71 +691,12 @@ useEffect(() => {
       </TouchableOpacity>
     </View>
 
-    {/* Reservation Section */}
-    <View style={styles.bookingContainer}>
-      <Text style={styles.bookingTitle}>Book Reservation</Text>
 
-      <TouchableOpacity
-        style={styles.dateInput}
-        onPress={() => setShowStart(true)}
-      >
-        <Text>{startDate ? startDate.toDateString() : 'Select Start Date'}</Text>
-      </TouchableOpacity>
 
-      {showStart && (
-        <DateTimePicker
-          value={startDate || new Date()}
-          mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowStart(false);
-            if (selectedDate) setStartDate(selectedDate);
-          }}
-        />
-      )}
 
-      <TouchableOpacity
-        style={styles.dateInput}
-        onPress={() => setShowEnd(true)}
-      >
-        <Text>{endDate ? endDate.toDateString() : 'Select End Date'}</Text>
-      </TouchableOpacity>
-
-      {showEnd && (
-        <DateTimePicker
-          value={endDate || new Date()}
-          mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowEnd(false);
-            if (selectedDate) setEndDate(selectedDate);
-          }}
-        />
-      )}
-
-      <TextInput
-        style={styles.descriptionInput}
-        placeholder="Describe the items you are storing"
-        value={reservationDescription}
-        onChangeText={setReservationDescription}
-        multiline
-      />
-
-      <TouchableOpacity
-        style={[
-          styles.confirmButton,
-          (!startDate || !endDate || booking) && styles.disabledButton,
-        ]}
-        disabled={!startDate || !endDate || booking}
-        onPress={handleReservation}
-      >
-        <Text style={styles.confirmText}>
-          {booking ? 'Booking...' : 'Confirm Reservation'}
-        </Text>
-      </TouchableOpacity>
-    </View>
   </>
 )}
+
 
 
 
@@ -660,8 +842,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 8,
+    borderRadius: 12,
+    borderColor: '#DDD',
+
     borderTopWidth: 1,
-    borderColor: '#ddd',
     backgroundColor: '#FFFFFF',
     gap: 8,
   },
@@ -767,4 +951,17 @@ const styles = StyleSheet.create({
     color: '#555',
     textAlign: 'center',
   },
+  dateSummary: {
+    marginTop: 15,
+    paddingVertical: 5,  // top & bottom padding
+    paddingHorizontal: 0, // optional, you can add a little if needed
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 4, // space between start and end
+  },
+  
+  
+  
 });
