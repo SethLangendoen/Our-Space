@@ -23,6 +23,17 @@ import { useFilterContext } from '../../context/FilterContext';
 
 
 
+// type FiltersObjectType = {
+//   categories?: string[];
+//   maxPrice?: string;
+//   startDate?: string;
+//   endDate?: string;
+//   radius?: number;
+//   pickupDropoff?: boolean;
+//   postType?: 'Offering' | 'Requesting' | 'Both';
+//   location?: { lat: number; lng: number };
+//   address?: string;
+// };
 type FiltersObjectType = {
   categories?: string[];
   maxPrice?: string;
@@ -33,7 +44,11 @@ type FiltersObjectType = {
   postType?: 'Offering' | 'Requesting' | 'Both';
   location?: { lat: number; lng: number };
   address?: string;
+  usageType?: string[];                // e.g. "Short-term" | "Long-term"
+  securityFeatures?: string[];       // multiple checkboxes/toggles
+  accessibility?: string[];          // e.g. ["24/7 Access", "Wheelchair"]
 };
+
 
 type RootStackParamList = {
   SpacesMain: {
@@ -77,39 +92,82 @@ export default function FiltersScreen() {
 
   const postTypesOptions: ('Offering' | 'Requesting' | 'Both')[] = ['Offering', 'Requesting', 'Both'];
 
+  const [usageType, setUsageType] = useState<string[]>([]);
+const [securityFeatures, setSecurityFeatures] = useState<string[]>([]);
+const [accessibility, setAccessibility] = useState<string[]>([]);
 
-  const [selectedUsageTypes, setSelectedUsageTypes] = useState<string[]>([]);
-  const usageTypeOptions = [
-    'Vehicle Storage',
-    'Business Storage',
-    'Personal Storage',
-    'Boat Storage',
-    'RV Storage',
-    'Seasonal Storage',
-    'Equipment Storage',
-  ];
-  const toggleUsageType = (type: string) => {
-    setSelectedUsageTypes((prev) =>
-      prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
-    );
-  };
-
-
-  const [selectedSecurity, setSelectedSecurity] = useState<string[]>([]);
-  const securityOptions = ['Gated Area', 'Video Surveillance', 'Pinpad/Keys', 'Smoke Detectors'];
-  const toggleSecurity = (type: string) => {
-    setSelectedSecurity((prev) =>
-      prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
-    );
-  };
-  
-  const [selectedAccessibility, setSelectedAccessibility] = useState<string[]>([]);
-const accessibilityOptions = ['24/7 Access', 'Ground Floor', 'Ramp Access', 'Drive-Up Access'];
-const toggleAccessibility = (type: string) => {
-  setSelectedAccessibility((prev) =>
+const toggleUsageType = (type: string) => {
+  setUsageType((prev) =>
     prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
   );
 };
+
+const toggleSecurity = (type: string) => {
+  setSecurityFeatures((prev) =>
+    prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
+  );
+};
+
+const toggleAccessibility = (type: string) => {
+  setAccessibility((prev) =>
+    prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
+  );
+};
+
+// Usage Type options
+const usageTypeOptions = ['Cars/Trucks', 'RV', 'Boats', 'Personal', 'Business'];
+
+// Security options
+const securityOptions = ['Video Surveillance', 'Pinpad/Keys', 'Gated Area', 'Smoke Detectors'];
+
+// Accessibility options
+const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
+
+
+
+// everything to do with the filter reset and apply functionality. 
+  const [initialFilters, setInitialFilters] = useState<FiltersObjectType | null>(null);
+  useEffect(() => {
+    if (filters) {
+      setInitialFilters(filters);
+      setSelectedCategories(filters.categories || []);
+      setMaxPrice(filters.maxPrice || '');
+      setStartDate(filters.startDate || '');
+      setEndDate(filters.endDate || '');
+      setRadius(filters.radius ?? 10);
+      setPickupDropoff(filters.pickupDropoff ?? false);
+      setPostType(filters.postType ?? 'Both');
+      setSelectedLocation(filters.location ?? null);
+      setLocationAddress(filters.address || '');
+      setUsageType(filters.usageType || []);
+      setSecurityFeatures(filters.securityFeatures || []);
+      setAccessibility(filters.accessibility || []);
+    }
+  }, []);
+  
+
+  const currentFilters: FiltersObjectType = {
+    categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+    maxPrice: maxPrice || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    radius,
+    pickupDropoff: pickupDropoff || undefined,
+    postType: postType === 'Both' ? undefined : postType,
+    location: selectedLocation || undefined,
+    address: locationAddress || undefined,
+    usageType: usageType || undefined,
+    securityFeatures: securityFeatures.length > 0 ? securityFeatures : undefined,
+    accessibility: accessibility.length > 0 ? accessibility : undefined,
+  };
+  
+
+  const filtersApplied = Object.values(currentFilters).some(val => val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0));
+  const filtersChanged = JSON.stringify(currentFilters) !== JSON.stringify(initialFilters || {});
+
+
+
+
 
 
 
@@ -129,6 +187,57 @@ const toggleAccessibility = (type: string) => {
     );
   };
 
+  // const resetFilters = () => {
+  //   setSelectedCategories([]);
+  //   setStartDate('');
+  //   setEndDate('');
+  //   setRadius(10);
+  //   setMaxPrice(''); // Reset maxPrice
+  //   setPickupDropoff(false);
+  //   setPostType('Both'); // Reset postType
+  //   setSelectedLocation(null); // Reset location
+  //   setLocationAddress(''); // Reset address
+  // };
+
+  // const route = useRoute<RouteProp<RootStackParamList, 'Filters'>>();
+
+  
+
+
+  
+  // useEffect(() => {
+  //   if (filters) {
+  //     setSelectedCategories(filters.categories || []);
+  //     setMaxPrice(filters.maxPrice || '');
+  //     setStartDate(filters.startDate || '');
+  //     setEndDate(filters.endDate || '');
+  //     setRadius(filters.radius ?? 10);
+  //     setPickupDropoff(filters.pickupDropoff ?? false);
+  //     setPostType(filters.postType ?? 'Both');
+  //     setSelectedLocation(filters.location ?? null);
+  //     setLocationAddress(filters.address || '');
+  //   }
+  // }, []);
+
+
+  // const handleApplyFilters = () => {
+  //   const newFilters = {
+  //     categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+  //     maxPrice: maxPrice || undefined,
+  //     startDate: startDate || undefined,
+  //     endDate: endDate || undefined,
+  //     radius,
+  //     pickupDropoff: pickupDropoff || undefined,
+  //     postType: postType === 'Both' ? undefined : postType,
+  //     location: selectedLocation || undefined,
+  //     address: locationAddress || undefined,
+  //   };
+
+  //   setFilters(newFilters); // ✅ update context
+  //   navigation.navigate('SpacesMain');
+  // };
+
+
   const resetFilters = () => {
     setSelectedCategories([]);
     setStartDate('');
@@ -139,30 +248,33 @@ const toggleAccessibility = (type: string) => {
     setPostType('Both'); // Reset postType
     setSelectedLocation(null); // Reset location
     setLocationAddress(''); // Reset address
+    setUsageType([]); // Reset Usage Type
+    setSecurityFeatures([]); // Reset Security Features
+    setAccessibility([]); // Reset Accessibility
   };
-
-  const route = useRoute<RouteProp<RootStackParamList, 'Filters'>>();
-
   
 
 
+
+  const handleApplyFilters = async () => {
+    let locationCoords = selectedLocation;
   
-  useEffect(() => {
-    if (filters) {
-      setSelectedCategories(filters.categories || []);
-      setMaxPrice(filters.maxPrice || '');
-      setStartDate(filters.startDate || '');
-      setEndDate(filters.endDate || '');
-      setRadius(filters.radius ?? 10);
-      setPickupDropoff(filters.pickupDropoff ?? false);
-      setPostType(filters.postType ?? 'Both');
-      setSelectedLocation(filters.location ?? null);
-      setLocationAddress(filters.address || '');
+    // If user typed an address but didn't use current location
+    if (!locationCoords && locationAddress) {
+      try {
+        const geocoded = await Location.geocodeAsync(locationAddress);
+        if (geocoded.length > 0) {
+          locationCoords = {
+            lat: geocoded[0].latitude,
+            lng: geocoded[0].longitude,
+          };
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        Alert.alert('Location Error', 'Could not find coordinates for that address.');
+      }
     }
-  }, []);
-
-
-  const handleApplyFilters = () => {
+  
     const newFilters = {
       categories: selectedCategories.length > 0 ? selectedCategories : undefined,
       maxPrice: maxPrice || undefined,
@@ -171,151 +283,241 @@ const toggleAccessibility = (type: string) => {
       radius,
       pickupDropoff: pickupDropoff || undefined,
       postType: postType === 'Both' ? undefined : postType,
-      location: selectedLocation || undefined,
+      location: locationCoords || undefined, // Now will have lat/lng
       address: locationAddress || undefined,
+      usageType: usageType.length > 0 ? usageType : undefined,
+      securityFeatures: securityFeatures.length > 0 ? securityFeatures : undefined,
+      accessibility: accessibility.length > 0 ? accessibility : undefined,
     };
-
-    setFilters(newFilters); // ✅ update context
+  
+    setFilters(newFilters);
     navigation.navigate('SpacesMain');
   };
+  
+  
 
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.scrollContainer}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
+
+<View style={{ flex: 1 }}>
+
+
+<ScrollView
+  contentContainerStyle={styles.scrollContainer}
+  showsVerticalScrollIndicator={false}
+  keyboardShouldPersistTaps="handled"
+>
+
+  {/* Location Input */}
+  <Text style={styles.sectionTitle}>Select Your Location</Text>
+
+  <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.locationButton}
+      onPress={async () => {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Denied',
+            'Permission to access location was denied.'
+          );
+          return;
+        }
+        try {
+          const location = await Location.getCurrentPositionAsync({});
+          setSelectedLocation({
+            lat: location.coords.latitude,
+            lng: location.coords.longitude,
+          });
+          setLocationAddress('Current Location');
+          Alert.alert('Location Set', 'Your current location has been captured.');
+        } catch (error) {
+          console.error(error);
+          Alert.alert('Location Error', 'Could not get current location.');
+        }
+      }}
     >
-      <Text style={styles.sectionTitle}>Post Type</Text>
+      <Text style={styles.locationButtonText}>
+        {selectedLocation ? `Location Set ✓` : 'Use Current Location'}
+      </Text>
+    </TouchableOpacity>
+
+    <TextInput
+      style={styles.textInput}
+      value={locationAddress}
+      onChangeText={setLocationAddress}
+      placeholder="Enter address or use current location"
+      placeholderTextColor="#A0A0A0"
+    />
+
+      {/* Radius Slider */}
+  <Text style={styles.sectionTitle}>Search Radius: {radius} km</Text>
+  <Slider
+    minimumValue={1}
+    maximumValue={100}
+    step={1}
+    value={radius}
+    onValueChange={(value) => setRadius(value)}
+    minimumTrackTintColor="#0F6B5B"
+    maximumTrackTintColor="#A0A0A0"
+    thumbTintColor="#0F6B5B"
+    style={{ width: '100%', marginBottom: 16 }}
+  />
+
+  </View>
 
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-        {/* FIX: Map over the explicitly typed array and remove the type annotation from the callback parameter */}
-        {postTypesOptions.map((type) => ( // 'type' will now be correctly inferred by TypeScript from 'postTypesOptions'
-          <TouchableOpacity
-            key={type}
-            onPress={() => setPostType(type)} // This line remains correct
-            style={{
-              padding: 10,
-              borderWidth: 1,
-              borderRadius: 8,
-              backgroundColor: postType === type ? '#007AFF' : '#fff',
-              borderColor: postType === type ? '#007AFF' : '#ccc',
-            }}
-          >
-            <Text style={{ color: postType === type ? '#fff' : '#333' }}>{type}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
 
-      {/* New UI: Location input button */}
+
+ {/* Calendar */}
+ <Text style={styles.sectionTitle}>Select Storage Dates</Text>
+  <View style={styles.card}>
+    <Calendar
+      onDayPress={(day) => {
+        if (!startDate || (startDate && endDate)) {
+          setStartDate(day.dateString);
+          setEndDate('');
+        } else {
+          if (day.dateString >= startDate) {
+            setEndDate(day.dateString);
+          } else {
+            setStartDate(day.dateString);
+            setEndDate('');
+            Alert.alert('Invalid Date', 'End date cannot be before start date.');
+          }
+        }
+      }}
+      markedDates={{
+        ...(startDate
+          ? {
+              [startDate]: {
+                selected: true,
+                startingDay: true,
+                color: '#0F6B5B',
+                textColor: 'white',
+              },
+            }
+          : {}),
+        ...(endDate
+          ? {
+              [endDate]: {
+                selected: true,
+                endingDay: true,
+                color: '#0F6B5B',
+                textColor: 'white',
+              },
+            }
+          : {}),
+        ...(startDate && endDate
+          ? (() => {
+              const dates: { [key: string]: any } = {};
+              let currentDate = new Date(startDate);
+              let lastDate = new Date(endDate);
+              while (currentDate <= lastDate) {
+                const dateString = currentDate.toISOString().split('T')[0];
+                if (dateString !== startDate && dateString !== endDate) {
+                  dates[dateString] = { color: '#629447', textColor: 'white' };
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+              }
+              return dates;
+            })()
+          : {}),
+      }}
+      markingType={'period'}
+    />
+  </View>
+
+
+
+
+
+
+
+
+  <Text style={styles.sectionTitle}>Post Type</Text>
+  <View style={styles.cardRow}>
+    {postTypesOptions.map((type) => (
       <TouchableOpacity
-        style={{ padding: 10, backgroundColor: '#eee', borderRadius: 6, marginBottom: 12 }}
-        onPress={async () => {
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Permission to access location was denied. Cannot use current location.');
-            return;
-          }
-          try {
-            const location = await Location.getCurrentPositionAsync({});
-            setSelectedLocation({ lat: location.coords.latitude, lng: location.coords.longitude });
-            // You might want to reverse geocode to get an address here
-            // For simplicity, we'll just set a placeholder address if location is acquired
-            setLocationAddress('Current Location'); // Set a placeholder address
-            Alert.alert('Location Set', 'Your current location has been captured.');
-          } catch (error) {
-            console.error("Error getting location:", error);
-            Alert.alert('Location Error', 'Could not get current location. Please try again.');
-          }
-        }}
+        key={type}
+        onPress={() => setPostType(type)}
+        style={[
+          styles.optionButton,
+          postType === type && styles.optionButtonSelected,
+        ]}
       >
-        <Text>{selectedLocation ? `Location Set ✓` : 'Use Current Location'}</Text>
+        <Text
+          style={[
+            styles.optionText,
+            postType === type && styles.optionTextSelected,
+          ]}
+        >
+          {type}
+        </Text>
       </TouchableOpacity>
-
-      {/* Address Text Input (User can manually enter or it can be set by geolocation) */}
-      <Text style={styles.sectionTitle}>Address (e.g. for searching)</Text>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          value={locationAddress}
-          onChangeText={setLocationAddress}
-          placeholder="Enter address or use current location"
-          autoCapitalize="words"
-        />
-      </View>
+    ))}
+  </View>
 
 
-      <Text style={styles.sectionTitle}>Usage Type</Text>
-<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+
+{/* Usage Type */}
+<Text style={styles.sectionTitle}>Usage Type</Text>
+<View style={styles.cardRowWrap}>
   {usageTypeOptions.map((type) => {
-    const selected = selectedUsageTypes.includes(type);
+    const selected = usageType.includes(type);
     return (
       <TouchableOpacity
         key={type}
         onPress={() => toggleUsageType(type)}
-        style={{
-          paddingVertical: 6,
-          paddingHorizontal: 12,
-          borderWidth: 1,
-          borderRadius: 20,
-          backgroundColor: selected ? '#007AFF' : '#fff',
-          borderColor: selected ? '#007AFF' : '#ccc',
-          marginBottom: 6,
-        }}
+        style={[styles.optionButton, selected && styles.optionButtonSelected]}
       >
-        <Text style={{ color: selected ? '#fff' : '#333' }}>{type}</Text>
+        <Text
+          style={[styles.optionText, selected && styles.optionTextSelected]}
+        >
+          {type}
+        </Text>
       </TouchableOpacity>
     );
   })}
 </View>
 
-
-
+{/* Security Features */}
 <Text style={styles.sectionTitle}>Security Features</Text>
-<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+<View style={styles.cardRowWrap}>
   {securityOptions.map((type) => {
-    const selected = selectedSecurity.includes(type);
+    const selected = securityFeatures.includes(type);
     return (
       <TouchableOpacity
         key={type}
         onPress={() => toggleSecurity(type)}
-        style={{
-          paddingVertical: 6,
-          paddingHorizontal: 12,
-          borderWidth: 1,
-          borderRadius: 20,
-          backgroundColor: selected ? '#007AFF' : '#fff',
-          borderColor: selected ? '#007AFF' : '#ccc',
-          marginBottom: 6,
-        }}
+        style={[styles.optionButton, selected && styles.optionButtonSelected]}
       >
-        <Text style={{ color: selected ? '#fff' : '#333' }}>{type}</Text>
+        <Text
+          style={[styles.optionText, selected && styles.optionTextSelected]}
+        >
+          {type}
+        </Text>
       </TouchableOpacity>
     );
   })}
 </View>
 
-
+{/* Accessibility */}
 <Text style={styles.sectionTitle}>Accessibility</Text>
-<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+<View style={styles.cardRowWrap}>
   {accessibilityOptions.map((type) => {
-    const selected = selectedAccessibility.includes(type);
+    const selected = accessibility.includes(type);
     return (
       <TouchableOpacity
         key={type}
         onPress={() => toggleAccessibility(type)}
-        style={{
-          paddingVertical: 6,
-          paddingHorizontal: 12,
-          borderWidth: 1,
-          borderRadius: 20,
-          backgroundColor: selected ? '#007AFF' : '#fff',
-          borderColor: selected ? '#007AFF' : '#ccc',
-          marginBottom: 6,
-        }}
+        style={[styles.optionButton, selected && styles.optionButtonSelected]}
       >
-        <Text style={{ color: selected ? '#fff' : '#333' }}>{type}</Text>
+        <Text
+          style={[styles.optionText, selected && styles.optionTextSelected]}
+        >
+          {type}
+        </Text>
       </TouchableOpacity>
     );
   })}
@@ -323,111 +525,68 @@ const toggleAccessibility = (type: string) => {
 
 
 
+  {/* Pick-up/Drop-off */}
+  <View style={styles.toggleRow}>
+    <Text style={styles.sectionTitle}>Pick-up & Drop-off available</Text>
+    <Switch value={pickupDropoff} onValueChange={setPickupDropoff} />
+  </View>
 
-      {/* MAX PRICE */}
-      <Text style={styles.sectionTitle}>Max Price ($)</Text>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          keyboardType="numeric"
-          value={maxPrice}
-          onChangeText={setMaxPrice}
-          placeholder="Enter max price"
-        />
-      </View>
 
-      {/* CALENDAR RANGE */}
-      <Text style={styles.sectionTitle}>Select Storage Dates</Text>
-      <Calendar
-        onDayPress={(day) => {
-          if (!startDate || (startDate && endDate)) {
-            setStartDate(day.dateString);
-            setEndDate('');
-          } else {
-            // Ensure end date is after start date
-            if (day.dateString >= startDate) {
-                setEndDate(day.dateString);
-            } else {
-                // If selected end date is before start date, restart selection
-                setStartDate(day.dateString);
-                setEndDate('');
-                Alert.alert('Invalid Date', 'End date cannot be before start date. Please re-select.');
-            }
-          }
-        }}
-        markedDates={{
-          ...(startDate
-            ? {
-                [startDate]: {
-                  selected: true,
-                  startingDay: true,
-                  color: 'blue',
-                  textColor: 'white',
-                },
-              }
-            : {}),
-          ...(endDate
-            ? {
-                [endDate]: {
-                  selected: true,
-                  endingDay: true,
-                  color: 'blue',
-                  textColor: 'white',
-                },
-              }
-            : {}),
-            // Mark period between start and end date
-            ...(startDate && endDate ? (() => {
-                const dates: { [key: string]: any } = {};
-                let currentDate = new Date(startDate);
-                let lastDate = new Date(endDate);
-                while (currentDate <= lastDate) {
-                    const dateString = currentDate.toISOString().split('T')[0];
-                    if (dateString !== startDate && dateString !== endDate) {
-                        dates[dateString] = { color: 'lightblue', textColor: 'black' };
-                    }
-                    currentDate.setDate(currentDate.getDate() + 1);
-                }
-                return dates;
-            })() : {})
-        }}
-        markingType={'period'}
-      />
 
-      {/* LOCATION RADIUS SLIDER */}
-      <Text style={styles.sectionTitle}>Search Radius: {radius} km</Text>
-      <Slider
-        minimumValue={1}
-        maximumValue={100}
-        step={1}
-        value={radius}
-        onValueChange={(value) => setRadius(value)}
-        style={{ width: '100%' }}
-      />
+</ScrollView>
 
-      {/* PICK-UP / DROP-OFF */}
-      <View style={styles.toggleRow}>
-        <Text style={styles.sectionTitle}>Pick-up & Drop-off available</Text>
-        <Switch value={pickupDropoff} onValueChange={setPickupDropoff} />
-      </View>
 
-      {/* ACTION BUTTONS */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
-          <Text style={styles.buttonText}>Reset Filters</Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.applyButton}
-          onPress={handleApplyFilters} // Call the useCallback function
-        >
-          <Text style={styles.buttonText}>Apply</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+  {/* Sticky footer */}
+  <View style={styles.footer}>
+    <TouchableOpacity
+      style={[
+        styles.applyButton,
+        styles.secondaryButton,
+        !filtersApplied && styles.disabledButton,
+      ]}
+      onPress={resetFilters}
+      disabled={!filtersApplied}
+    >
+      <Text
+        style={[
+          styles.buttonText,
+          styles.secondaryButtonText,
+          !filtersApplied && styles.disabledText,
+        ]}
+      >
+        Reset Filters
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[
+        styles.applyButton,
+        !filtersChanged && styles.disabledButton,
+      ]}
+      onPress={handleApplyFilters}
+      disabled={!filtersChanged}
+    >
+      <Text
+        style={[
+          styles.buttonText,
+          !filtersChanged && styles.disabledText,
+        ]}
+      >
+        Apply
+      </Text>
+    </TouchableOpacity>
+  </View>
+
+
+  </View>
+
+
+
   );
-}
 
+
+}
 
 
 
@@ -436,39 +595,76 @@ const styles = StyleSheet.create({
   scrollContainer: {
     padding: 16,
     paddingBottom: 48,
+    backgroundColor: '#FFFCF1', // Wheat/Cream
   },
   sectionTitle: {
+    fontFamily: 'Poppins-Bold',
     fontSize: 18,
-    fontWeight: 'bold',
+    color: '#0F6B5B', // Emerald Green
     marginVertical: 12,
   },
-  categoryList: {
-    paddingVertical: 8,
-    paddingHorizontal: 2,
+  card: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
   },
-  categoryItem: {
-    alignItems: 'center',
-    marginRight: 12,
-    padding: 10,
+  cardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  cardRowWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  optionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 12,
-    backgroundColor: '#f8f8f8',
-    width: 100,
+    backgroundColor: '#fff',
+    marginBottom: 8,
   },
-  selectedCategory: {
-    borderColor: '#007AFF',
-    backgroundColor: '#e6f0ff',
+  optionButtonSelected: {
+    backgroundColor: '#0F6B5B',
+    borderColor: '#0F6B5B',
   },
-  categoryImage: {
-    width: 50,
-    height: 50,
-    marginBottom: 6,
-    resizeMode: 'contain',
+  optionText: {
+    fontFamily: 'Poppins-Regular',
+    color: '#1F1F1F',
   },
-  categoryLabel: {
-    fontSize: 14,
-    textAlign: 'center',
+  optionTextSelected: {
+    color: '#fff',
+    fontFamily: 'Poppins-Bold',
+  },
+  locationButton: {
+    padding: 12,
+    backgroundColor: '#E6F0FF',
+    borderRadius: 10,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  locationButtonText: {
+    fontFamily: 'Poppins-Bold',
+    color: '#0F6B5B',
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    fontFamily: 'Poppins-Regular',
+    backgroundColor: '#fff',
   },
   toggleRow: {
     flexDirection: 'row',
@@ -481,36 +677,43 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 32,
   },
-  resetButton: {
-    flex: 1,
-    marginRight: 10,
-    padding: 14,
-    backgroundColor: '#ccc',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
   applyButton: {
     flex: 1,
     marginLeft: 10,
     padding: 14,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0F6B5B',
     borderRadius: 8,
     alignItems: 'center',
   },
-  buttonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  inputContainer: {
-    width: '100%', // Changed from '90%' for better alignment
-    marginBottom: 16,
-  },
-  textInput: {
+  secondaryButton: {
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
+    borderColor: '#0F6B5B',
+    marginRight: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontFamily: 'Poppins-Bold',
+  },
+  secondaryButtonText: {
+    color: '#0F6B5B',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderTopWidth: 1,
+    borderColor: '#ddd',
     backgroundColor: '#fff',
   },
+  
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  
+  disabledText: {
+    color: '#777',
+  },
+  
 });

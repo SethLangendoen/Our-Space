@@ -182,6 +182,8 @@ export default function SpacesScreen() {
 
 
   const fetchAndFilterSpaces = useCallback(async () => {
+    console.log('Filters from context:', filters);
+
     setLoading(true);
     try {
       const querySnapshot = await getDocs(collection(db, 'spaces'));
@@ -363,6 +365,9 @@ export default function SpacesScreen() {
               })}
           </MapView>
 
+
+
+
           {/* Bottom Panel Card when Marker is selected */}
           {selectedSpace && (
             <TouchableOpacity
@@ -384,6 +389,7 @@ export default function SpacesScreen() {
               <SpaceCard
                 item={selectedSpace}
                 onPress={() => navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id })}
+
               />
             </TouchableOpacity>
           )}

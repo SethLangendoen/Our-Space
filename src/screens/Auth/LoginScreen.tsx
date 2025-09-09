@@ -68,9 +68,9 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       {/* Back Arrow */}
-      <Pressable style={styles.backIcon} onPress={() => navigation.goBack()}>
+      {/* <Pressable style={styles.backIcon} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={28} color="#334E35" />
-      </Pressable>
+      </Pressable> */}
 
       {/* Logo */}
       {/* <Image

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, TextInput, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
@@ -10,6 +10,8 @@ import MapView, { Marker } from 'react-native-maps';
 import BlockedCalendar from 'src/components/BlockedCalendar';
 // import DateTimePicker from '@react-native-community/datetimepicker';
 
+import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 
 
@@ -163,12 +165,7 @@ useEffect(() => {
             { merge: true }
           );
         }
-    
-        // await addDoc(collection(chatRef, 'messages'), {
-        //   text: message,
-        //   senderId,
-        //   createdAt: serverTimestamp(),
-        // });
+  
 
         await addDoc(collection(chatRef, 'messages'), {
           text: message,
@@ -197,67 +194,6 @@ useEffect(() => {
         setSending(false);
       }
     };
-
-
-
-
-    // const handleReservation = async () => {
-    //   if (!currentUser || !selectedRange.start || !selectedRange.end || !space?.id || currentUser === space.userId) return;
-    
-    //   try {
-    //     setBooking(true);
-    
-    //     const postRef = doc(db, 'spaces', space.id);
-    
-    //     // Prevent duplicate
-    //     const docSnap = await getDoc(postRef);
-    //     const existingContracts = docSnap.exists() ? docSnap.data().contracts || {} : {};
-    
-    //     if (existingContracts[currentUser]) {
-    //       Alert.alert('Already Requested', 'You have already requested a reservation for this space.');
-    //       setBooking(false);
-    //       return;
-    //     }
-    
-    //     const contractData = {
-    //       userId: currentUser,
-    //       requestedAt: Timestamp.now(),
-    //       startDate: Timestamp.fromDate(selectedRange.start),
-    //       endDate: Timestamp.fromDate(selectedRange.end),
-    //       state: 'requested',
-    //       description: reservationDescription,
-    //     };
-    
-    //     await setDoc(
-    //       postRef,
-    //       { [`contracts.${currentUser}`]: contractData },
-    //       { merge: true }
-    //     );
-    
-    //     await addDoc(collection(db, 'reservations'), {
-    //       spaceId: space.id,
-    //       spaceTitle: space.title || '',
-    //       requesterId: currentUser,
-    //       ownerId: space.userId,
-    //       startDate: Timestamp.fromDate(selectedRange.start),
-    //       endDate: Timestamp.fromDate(selectedRange.end),
-    //       description: reservationDescription,
-    //       createdAt: serverTimestamp(),
-    //       status: 'requested',
-    //     });
-    
-    //     Alert.alert('Reservation Requested', 'The space owner will review your request.');
-    //     setReservationDescription('');
-    //     setSelectedRange({ start: null, end: null });
-    
-    //   } catch (err) {
-    //     console.error('Reservation Error:', err);
-    //     Alert.alert('Error', 'Could not submit reservation.');
-    //   } finally {
-    //     setBooking(false);
-    //   }
-    // };
-    
 
 
 
@@ -360,80 +296,16 @@ useEffect(() => {
 
 
 
-    // const handleReservation = async () => {
-    //   if (!currentUser || !startDate || !endDate || !space?.id || currentUser === space.userId) return;
-    
-    //   try {
-    //     setBooking(true);
-    
-    //     const postRef = doc(db, 'spaces', space.id);
-    
-    //     // Check if already requested
-    //     const docSnap = await getDoc(postRef);
-    //     const existingContracts = docSnap.exists() ? docSnap.data().contracts || {} : {};
-    
-    //     if (existingContracts[currentUser]) {
-    //       Alert.alert('Already Requested', 'You have already requested a reservation for this space.');
-    //       setBooking(false);
-    //       return;
-    //     }
-    
-    //     const contractData = {
-    //       userId: currentUser,
-    //       requestedAt: Timestamp.now(),
-    //       startDate: Timestamp.fromDate(startDate),
-    //       endDate: Timestamp.fromDate(endDate),
-    //       state: 'requested',
-    //       description: reservationDescription,
-    //     };
-    
-    //     // 🔁 Merge into space's `contracts` map
-    //     await setDoc(
-    //       postRef,
-    //       {
-    //         [`contracts.${currentUser}`]: contractData,
-    //       },
-    //       { merge: true }
-    //     );
-    
-    //     // 🆕 Add to global `reservations` collection
-    //     await addDoc(collection(db, 'reservations'), {
-    //       spaceId: space.id,
-    //       spaceTitle: space.title || '',
-    //       requesterId: currentUser,
-    //       ownerId: space.userId,
-    //       startDate: Timestamp.fromDate(startDate),
-    //       endDate: Timestamp.fromDate(endDate),
-    //       description: reservationDescription,
-    //       createdAt: serverTimestamp(),
-    //       status: 'requested',
-    //     });
-    
-    //     Alert.alert('Reservation Requested', 'The space owner will review your request.');
-    //     setReservationDescription('');
-    //     setStartDate(null);
-    //     setEndDate(null);
-    
-    //   } catch (err) {
-    //     console.error('Reservation Error:', err);
-    //     Alert.alert('Error', 'Could not submit reservation.');
-    //   } finally {
-    //     setBooking(false);
-    //   }
-    // };
-    
-
-
-
-
-
-    
- 
-
-
-
-
   return (
+
+
+    <KeyboardAvoidingView
+    style={{ flex: 1 }}
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // iOS uses padding, Android height
+    keyboardVerticalOffset={0} // tweak this so the box clears the header
+  >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       {/* Images Carousel / Stack */}
       {images.length > 0 && (
@@ -670,26 +542,29 @@ useEffect(() => {
 
     </View>
 
-        {/* Message Box */}
-        <View style={styles.messageBox}>
-      <TextInput
-        style={styles.messageInput}
-        placeholder="Ask a question before booking..."
-        value={message}
-        onChangeText={setMessage}
-        multiline
-      />
-      <TouchableOpacity
-        onPress={sendMessage}
-        disabled={!message.trim() || sending}
-        style={[
-          styles.sendButton,
-          (!message.trim() || sending) && styles.disabledButton,
-        ]}
-      >
-        <Text style={styles.sendText}>{sending ? 'Sending...' : 'Send'}</Text>
-      </TouchableOpacity>
-    </View>
+    <Text style={styles.questionText}>Have a question before booking?</Text>
+
+
+<View style={styles.messageBox}>
+  <TextInput
+    style={styles.messageInput}
+    placeholder="Send message..."
+    value={message}
+    onChangeText={setMessage}
+    multiline
+  />
+
+  <TouchableOpacity
+    onPress={sendMessage}
+    disabled={!message.trim() || sending}
+    style={[
+      styles.sendButton,
+      (!message.trim() || sending) && styles.disabledButton,
+    ]}
+  >
+    <Text style={styles.sendText}>{sending ? 'Sending...' : 'Send'}</Text>
+  </TouchableOpacity>
+</View>
 
 
 
@@ -703,6 +578,10 @@ useEffect(() => {
 
 
     </ScrollView>
+    </TouchableWithoutFeedback>
+
+    </KeyboardAvoidingView>
+
   );
 }
 
@@ -837,19 +716,25 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 
+  questionText: {
+    textAlign: 'center',
+    fontSize: 16,
+    fontFamily: 'Poppins-Medium',
+    marginVertical: 20,
+    color: '#333',
+  },
+  
   messageBox: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderColor: '#DDD',
-
+    paddingVertical: 26,
     borderTopWidth: 1,
-    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E5E5',
+    backgroundColor: 'transparent', // no white outer background
     gap: 8,
   },
-
+  
   messageInput: {
     flex: 1,
     borderWidth: 1,
@@ -857,11 +742,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Poppins-Regular',
-    backgroundColor: '#FFFCF1',
+    backgroundColor: '#FFFFFF', // white inside only
     maxHeight: 120,
   },
+  
 
   sendButton: {
     backgroundColor: '#0F6B5B', // Emerald green
