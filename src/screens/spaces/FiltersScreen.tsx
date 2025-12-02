@@ -23,25 +23,20 @@ import { useFilterContext } from '../../context/FilterContext';
 
 
 
-// type FiltersObjectType = {
-//   categories?: string[];
-//   maxPrice?: string;
-//   startDate?: string;
-//   endDate?: string;
-//   radius?: number;
-//   pickupDropoff?: boolean;
-//   postType?: 'Offering' | 'Requesting' | 'Both';
-//   location?: { lat: number; lng: number };
-//   address?: string;
-// };
+
+
+
+
 type FiltersObjectType = {
   categories?: string[];
   maxPrice?: string;
   startDate?: string;
   endDate?: string;
   radius?: number;
-  pickupDropoff?: boolean;
+  // pickupDropoff?: boolean;
   postType?: 'Offering' | 'Requesting' | 'Both';
+  storageType?: 'Indoor' | 'Outdoor' | 'Climate-Controlled';
+
   location?: { lat: number; lng: number };
   address?: string;
   usageType?: string[];                // e.g. "Short-term" | "Long-term"
@@ -83,7 +78,14 @@ export default function FiltersScreen() {
   const [endDate, setEndDate] = useState('');
   const [radius, setRadius] = useState(10);
   const [maxPrice, setMaxPrice] = useState('');
-  const [pickupDropoff, setPickupDropoff] = useState(false);
+  // const [pickupDropoff, setPickupDropoff] = useState(false);
+  const [storageType, setStorageType] = useState<'Indoor' | 'Outdoor' | 'Climate-Controlled' | undefined>(undefined);
+
+  const storageTypeOptions: ('Indoor' | 'Outdoor' | 'Climate-Controlled')[] = [
+    'Indoor',
+    'Outdoor',
+    'Climate-Controlled',
+  ];
 
   // This useState is already correctly typed as 'Offering' | 'Requesting' | 'Both'
   const [postType, setPostType] = useState<'Offering' | 'Requesting' | 'Both'>('Both');
@@ -93,8 +95,11 @@ export default function FiltersScreen() {
   const postTypesOptions: ('Offering' | 'Requesting' | 'Both')[] = ['Offering', 'Requesting', 'Both'];
 
   const [usageType, setUsageType] = useState<string[]>([]);
-const [securityFeatures, setSecurityFeatures] = useState<string[]>([]);
-const [accessibility, setAccessibility] = useState<string[]>([]);
+  const [securityFeatures, setSecurityFeatures] = useState<string[]>([]);
+  const [accessibility, setAccessibility] = useState<string[]>([]);
+
+  const [locationMode, setLocationMode] = useState<'current' | 'manual'>('manual');
+
 
 const toggleUsageType = (type: string) => {
   setUsageType((prev) =>
@@ -109,9 +114,7 @@ const toggleSecurity = (type: string) => {
 };
 
 const toggleAccessibility = (type: string) => {
-  setAccessibility((prev) =>
-    prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
-  );
+  setAccessibility(prev => (prev.includes(type) ? [] : [type]));
 };
 
 // Usage Type options
@@ -135,13 +138,15 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
       setStartDate(filters.startDate || '');
       setEndDate(filters.endDate || '');
       setRadius(filters.radius ?? 10);
-      setPickupDropoff(filters.pickupDropoff ?? false);
+      // setPickupDropoff(filters.pickupDropoff ?? false);
       setPostType(filters.postType ?? 'Both');
       setSelectedLocation(filters.location ?? null);
       setLocationAddress(filters.address || '');
       setUsageType(filters.usageType || []);
       setSecurityFeatures(filters.securityFeatures || []);
       setAccessibility(filters.accessibility || []);
+      setStorageType(filters.storageType || undefined);
+
     }
   }, []);
   
@@ -152,13 +157,15 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     radius,
-    pickupDropoff: pickupDropoff || undefined,
+    // pickupDropoff: pickupDropoff || undefined,
     postType: postType === 'Both' ? undefined : postType,
     location: selectedLocation || undefined,
     address: locationAddress || undefined,
     usageType: usageType || undefined,
     securityFeatures: securityFeatures.length > 0 ? securityFeatures : undefined,
     accessibility: accessibility.length > 0 ? accessibility : undefined,
+    storageType: storageType || undefined,
+
   };
   
 
@@ -187,56 +194,6 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
     );
   };
 
-  // const resetFilters = () => {
-  //   setSelectedCategories([]);
-  //   setStartDate('');
-  //   setEndDate('');
-  //   setRadius(10);
-  //   setMaxPrice(''); // Reset maxPrice
-  //   setPickupDropoff(false);
-  //   setPostType('Both'); // Reset postType
-  //   setSelectedLocation(null); // Reset location
-  //   setLocationAddress(''); // Reset address
-  // };
-
-  // const route = useRoute<RouteProp<RootStackParamList, 'Filters'>>();
-
-  
-
-
-  
-  // useEffect(() => {
-  //   if (filters) {
-  //     setSelectedCategories(filters.categories || []);
-  //     setMaxPrice(filters.maxPrice || '');
-  //     setStartDate(filters.startDate || '');
-  //     setEndDate(filters.endDate || '');
-  //     setRadius(filters.radius ?? 10);
-  //     setPickupDropoff(filters.pickupDropoff ?? false);
-  //     setPostType(filters.postType ?? 'Both');
-  //     setSelectedLocation(filters.location ?? null);
-  //     setLocationAddress(filters.address || '');
-  //   }
-  // }, []);
-
-
-  // const handleApplyFilters = () => {
-  //   const newFilters = {
-  //     categories: selectedCategories.length > 0 ? selectedCategories : undefined,
-  //     maxPrice: maxPrice || undefined,
-  //     startDate: startDate || undefined,
-  //     endDate: endDate || undefined,
-  //     radius,
-  //     pickupDropoff: pickupDropoff || undefined,
-  //     postType: postType === 'Both' ? undefined : postType,
-  //     location: selectedLocation || undefined,
-  //     address: locationAddress || undefined,
-  //   };
-
-  //   setFilters(newFilters); // ✅ update context
-  //   navigation.navigate('SpacesMain');
-  // };
-
 
   const resetFilters = () => {
     setSelectedCategories([]);
@@ -244,13 +201,15 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
     setEndDate('');
     setRadius(10);
     setMaxPrice(''); // Reset maxPrice
-    setPickupDropoff(false);
+    // setPickupDropoff(false);
     setPostType('Both'); // Reset postType
     setSelectedLocation(null); // Reset location
     setLocationAddress(''); // Reset address
     setUsageType([]); // Reset Usage Type
     setSecurityFeatures([]); // Reset Security Features
     setAccessibility([]); // Reset Accessibility
+    setStorageType(undefined);
+
   };
   
 
@@ -281,13 +240,15 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       radius,
-      pickupDropoff: pickupDropoff || undefined,
+      // pickupDropoff: pickupDropoff || undefined,
       postType: postType === 'Both' ? undefined : postType,
       location: locationCoords || undefined, // Now will have lat/lng
       address: locationAddress || undefined,
       usageType: usageType.length > 0 ? usageType : undefined,
       securityFeatures: securityFeatures.length > 0 ? securityFeatures : undefined,
       accessibility: accessibility.length > 0 ? accessibility : undefined,
+      storageType: storageType || undefined,
+
     };
   
     setFilters(newFilters);
@@ -308,50 +269,93 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
   keyboardShouldPersistTaps="handled"
 >
 
-  {/* Location Input */}
+
+
+
+
   <Text style={styles.sectionTitle}>Select Your Location</Text>
 
-  <View style={styles.card}>
+
+
+  <Text style={styles.sectionTitle}>Location</Text>
+
+<View style={styles.card}>
+  <View style={styles.toggleRow}>
+    <TouchableOpacity
+      onPress={() => setLocationMode('current')}
+      style={[
+        styles.optionButton,
+        locationMode === 'current' && styles.optionButtonSelected,
+      ]}
+    >
+      <Text
+        style={[
+          styles.optionText,
+          locationMode === 'current' && styles.optionTextSelected,
+        ]}
+      >
+        Use Current
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      onPress={() => setLocationMode('manual')}
+      style={[
+        styles.optionButton,
+        locationMode === 'manual' && styles.optionButtonSelected,
+      ]}
+    >
+      <Text
+        style={[
+          styles.optionText,
+          locationMode === 'manual' && styles.optionTextSelected,
+        ]}
+      >
+        Enter Address
+      </Text>
+    </TouchableOpacity>
+  </View>
+
+
+
+  {locationMode === 'current' ? (
     <TouchableOpacity
       style={styles.locationButton}
       onPress={async () => {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert(
-            'Permission Denied',
-            'Permission to access location was denied.'
-          );
+          Alert.alert('Permission Denied', 'Permission to access location was denied.');
           return;
         }
-        try {
-          const location = await Location.getCurrentPositionAsync({});
-          setSelectedLocation({
-            lat: location.coords.latitude,
-            lng: location.coords.longitude,
-          });
-          setLocationAddress('Current Location');
-          Alert.alert('Location Set', 'Your current location has been captured.');
-        } catch (error) {
-          console.error(error);
-          Alert.alert('Location Error', 'Could not get current location.');
-        }
+        const location = await Location.getCurrentPositionAsync({});
+        setSelectedLocation({
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        });
+        setLocationAddress('Current Location');
+        Alert.alert('Location Set', 'Your current location has been captured.');
       }}
     >
       <Text style={styles.locationButtonText}>
-        {selectedLocation ? `Location Set ✓` : 'Use Current Location'}
+        {selectedLocation ? 'Current Location Set ✓' : 'Use Current Location'}
       </Text>
     </TouchableOpacity>
+  ) : (
+    <View>
+      <TextInput
+        style={styles.textInput}
+        value={locationAddress}
+        onChangeText={setLocationAddress}
+        placeholder="Start typing address or city..."
+        placeholderTextColor="#A0A0A0"
+      />
+      {/* Autocomplete suggestions will go here */}
 
-    <TextInput
-      style={styles.textInput}
-      value={locationAddress}
-      onChangeText={setLocationAddress}
-      placeholder="Enter address or use current location"
-      placeholderTextColor="#A0A0A0"
-    />
+    </View>
+  )}
 
-      {/* Radius Slider */}
-  <Text style={styles.sectionTitle}>Search Radius: {radius} km</Text>
+
+<Text style={styles.sectionTitle}>Search Radius: {radius} km</Text>
   <Slider
     minimumValue={1}
     maximumValue={100}
@@ -364,7 +368,11 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
     style={{ width: '100%', marginBottom: 16 }}
   />
 
-  </View>
+
+</View>
+
+
+
 
 
 
@@ -523,13 +531,29 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
   })}
 </View>
 
-
-
-  {/* Pick-up/Drop-off */}
-  <View style={styles.toggleRow}>
-    <Text style={styles.sectionTitle}>Pick-up & Drop-off available</Text>
-    <Switch value={pickupDropoff} onValueChange={setPickupDropoff} />
-  </View>
+{/* Storage Type */}
+<Text style={styles.sectionTitle}>Storage Type</Text>
+<View style={styles.cardRow}>
+  {storageTypeOptions.map((type) => (
+    <TouchableOpacity
+      key={type}
+      onPress={() => setStorageType(type)}
+      style={[
+        styles.optionButton,
+        storageType === type && styles.optionButtonSelected,
+      ]}
+    >
+      <Text
+        style={[
+          styles.optionText,
+          storageType === type && styles.optionTextSelected,
+        ]}
+      >
+        {type}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</View>
 
 
 

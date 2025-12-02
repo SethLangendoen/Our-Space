@@ -451,14 +451,14 @@ useEffect(() => {
     {space.availability?.startDate || 'N/A'} - {space.availability?.endDate || 'N/A'}
   </Text>
 </Text>
-
+{/* 
 <Text style={styles.label}>
   Delivery Method:
   <Text style={styles.value}>
     {' '}
     {space.deliveryMethod?.length > 0 ? space.deliveryMethod.join(', ') : 'N/A'}
   </Text>
-</Text>
+</Text> */}
 
 <Text style={styles.label}>
   Dimensions:
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
 
   map: {
     width: '100%',
-    height: 100,
+    height: 120,
     borderRadius: 12,
   },
 

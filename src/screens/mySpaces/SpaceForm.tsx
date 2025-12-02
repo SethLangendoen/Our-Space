@@ -7,7 +7,6 @@ import { auth, db } from '../../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect } from 'react';
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
-import * as FileSystem from 'expo-file-system';
 // import { v4 as uuidv4 } from 'uuid'; // for unique image names
 import * as Crypto from 'expo-crypto';
 import { storage } from '../../firebase/config';
@@ -60,15 +59,25 @@ const [postType, setPostType] = useState(initialData?.postType || null);
 const [price, setPrice] = useState(initialData?.price || '');
 const [address, setAddress] = useState(initialData?.address?.split(',')[0] || '');
 const [postalCode, setPostalCode] = useState(initialData?.address?.split(',')[1]?.trim() || '');
-const [billingFrequency, setBillingFrequency] = useState(initialData?.billingFrequency || null);
 const [accessibility, setAccessibility] = useState(initialData?.accessibility || null);
 const [security, setSecurity] = useState(initialData?.security || []);
-const [deliveryMethod, setDeliveryMethod] = useState(initialData?.deliveryMethod || []);
+// const [deliveryMethod, setDeliveryMethod] = useState(initialData?.deliveryMethod || []);
 const [images, setImages] = useState<string[]>(initialData?.images || []);
 const [mainImage, setMainImage] = useState<string | null>(initialData?.mainImage || null);
 // const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[]>(
 //   initialData?.blockedTimes || []
 // );
+const [convertedPrices, setConvertedPrices] = useState<{ daily: number; weekly: number; monthly: number }>({
+  daily: 0,
+  weekly: 0,
+  monthly: 0,
+});
+
+
+
+const [lengthDiscountPercent, setLengthDiscountPercent] = useState<number>(0);
+const [lengthDiscountDays, setLengthDiscountDays] = useState<number | null>(null);
+
 
 
 const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[]>(
@@ -85,21 +94,6 @@ const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[
 const navigation = useNavigation();
 
 
-
-
-// For availability
-// const [startDateNegotiable, setStartDateNegotiable] = useState(initialData?.availability?.startDate === 'Negotiable');
-// const [endDateNegotiable, setEndDateNegotiable] = useState(initialData?.availability?.endDate === 'Negotiable');
-// const [startDate, setStartDate] = useState(
-//   initialData?.availability?.startDate && initialData?.availability?.startDate !== 'Negotiable'
-//     ? new Date(initialData.availability.startDate)
-//     : null
-// );
-// const [endDate, setEndDate] = useState(
-//   initialData?.availability?.endDate && initialData?.availability?.endDate !== 'Negotiable'
-//     ? new Date(initialData.availability.endDate)
-//     : null
-// );
 
 
 1
@@ -147,6 +141,23 @@ useEffect(() => {
   return unsubscribe;
 }, []);
 
+
+
+useEffect(() => {
+  const priceNum = parseFloat(price);
+  if (isNaN(priceNum)) return;
+
+  // Price is always daily
+  const daily = priceNum;
+  const weekly = priceNum * 7;
+  const monthly = priceNum * 30;
+
+  setConvertedPrices({
+    daily: parseFloat(daily.toFixed(2)),
+    weekly: parseFloat(weekly.toFixed(2)),
+    monthly: parseFloat(monthly.toFixed(2)),
+  });
+}, [price]);
 
 
 
@@ -251,16 +262,7 @@ const handleSubmit = async () => {
 	  alert('You must be logged in.');
 	  return;
 	}
-  
-	// if (
-	//   !title || !description || (!startDateNegotiable && !startDate) || (!endDateNegotiable && !endDate) ||
-	//   !width || !length || !height || !storageType || usageType.length === 0 || !postType || !price ||
-	//   images.length === 0 || !address || !postalCode || !billingFrequency || !accessibility || deliveryMethod.length === 0
-	// ) {
-	//   alert('Please fill out all required fields.');
-	//   return;
-	// }
-  
+
 	try {
 	  const fullAddress = `${address}, ${postalCode}`;
 	  const coordinates = await geocodeAddress(fullAddress);
@@ -292,12 +294,11 @@ const handleSubmit = async () => {
 		price,
 		address: fullAddress,
 		location: coordinates,
-		billingFrequency,
 		accessibility,
 		security,
 
     blockedTimes: blockedTimes,
-		deliveryMethod
+		// deliveryMethod
 	  };
   
 	  await onSubmit(postData);
@@ -307,6 +308,7 @@ const handleSubmit = async () => {
 	}
   };
   
+
 
 
 
@@ -395,13 +397,13 @@ const handleSubmit = async () => {
 />
 
 
-<TextInput
+{/* <TextInput
   style={styles.input}
   placeholder="Price ($)"
   value={price}
   onChangeText={setPrice}
   keyboardType="numeric"
-/>
+/> */}
 
 
 
@@ -428,6 +430,29 @@ const handleSubmit = async () => {
     keyboardType="numeric"
   />
 </View>
+
+
+
+<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+  <TextInput
+    style={[styles.sizeInput, { flex: 1 }]}
+    placeholder="Daily Price"
+    value={price}
+    onChangeText={setPrice}
+    keyboardType="numeric"
+  />
+
+
+
+  
+</View>
+
+<Text style={{ marginBottom: 10, fontFamily: 'Poppins-Regular', color: '#1F1F1F' }}>
+  Equivalent prices: Weekly ${convertedPrices.weekly} | Monthly ${convertedPrices.monthly}
+</Text>
+
+
+
 
 
 
@@ -458,24 +483,7 @@ const handleSubmit = async () => {
 </View>
 
 
-{/* Billing Frequency (Radio Buttons) */}
-<Text style={styles.sectionTitle}>Billing Frequency:</Text>
-<View style={styles.optionRow}>
-  {['Daily', 'Weekly', 'Monthly'].map(freq => {
-    const selected = billingFrequency === freq;
-    return (
-      <TouchableOpacity
-        key={freq}
-        onPress={() => setBillingFrequency(freq as any)}
-        style={[styles.optionButton, selected && styles.optionSelected]}
-      >
-        <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
-          {freq}
-        </Text>
-      </TouchableOpacity>
-    );
-  })}
-</View>
+
 
 
 {/* Accessibility (Radio Buttons) */}
@@ -529,30 +537,6 @@ const handleSubmit = async () => {
 
 
 
-
-
-
-    <Text style={styles.sectionTitle}>Delivery Method:</Text>
-<View style={styles.optionRow}>
-  {['Pickup', 'Delivery' ].map(option => {
-    const selected = deliveryMethod.includes(option);
-    return (
-      <TouchableOpacity
-        key={option}
-        onPress={() =>
-          setDeliveryMethod((prev: any[]) =>
-            selected ? prev.filter(o => o !== option) : [...prev, option]
-          )
-        }
-        style={[styles.optionButton, selected && styles.optionSelected]}
-      >
-        <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
-          {option}
-        </Text>
-      </TouchableOpacity>
-    );
-  })}
-</View>
 
 
 <Text style={styles.sectionTitle}>Storage Type</Text>
@@ -640,6 +624,9 @@ const handleSubmit = async () => {
     </ScrollView>
   );
 }
+
+
+
 
 
 
@@ -795,5 +782,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 6,
   },
+  promoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 8,
+  },
+  
   
 });

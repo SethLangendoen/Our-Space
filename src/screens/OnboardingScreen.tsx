@@ -43,43 +43,43 @@ const onboardingSlides: Slide[] = [
     key: '1',
     title: 'Welcome to Our Space!',
     description: 'Discover the easiest way to store your stuff or earn from unused space - right in your neighbourhood',
-    image: require('../../assets/Onboarding/onboarding1.png'),
+    image: require('../../assets/Onboarding/onboarding1.webp'),
   },
   {
     key: '2',
     title: 'Find storage near you',
     description: 'Quickly search, compare, and book trusted spaces nearby.',
-    image: require('../../assets/Onboarding/onboarding2.png'),
+    image: require('../../assets/Onboarding/onboarding2.webp'),
   },
   {
     key: '3',
     title: 'Earn money from your unused space.',
     description: 'List your garage, basement, closet, shed and more - start earning in minutes.',
-    image: require('../../assets/Onboarding/onboarding3.png'),
+    image: require('../../assets/Onboarding/onboarding3.webp'),
   },
   {
     key: '4',
     title: 'Affordable, local, and personal.',
     description: 'No more overpriced, far-away storage units. OURSPACE brings the community together.',
-    image: require('../../assets/Onboarding/onboarding5.png'),
+    image: require('../../assets/Onboarding/onboarding5.webp'),
   },
   {
     key: '5',
     title: 'Secure and stress-free.',
     description: 'In-app messaging, payments, reviews, and insurance options keep everyone protected',
-    image: require('../../assets/Onboarding/onboarding6.png'),
+    image: require('../../assets/Onboarding/onboarding6.webp'),
   },
   {
     key: '6',
     title: 'Get started and earn a bonus.',
     description: 'List your first space or book storage to unlock launch rewards',
-    image: require('../../assets/Onboarding/onboarding7.png'),
+    image: require('../../assets/Onboarding/onboarding7.webp'),
   },
   {
     key: '7',
     title: 'You are all set!',
     description: 'Join the OURSPACE community and make storage simpler.',
-    image: require('../../assets/Onboarding/onboarding8.png'),
+    image: require('../../assets/Onboarding/onboarding8.webp'),
     isFinal: true,
   },
 ];
@@ -119,11 +119,15 @@ const OnboardingScreen = () => {
     animateSlideIn(currentIndex);
   }, [currentIndex]);
 
+  
+
   const handleNext = () => {
     if (flatListRef.current && currentIndex < onboardingSlides.length - 1) {
       flatListRef.current.scrollToIndex({ index: currentIndex + 1 });
     }
   };
+
+
 
   const renderItem = ({ item, index }: { item: Slide; index: number }) => (
     <View style={styles.slide}>
@@ -203,6 +207,9 @@ const OnboardingScreen = () => {
     </View>
   );
 
+
+
+  
   return (
     <View style={styles.container}>
       <FlatList
@@ -356,13 +363,13 @@ const styles = StyleSheet.create({
 	  width: width,
 	  height: width,
 	  resizeMode: 'contain',
-	  marginVertical: 0,
-	  
+	  marginVertical: 0,	  
 	},
 	buttonContainer: {
 	  width: '100%',
 	  marginBottom: 20,
 	},
+
 	button: {
 	  backgroundColor: '#0F6B5B', // Emerald Green
 	  paddingVertical: 15,

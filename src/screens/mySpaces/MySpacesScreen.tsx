@@ -13,13 +13,7 @@ import { Dimensions } from 'react-native';
 import SpaceCard from 'src/components/SpaceCard';
 const { width, height } = Dimensions.get('window');
 
-// type RootStackParamList = {
-//   MySpacesScreen: undefined;
-//   CreateSpaceScreen: undefined;
-//   EditSpaceScreen: { spaceId: string };
-//   ContractDetailScreen: { postId: string };
 
-// };
 
 type RootStackParamList = {
   MySpacesScreen: undefined;
@@ -213,83 +207,38 @@ const renderContent = () => {
 	switch (selectedTab) {
 
 
-      // case 'Awaiting':
 
-      //   return awaitingPosts.length > 0 ? (
-      //     awaitingPosts.map((post) => (
-      //       <TouchableOpacity
-      //         key={post.id}
-      //         onPress={() =>
-      //           navigation.navigate('EditSpaceScreen', { spaceId: post.id })
-      //         }
-      //         style={styles.postBox}
-      //       >
-      //         <View style={styles.postHeader}>
-      //           <Text style={styles.postTitle}>{post.title}</Text>
-      //           {post.postType && (
-      //             <View
-      //               style={[
-      //                 styles.tag,
-      //                 post.postType === 'Offering'
-      //                   ? styles.offeringTag
-      //                   : styles.requestingTag,
-      //               ]}
-      //             >
-      //               <Text style={styles.tagText}>{post.postType}</Text>
-      //             </View>
-      //           )}
-      //         </View>
-      //         <Text style={styles.postDesc}>{post.description}</Text>
-      //         <View style={styles.postFooter}>
-      //           <Text style={styles.postDate}>
-      //             {post.availability?.startDate} → {post.availability?.endDate}
-      //           </Text>
-      //           {post.price && (
-      //             <Text style={styles.priceText}>${post.price}</Text>
-      //           )}
-      //         </View>
-      //       </TouchableOpacity>
-      //     ))
-      //   ) : (
-			// <View style={styles.placeholderImage}>
-			// <Text style={styles.message}>Spaces you create will show up here</Text>
-			// <Image
-			// 	source={require('../../../assets/mySpaces/awaitingPosts.png')}
-			// 	style={styles.awaitingImage}
-			// 	resizeMode="contain"
-			// />
-			// </View>
-
-      //   );
-
-
-      case 'Awaiting':
-  return awaitingPosts.length > 0 ? (
-    awaitingPosts.map((post) => (
-      <SpaceCard
-        key={post.id}
-        item={post}
-        onPress={() =>
-          navigation.navigate('EditSpaceScreen', { spaceId: post.id })
-        }
-      />
-    ))
-  ) : (
-    <View style={styles.placeholderImage}>
-      <Text style={styles.message}>Spaces you create will show up here</Text>
-      <Image
-        source={require('../../../assets/mySpaces/awaitingPosts.png')}
-        style={styles.awaitingImage}
-        resizeMode="contain"
-      />
-    </View>
-  );
+        case 'Awaiting':
+        return awaitingPosts.length > 0 ? (
+          awaitingPosts.map((post) => (
+            <SpaceCard
+              key={post.id}
+              item={post}
+              onPress={() =>
+                navigation.navigate('EditSpaceScreen', { spaceId: post.id })
+              }
+            />
+          ))
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Text style={styles.message}>Spaces you create will show up here</Text>
+            <Image
+              source={require('../../../assets/mySpaces/awaitingPosts.png')}
+              style={styles.awaitingImage}
+              resizeMode="contain"
+            />
+          </View>
+        );
 
 
 
 
         case 'Requested':
-          const requested = userReservations.filter(r => r.status === 'requested');
+          // const requested = userReservations.filter(r => r.status === 'requested' || 'awaiting_acceptance');
+          const requested = userReservations.filter(
+            r => r.status === 'requested' || r.status === 'awaiting_acceptance'
+          );
+          
           console.log(requested.length);
           return requested.length > 0 ? (
             requested.map((reservation) => {
@@ -313,6 +262,8 @@ const renderContent = () => {
               />
             </View>
           );
+
+
         
         
         case 'Confirmed':

@@ -1,14 +1,27 @@
-// components/SpaceCard.tsx
 
+
+import { match } from 'assert';
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+
+// Import icons
+const iconsMap: { [key: string]: any } = {
+  'Cars/Trucks': require('../../assets/postIcons/vehicle.png'),
+  RV: require('../../assets/postIcons/rv.png'),
+  Boats: require('../../assets/postIcons/boat.png'),
+  Personal: require('../../assets/postIcons/personal.png'),
+  Business: require('../../assets/postIcons/business.png'),
+};
 
 interface SpaceCardProps {
   item: any;
   onPress: () => void;
+  matchScore?: number;        // number of matching filters
+  totalFilters?: number;      // total filters considered
 }
 
-const SpaceCard = ({ item, onPress }: SpaceCardProps) => {
+const SpaceCard = ({ item, onPress, matchScore, totalFilters }: SpaceCardProps) => {
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       {/* Main Image */}
@@ -35,82 +48,43 @@ const SpaceCard = ({ item, onPress }: SpaceCardProps) => {
         )}
       </View>
 
+      {/* Match Score Badge */}
+      {console.log(matchScore + " is the matchscore, " + totalFilters + 'Is the total filters')}
+      {matchScore !== undefined && totalFilters !== undefined && (
+        <View style={styles.matchBadge}>
+          <Text style={styles.matchBadgeText}>
+            Matched {matchScore} of {totalFilters} filters
+          </Text>
+        </View>
+      )}
+
       {/* Description */}
       {item.description && <Text style={styles.description}>{item.description}</Text>}
 
-      {/* Price */}
-      {item.price && (
-        <Text style={styles.price}>${parseFloat(item.price).toFixed(2)}</Text>
-      )}
+      {/* Price + Icons */}
+      <View style={styles.priceRow}>
+        {item.price && (
+          <Text style={styles.price}>${parseFloat(item.price).toFixed(2)} / Day</Text>
+        )}
+        <View style={styles.iconRow}>
+          {item.usageType &&
+            item.usageType.map((type: string) =>
+              iconsMap[type] ? (
+                <Image
+                  key={type}
+                  source={iconsMap[type]}
+                  style={styles.icon}
+                  resizeMode="contain"
+                />
+              ) : null
+            )}
+        </View>
+      </View>
     </TouchableOpacity>
   );
 };
 
-// const styles = StyleSheet.create({
-//   card: {
-//     padding: 20,
-//     marginVertical: 8,
-//     backgroundColor: '#f9f9f9',
-//     borderRadius: 8,
-//   },
-//   mainImage: {
-//     width: '100%',
-//     height: 150,
-//     borderRadius: 8,
-//     marginBottom: 8,
-//   },
-//   titleRow: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//   },
-//   title: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//     flex: 1,
-//   },
-//   tag: {
-//     paddingVertical: 4,
-//     paddingHorizontal: 8,
-//     borderRadius: 12,
-//   },
-//   offeringTag: {
-//     backgroundColor: '#4CAF50',
-//   },
-//   requestingTag: {
-//     backgroundColor: '#F44336',
-//   },
-//   tagText: {
-//     color: '#fff',
-//     fontWeight: '600',
-//   },
-//   description: {
-//     marginTop: 6,
-//     fontSize: 14,
-//     color: '#555',
-//   },
-//   price: {
-//     marginTop: 6,
-//     fontWeight: '600',
-//     fontSize: 16,
-//     color: '#333',
-//   },
-// });
-
-
 const styles = StyleSheet.create({
-  // card: {
-  //   padding: 15,
-  //   marginVertical: 10,
-  //   backgroundColor: '#FFFFFF', // White card on wheat background
-  //   borderRadius: 12,
-  //   shadowColor: '#000',
-  //   shadowOpacity: 0.05,
-  //   shadowOffset: { width: 0, height: 1 },
-  //   shadowRadius: 3,
-  //   elevation: 2,
-  // },
-
   card: {
     width: '100%',
     padding: 15,
@@ -123,17 +97,13 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  
 
   mainImage: {
     width: '100%',
-    // width: 100,
-
     height: 150,
     borderRadius: 10,
     marginBottom: 12,
-    resizeMode: 'cover', // makes sure it fills nicely
-
+    resizeMode: 'cover',
   },
 
   titleRow: {
@@ -145,7 +115,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontFamily: 'Poppins-SemiBold',
-    color: '#0F6B5B', // Emerald green for emphasis
+    color: '#0F6B5B',
     flex: 1,
   },
 
@@ -157,17 +127,33 @@ const styles = StyleSheet.create({
   },
 
   offeringTag: {
-    backgroundColor: '#629447', // Earthy green for Offering
+    backgroundColor: '#629447',
   },
 
   requestingTag: {
-    backgroundColor: '#F3AF1D', // Mustard Yellow for Requesting
+    backgroundColor: '#F3AF1D',
   },
 
   tagText: {
     color: '#FFFFFF',
     fontFamily: 'Poppins-SemiBold',
     fontSize: 12,
+  },
+
+  // Match Score Badge
+  matchBadge: {
+    backgroundColor: '#DFF5D1',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+  },
+
+  matchBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Poppins-Medium',
+    color: '#0F6B5B',
   },
 
   description: {
@@ -177,14 +163,30 @@ const styles = StyleSheet.create({
     color: '#444',
   },
 
-  price: {
+  priceRow: {
     marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  price: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
-    color: '#0F6B5B', // Emerald green for pricing
+    color: '#0F6B5B',
+  },
+
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+
+  icon: {
+    width: 22,
+    height: 22,
+    marginLeft: 6,
   },
 });
-
-
 
 export default SpaceCard;

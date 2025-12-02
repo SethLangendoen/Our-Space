@@ -159,62 +159,6 @@ export default function ContractDetailScreen() {
   );
 }
 
-// const styles = StyleSheet.create({
-//   container: {
-//     padding: 20,
-//     backgroundColor: '#fff',
-//   },
-//   centered: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   title: {
-//     fontSize: 22,
-//     fontWeight: 'bold',
-//     marginBottom: 20,
-//     textAlign: 'center',
-//     color: '#334E35',
-//   },
-//   contractCard: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     paddingVertical: 12,
-//     paddingHorizontal: 10,
-//     borderBottomWidth: 1,
-//     borderColor: '#eee',
-//   },
-//   avatar: {
-//     width: 48,
-//     height: 48,
-//     borderRadius: 24,
-//     marginRight: 12,
-//   },
-//   name: {
-//     fontWeight: 'bold',
-//     fontSize: 16,
-//   },
-//   dateRange: {
-//     fontSize: 14,
-//     color: '#666',
-//     marginVertical: 2,
-//   },
-//   status: {
-//     fontSize: 14,
-//     fontWeight: '600',
-//   },
-//   acceptButton: {
-//     backgroundColor: '#00BFFF',
-//     paddingHorizontal: 16,
-//     paddingVertical: 8,
-//     borderRadius: 6,
-//   },
-//   buttonText: {
-//     color: '#fff',
-//     fontWeight: '600',
-//   },
-// });
-
 
 const styles = StyleSheet.create({
   container: {

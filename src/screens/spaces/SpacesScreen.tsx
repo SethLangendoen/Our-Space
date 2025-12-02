@@ -23,29 +23,11 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import SpaceCard from '../../components/SpaceCard'; // ✅ Reusable component
 import * as Location from 'expo-location'; // Also needed here for distance
-import { useFilterContext } from '../../context/FilterContext';
+import { FilterData, useFilterContext } from '../../context/FilterContext';
 
 const { width } = Dimensions.get('window');
 
-// --- Type Definitions ---
-// Define the RootStackParamList for consistent navigation types
-// type RootStackParamList = {
-//   Spaces: {
-//     filters?: {
-//       categories?: string[];
-//       maxPrice?: string;
-//       startDate?: string;
-//       endDate?: string;
-//       radius?: number;
-//       pickupDropoff?: boolean;
-//       postType?: 'Offering' | 'Requesting' | 'Both';
-//       location?: { lat: number; lng: number }; // Keep location optional here
-//       address?: string;
-//     };
-//   } | undefined; // 'Spaces' can also be navigated to without params
-//   Filters: undefined;
-//   SpaceDetail: { spaceId: string };
-// };
+
 
 type RootStackParamList = {
   SpacesMain: {
@@ -81,6 +63,9 @@ type SpacesScreenRouteProp = RouteProp<RootStackParamList, 'SpacesMain'>;
 
 // Define the Space type for better data structure clarity
 type Space = {
+  totalFilters: number | undefined;
+  matchScore?: number;  // Add this here for sorting/display
+  blockedTimes: any;
   id: string;
   accessibility?: string;
   address?: string;
@@ -116,7 +101,7 @@ type Space = {
   security?: string[];
   storageType?: string;
   title?: string;
-  usageType?: string;
+  usageType?: string[];
   userId?: string;
 };
 
@@ -177,8 +162,92 @@ export default function SpacesScreen() {
   }, []);
 
 
+  const datesOverlap = (
+    userStart: string,
+    userEnd: string,
+    blockedStart: string,
+    blockedEnd: string
+  ) => {
+    const uStart = new Date(userStart);
+    const uEnd = new Date(userEnd);
+    const bStart = new Date(blockedStart);
+    const bEnd = new Date(blockedEnd);
+  
+    // Overlap condition
+    return bStart <= uEnd && bEnd >= uStart;
+  };
+  
+
+
+  // const computeMatchScore = (space: Space, filters: FilterData) => {
+  //   let score = 0;
+  
+  //   if (filters.usageType?.length && space.usageType?.length) {
+  //     const hasMatch = filters.usageType.some(type => space.usageType!.includes(type));
+  //     if (hasMatch) score++;
+  //   }
+    
+  
+  //   // ---- SECURITY FEATURES (multiple) ----
+  //   if (filters.securityFeatures?.length && space.security?.length) {
+  //     const matches = space.security.filter(s => filters.securityFeatures!.includes(s));
+  //     if (matches.length > 0) score++;
+  //   }
+  
+  //   // ---- ACCESSIBILITY (multiple) ----
+  //   if (filters.accessibility?.length && space.accessibility) {
+  //     const matches = filters.accessibility.filter(a => space.accessibility!.includes(a));
+  //     if (matches.length > 0) score++;
+  //   }
+  
+  //   // ---- STORAGE TYPE ----
+  //   if (filters.storageType && space.storageType) {
+  //     if (filters.storageType === space.storageType) score++;
+  //   }
+  
+  //   console.log('SCORE: ' + score)
+  //   return score;
+  // };
+  
+
+  const computeMatchScore = (space: Space, filters: FilterData) => {
+    let score = 0;
+  
+    // ---- USAGE TYPE (multiple) ----
+    if (filters.usageType?.length && space.usageType?.length) {
+      const matches = space.usageType.filter(t => filters.usageType!.includes(t));
+      score += matches.length;   // add # of matches
+    }
+  
+    // ---- SECURITY FEATURES (multiple) ----
+    if (filters.securityFeatures?.length && space.security?.length) {
+      const matches = space.security.filter(s => filters.securityFeatures!.includes(s));
+      score += matches.length;   // add # of matches
+    }
+  
+// ---- ACCESSIBILITY (single) ----
+if (filters.accessibility?.length && space.accessibility?.length) {
+  const hasMatch = filters.accessibility.some(a => space.accessibility!.includes(a));
+  if (hasMatch) score += 1;
+}
+
+  
+    // ---- STORAGE TYPE (single) ----
+    if (filters.storageType && space.storageType) {
+      if (filters.storageType === space.storageType) {
+        score += 1;
+      }
+    }
+  
+    console.log('SCORE:', score);
+    return score;
+  };
+  
+  
+
 
   const { filters } = useFilterContext(); // ✅
+
 
 
   const fetchAndFilterSpaces = useCallback(async () => {
@@ -222,11 +291,65 @@ export default function SpacesScreen() {
           setSearchInfo(null);
         }
 
-        setSpaces(filtered);
+        if (filters.startDate && filters.endDate) {
+          filtered = filtered.filter(space => {
+            console.log("THE BLOCKED TIMES SET IN FILTERS" + space.blockedTimes)
+
+            // No blockedTimes means fully available
+            if (!space.blockedTimes || space.blockedTimes.length === 0) {
+              return true;
+            }
+
+            // Check for overlap with any blocked entry
+            const hasOverlap = space.blockedTimes.some((block: { start: string; end: string; }) =>
+              datesOverlap(
+                filters.startDate!,
+                filters.endDate!,
+                block.start,
+                block.end
+              )
+            );
+
+            return !hasOverlap; // keep only spaces without overlap
+          });
+        }
+
+        filtered = filtered.map(space => {
+          const matchScore = computeMatchScore(space, filters);
+
+          const totalFilters =
+            (filters.usageType?.length ?? 0) +
+            (filters.securityFeatures?.length ?? 0) +
+            (filters.accessibility?.length ?? 0) +
+            (filters.storageType ? 1 : 0);
+
+          return { ...space, matchScore, totalFilters };
+        });
+
+        // Tell TS these fields now exist
+        type ScoredSpace = Space & {
+          matchScore: number;
+          totalFilters: number;
+        };
+
+        const scored = filtered as ScoredSpace[];
+
+        // Sort
+        scored.sort((a, b) => {
+          if (b.matchScore !== a.matchScore) {
+            return b.matchScore - a.matchScore;
+          }
+          return b.totalFilters - a.totalFilters;
+        });
+
+        // Set spaces
+        setSpaces(scored);
+
       } else {
         setSpaces(allSpaces);
         setSearchInfo(null);
       }
+
     } catch (error) {
       console.error('Error fetching spaces:', error);
       setSpaces([]);
@@ -236,6 +359,9 @@ export default function SpacesScreen() {
   }, [filters]); // ✅ depends on context filters now
 
 
+
+
+  
 
 
   // Fetch spaces on initial mount and when filters change
@@ -385,12 +511,17 @@ export default function SpacesScreen() {
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
 
-              {/* Reuse SpaceCard layout here */}
+
+
               <SpaceCard
                 item={selectedSpace}
-                onPress={() => navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id })}
+                matchScore={selectedSpace?.matchScore}  // ✅ use selectedSpace
+                totalFilters={selectedSpace?.totalFilters}
 
+                onPress={() => navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id })}
               />
+
+
             </TouchableOpacity>
           )}
         </>
@@ -400,10 +531,20 @@ export default function SpacesScreen() {
           data={spaces}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
+
+            // <SpaceCard
+            //   item={item}
+            //   matchScore={selectedSpace?.matchScore}  // ✅ use selectedSpace
+            //   totalFilters={selectedSpace?.totalFilters}
+            //   onPress={() => navigation.navigate('SpaceDetail', { spaceId: item.id })}
+            // />
             <SpaceCard
-              item={item}
-              onPress={() => navigation.navigate('SpaceDetail', { spaceId: item.id })}
-            />
+            item={item}
+            matchScore={item.matchScore}         // <-- use item, not selectedSpace
+            totalFilters={item.totalFilters}     // <-- same here
+            onPress={() => navigation.navigate('SpaceDetail', { spaceId: item.id })}
+          />
+
           )}
           ListEmptyComponent={() => (
             <View style={{ padding: 20, alignItems: 'center' }}>

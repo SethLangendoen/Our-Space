@@ -1,3 +1,4 @@
+import { setDoc, serverTimestamp } from 'firebase/firestore';
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -45,6 +46,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [listings, setListings] = useState<any[]>([]);
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
 
 
   const badgeList = [
@@ -131,23 +133,41 @@ export default function ProfileScreen() {
   ];
 
 
-
+  
   const fetchUserData = async () => {
     if (!viewingUserId) return;
     setLoading(true);
+  
     try {
       const userRef = doc(db, 'users', viewingUserId);
       const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const data = userSnap.data();
+  
+      if (!userSnap.exists()) {
+        // Create user document if it doesn't exist
+        await setDoc(userRef, {
+          firstName: auth.currentUser?.displayName || '',
+          lastName: '',
+          bio: '',
+          profileImage: auth.currentUser?.photoURL || null,
+          createdAt: serverTimestamp(),
+        });
+      }
+  
+      // Now fetch the document (whether it existed or we just created it)
+      const updatedSnap = await getDoc(userRef);
+      if (updatedSnap.exists()) {
+        const data = updatedSnap.data();
         const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
         setName(fullName || 'No Name');
         setBio(data.bio || '');
         setProfileImage(data.profileImage || null);
-      } else {
-        setName('Unknown User');
-        setBio('');
-        setProfileImage(null);
+  
+        if (data.createdAt) {
+          const date = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+          const formattedDate = date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+          setCreatedAt(formattedDate);
+          console.log("Member since:", formattedDate);
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -214,7 +234,9 @@ export default function ProfileScreen() {
           <Text style={styles.name}>{name}</Text>
 
           <Text style={styles.aboutText}>{bio || 'No bio provided yet.'}</Text>
-
+          {createdAt && (
+    <Text style={styles.memberSince}>Member since: {createdAt}</Text>
+  )}
           {isOwnProfile && (
             <View style={styles.buttonRow}>
               <TouchableOpacity
@@ -329,9 +351,9 @@ const styles = StyleSheet.create({
   },
 
   profileImage: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
     borderWidth: 4,
     borderColor: '#FFFCF1',
     backgroundColor: '#ccc',
@@ -502,6 +524,12 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     minHeight: screenHeight,
 
+  },
+  memberSince: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+    textAlign: 'center',
   },
   
 });
