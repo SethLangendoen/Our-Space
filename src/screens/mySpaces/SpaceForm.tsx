@@ -41,7 +41,7 @@ interface SpaceFormProps {
   }
   
 
-  export default function SpaceForm({ mode, initialData, onSubmit }: SpaceFormProps) {
+export default function SpaceForm({ mode, initialData, onSubmit }: SpaceFormProps) {
 
 const [showStartPicker, setShowStartPicker] = useState(false);
 const [showEndPicker, setShowEndPicker] = useState(false);
@@ -83,6 +83,11 @@ const [lengthDiscountDays, setLengthDiscountDays] = useState<number | null>(null
 const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[]>(
   initialData?.blockedTimes || []
 );
+
+const [reservedTimes, setReservedTimes] = useState<{ start: string; end: string }[]>(
+  initialData?.reservedTimes || [] // default to empty array if creating a new space
+);
+
 
 
 
@@ -296,8 +301,9 @@ const handleSubmit = async () => {
 		location: coordinates,
 		accessibility,
 		security,
-
     blockedTimes: blockedTimes,
+    reservedTimes,
+
 		// deliveryMethod
 	  };
   
@@ -591,6 +597,7 @@ const handleSubmit = async () => {
 
 <BlockedCalendar
   blockedTimes={blockedTimes}
+  reservedTimes={reservedTimes}
   onAddBlockedTime={(time) => setBlockedTimes([...blockedTimes, time])}
   onRemoveBlockedTime={(index) =>
     setBlockedTimes(blockedTimes.filter((_, i) => i !== index))

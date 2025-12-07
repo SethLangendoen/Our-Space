@@ -6,6 +6,7 @@ import { useRoute } from '@react-navigation/native';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
+import { addReservedTime } from 'src/firebase/firestore/posts';
 
 export default function RequestDetailScreen() {
   const route = useRoute();
@@ -60,6 +61,55 @@ export default function RequestDetailScreen() {
       console.error('Failed to update status', err);
     }
   };
+
+
+  // const handleAcceptReservation = async () => {
+  //   if (!reservation) return;
+  
+  //   try {
+  //     // 1. Update reservation status
+  //     await updateStatus('confirmed');
+  
+  //     // 2. Add reserved time to the space
+  //     if (reservation.space && reservation.space.postId && reservation.space.ownerId) {
+  //       await addReservedTime(
+  //         reservation.space.postId,
+  //         reservation.startDate.toDate().toISOString().split('T')[0],
+  //         reservation.endDate.toDate().toISOString().split('T')[0]
+  //       );
+  //     }
+  
+  //     Alert.alert('Success', 'Reservation confirmed and time added to space.');
+  //   } catch (err) {
+  //     console.error(err);
+  //     Alert.alert('Error', 'Failed to finalize reservation.');
+  //   }
+  // };
+  
+  const handleAcceptReservation = async () => {
+    if (!reservation) return;
+  
+    try {
+      // 1. Update reservation status
+      await updateStatus('confirmed');
+  
+      // 2. Add reserved time to the space
+      if (reservation.spaceId) {
+        await addReservedTime(
+          reservation.spaceId,
+          reservation.startDate.toDate().toISOString().split('T')[0],
+          reservation.endDate.toDate().toISOString().split('T')[0]
+        );
+      }
+  
+      Alert.alert('Success', 'Reservation confirmed and time added to space.');
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to finalize reservation.');
+    }
+  };
+  
+  
 
   const canConfirm = userId === reservation?.ownerId && reservation?.status === 'requested';
   const canAccept = userId === reservation?.requesterId && reservation?.status === 'awaiting_acceptance';
@@ -149,9 +199,16 @@ export default function RequestDetailScreen() {
         <Button title="Confirm Request" onPress={() => updateStatus('awaiting_acceptance')} />
       )}
 
-      {canAccept && (
+      {/* {canAccept && (
         <Button title="Accept Reservation" onPress={() => updateStatus('confirmed')} />
+      )} */}
+
+      {canAccept && (
+        <Button title="Accept Reservation" onPress={handleAcceptReservation} />
       )}
+
+
+
     </View>
   );
 }

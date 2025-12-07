@@ -1,7 +1,7 @@
 // posts are a subcollection of a user: users/{userId}/posts/{postId}
 
 import { db } from '../config';
-import { doc, setDoc, getDoc, serverTimestamp, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 
 // create a post using a users id, and the post data inputted.
@@ -46,3 +46,17 @@ export const deletePost = async (postId) => {
 	}
   };
 
+
+  export const addReservedTime = async (postId, startDate, endDate) => {
+	try {
+	  const spaceRef = doc(db, 'spaces', postId);
+	  await updateDoc(spaceRef, {
+		reservedTimes: arrayUnion({ start: startDate, end: endDate }),
+	  });
+	  console.log('Reserved time added successfully');
+	} catch (err) {
+	  console.error('Failed to add reserved time:', err);
+	  throw err;
+	}
+  };
+  

@@ -489,8 +489,14 @@ useEffect(() => {
     <View style={styles.bookingContainer}>
       <Text style={styles.bookingTitle}>Book Reservation</Text>
 
+      {/* <BlockedCalendar
+        blockedTimes={space.blockedTimes || []}
+        onSelectRange={(range) => setSelectedRange(range)}
+        editable={false}
+      /> */}
       <BlockedCalendar
         blockedTimes={space.blockedTimes || []}
+        reservedTimes={space.reservedTimes || []} // ✅ add reserved times here
         onSelectRange={(range) => setSelectedRange(range)}
         editable={false}
       />
