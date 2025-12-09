@@ -7,7 +7,7 @@
 //   if (!stripe) {
 //     const secret = process.env.STRIPE_SECRET;
 //     if (!secret) throw new Error("Stripe secret not configured");
-//     stripe = new Stripe(secret, { apiVersion: "2025-08-14" });
+//     stripe = new Stripe(secret); // <-- NO API VERSION
 //   }
 //   return stripe;
 // }
@@ -46,7 +46,6 @@
 
 
 
-// attempt at fixing the api version problem. 
 
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
@@ -56,15 +55,13 @@ function getStripe() {
   if (!stripe) {
     const secret = process.env.STRIPE_SECRET;
     if (!secret) throw new Error("Stripe secret not configured");
-    stripe = new Stripe(secret); // <-- NO API VERSION
+    stripe = new Stripe(secret); // No API version needed; Stripe defaults to the latest
   }
   return stripe;
 }
 
 async function createStripeAccountLogic({ email, userId }) {
-  if (!email || !userId) {
-    throw new Error("Missing email or userId");
-  }
+  if (!email || !userId) throw new Error("Missing email or userId");
 
   const stripe = getStripe();
   const db = admin.firestore();
