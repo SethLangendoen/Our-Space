@@ -129,9 +129,89 @@ const OnboardingScreen = () => {
 
 
 
+  // const renderItem = ({ item, index }: { item: Slide; index: number }) => (
+  //   <View style={styles.slide}>
+  //     <View style={styles.topContent}>
+  //       <Animated.Text
+  //         style={[
+  //           styles.title,
+  //           {
+  //             opacity: titleAnimations[index],
+  //             transform: [
+  //               {
+  //                 translateY: titleAnimations[index].interpolate({
+  //                   inputRange: [0, 1],
+  //                   outputRange: [40, 0],
+  //                 }),
+  //               },
+  //             ],
+  //           },
+  //         ]}
+  //       >
+  //         {item.title}
+  //       </Animated.Text>
+
+  //       <Animated.Text
+  //         style={[
+  //           styles.description,
+  //           {
+  //             opacity: descAnimations[index],
+  //             transform: [
+  //               {
+  //                 translateY: descAnimations[index].interpolate({
+  //                   inputRange: [0, 1],
+  //                   outputRange: [40, 0],
+  //                 }),
+  //               },
+  //             ],
+  //           },
+  //         ]}
+  //       >
+  //         {item.description}
+  //       </Animated.Text>
+
+  //       <Image source={item.image} style={styles.image} />
+  //     </View>
+
+  //     <Animated.View
+  //       style={[
+  //         styles.buttonContainer,
+  //         { opacity: buttonAnimations[index] },
+  //       ]}
+  //     >
+  //       {item.isFinal ? (
+  //         <>
+  //           <TouchableOpacity
+  //             style={styles.button}
+  //             onPress={() => navigation.navigate('Auth')}
+  //           >
+  //             <Text style={styles.buttonText}>Sign Up</Text>
+  //           </TouchableOpacity>
+  //           <TouchableOpacity
+  //             style={[styles.button, styles.secondaryButton]}
+  //             onPress={() => navigation.navigate('MainTabs')}
+  //           >
+  //             <Text style={styles.secondaryButtonText}>Explore First</Text>
+  //           </TouchableOpacity>
+  //         </>
+  //       ) : index === 0 ? (
+  //         <TouchableOpacity style={styles.button} onPress={handleNext}>
+  //           <Text style={styles.buttonText}>Get Started</Text>
+  //         </TouchableOpacity>
+  //       ) : (
+  //         <TouchableOpacity style={styles.button} onPress={handleNext}>
+  //           <Text style={styles.buttonText}>Next</Text>
+  //         </TouchableOpacity>
+  //       )}
+  //     </Animated.View>
+  //   </View>
+  // );
+
+
   const renderItem = ({ item, index }: { item: Slide; index: number }) => (
     <View style={styles.slide}>
-      <View style={styles.topContent}>
+      {/* Text at top */}
+      <View style={styles.textContainer}>
         <Animated.Text
           style={[
             styles.title,
@@ -150,7 +230,7 @@ const OnboardingScreen = () => {
         >
           {item.title}
         </Animated.Text>
-
+  
         <Animated.Text
           style={[
             styles.description,
@@ -169,10 +249,14 @@ const OnboardingScreen = () => {
         >
           {item.description}
         </Animated.Text>
-
+      </View>
+  
+      {/* Image in middle */}
+      <View style={styles.imageContainer}>
         <Image source={item.image} style={styles.image} />
       </View>
-
+  
+      {/* Buttons at bottom */}
       <Animated.View
         style={[
           styles.buttonContainer,
@@ -206,8 +290,7 @@ const OnboardingScreen = () => {
       </Animated.View>
     </View>
   );
-
-
+  
 
   
   return (
@@ -247,95 +330,41 @@ export default OnboardingScreen;
 
 
 
-
-
-
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, backgroundColor: '#fff' },
-//   slide: {
-//     width,
-//     flex: 1,
-//     paddingHorizontal: 30,
-//     paddingVertical: 40,
-//   },
-//   topContent: {
-//     flex: 1,
-//     alignItems: 'center',
-//     justifyContent: 'flex-start',
-//     paddingTop: 60,
-//   },
-//   title: {
-//     fontSize: 40,
-//     fontWeight: 'bold',
-//     marginBottom: 12,
-//     textAlign: 'center',
-//   },
-//   description: {
-//     fontSize: 18,
-//     color: '#666',
-//     textAlign: 'center',
-//     marginBottom: 40,
-//   },
-//   image: {
-//     width: width,
-//     height: width,
-//     resizeMode: 'contain',
-//   },
-//   buttonContainer: {
-//     width: '100%',
-//     marginBottom: 10,
-//   },
-//   button: {
-//     backgroundColor: '#007bff',
-//     paddingVertical: 15,
-//     borderRadius: 10,
-//     width: '100%',
-//     alignItems: 'center',
-//   },
-//   buttonText: {
-//     color: '#fff',
-//     fontWeight: 'bold',
-//     fontSize: 18,
-//   },
-//   secondaryButton: {
-//     backgroundColor: '#f0f0f0',
-//     marginTop: 12,
-//   },
-//   secondaryButtonText: {
-//     color: '#007bff',
-//     fontWeight: 'bold',
-//     fontSize: 18,
-//   },
-//   dotsContainer: {
-//     flexDirection: 'row',
-//     justifyContent: 'center',
-//     marginBottom: 20,
-//   },
-//   dot: {
-//     width: 10,
-//     height: 10,
-//     backgroundColor: '#007bff',
-//     borderRadius: 5,
-//     marginHorizontal: 6,
-// 	marginBottom: 10
-//   },
-// });
-
-
-
 const styles = StyleSheet.create({
 	container: {
 	  flex: 1,
 	  backgroundColor: '#FFFCF1', // Wheat/Cream background
 	},
-	slide: {
-	  width,
-	  flex: 1,
-	  paddingHorizontal: 30,
-	  paddingVertical: 40,
-	  justifyContent: 'space-between',
-	},
+	// slide: {
+	//   width,
+	//   flex: 1,
+	//   paddingHorizontal: 30,
+	//   paddingVertical: 40,
+	//   justifyContent: 'space-between',
+	// },
+
+  slide: {
+    width,
+    flex: 1,
+    paddingHorizontal: 30,
+    paddingVertical: 40,
+    justifyContent: 'flex-start', // don't use space-between
+  },
+
+  // neweww
+  textContainer: {
+    marginTop: 60,
+    marginBottom: 20,
+  },
+
+  imageContainer: {
+    flex: 1, // take remaining space
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+
+
 	topContent: {
 	  flex: 1,
 	  alignItems: 'center',
@@ -359,16 +388,30 @@ const styles = StyleSheet.create({
 	  marginBottom: 0,
 	  lineHeight: 24,
 	},
-	image: {
-	  width: width,
-	  height: width,
-	  resizeMode: 'contain',
-	  marginVertical: 0,	  
-	},
-	buttonContainer: {
-	  width: '100%',
-	  marginBottom: 20,
-	},
+	// image: {
+	//   width: width,
+	//   height: width,
+	//   resizeMode: 'contain',
+	//   marginVertical: 0,	  
+	// },
+
+  image: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain', // important so it doesn't overflow
+  },
+
+	// buttonContainer: {
+	//   width: '100%',
+	//   marginBottom: 20,
+	// },
+
+
+buttonContainer: {
+  width: '100%',
+  marginTop: 'auto', // pushes buttons to bottom
+  marginBottom: 20,
+},
 
 	button: {
 	  backgroundColor: '#0F6B5B', // Emerald Green

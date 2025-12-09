@@ -178,36 +178,6 @@ export default function SpacesScreen() {
   };
   
 
-
-  // const computeMatchScore = (space: Space, filters: FilterData) => {
-  //   let score = 0;
-  
-  //   if (filters.usageType?.length && space.usageType?.length) {
-  //     const hasMatch = filters.usageType.some(type => space.usageType!.includes(type));
-  //     if (hasMatch) score++;
-  //   }
-    
-  
-  //   // ---- SECURITY FEATURES (multiple) ----
-  //   if (filters.securityFeatures?.length && space.security?.length) {
-  //     const matches = space.security.filter(s => filters.securityFeatures!.includes(s));
-  //     if (matches.length > 0) score++;
-  //   }
-  
-  //   // ---- ACCESSIBILITY (multiple) ----
-  //   if (filters.accessibility?.length && space.accessibility) {
-  //     const matches = filters.accessibility.filter(a => space.accessibility!.includes(a));
-  //     if (matches.length > 0) score++;
-  //   }
-  
-  //   // ---- STORAGE TYPE ----
-  //   if (filters.storageType && space.storageType) {
-  //     if (filters.storageType === space.storageType) score++;
-  //   }
-  
-  //   console.log('SCORE: ' + score)
-  //   return score;
-  // };
   
 
   const computeMatchScore = (space: Space, filters: FilterData) => {
