@@ -1,6 +1,5 @@
 
 
-
 import React, { useEffect, useState } from 'react';
 import { auth } from '../../firebase/config';
 import { createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
@@ -120,11 +119,7 @@ export default function CreateAccountScreen() {
           {/* Title */}
           <Text style={styles.title}>Create account</Text>
 
-          {/* Google Sign Up */}
-          {/* <TouchableOpacity style={styles.authButton}>
-            <Ionicons name="logo-google" size={20} color="black" />
-            <Text style={styles.authText}>Sign up with Google</Text>
-          </TouchableOpacity> */}
+
           <TouchableOpacity
             style={styles.authButton}
             disabled={!request}

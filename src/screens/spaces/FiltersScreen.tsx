@@ -14,18 +14,16 @@ import {
   TextInput,
   Alert, // Added for location permission feedback
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
 import { Calendar } from 'react-native-calendars';
 import Slider from '@react-native-community/slider';
 import * as Location from 'expo-location';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native'; // Import useNavigation
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'; // Import NativeStackNavigationProp
 import { useFilterContext } from '../../context/FilterContext';
-
-
-
-
-
-
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import Constants from 'expo-constants';
 
 type FiltersObjectType = {
   categories?: string[];
@@ -44,7 +42,6 @@ type FiltersObjectType = {
   accessibility?: string[];          // e.g. ["24/7 Access", "Wheelchair"]
 };
 
-
 type RootStackParamList = {
   SpacesMain: {
     filters?: FiltersObjectType;
@@ -55,11 +52,8 @@ type RootStackParamList = {
   SpaceDetail: { spaceId: string };
 };
 
- 
-
 // Define the navigation prop for THIS screen
 type FiltersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Filters'>;
-
 
 const categories = [
   { id: '1', label: 'Personal', image: require('../../../assets/filter/personal.jpeg') },
@@ -67,6 +61,16 @@ const categories = [
   { id: '3', label: 'Boat', image: require('../../../assets/filter/boat.jpeg') },
   { id: '4', label: 'RV', image: require('../../../assets/filter/rv.jpeg') },
 ];
+
+
+
+
+
+
+
+
+
+
 
 export default function FiltersScreen() {
   // FIX 2: Correctly initialize useNavigation and type it
@@ -100,31 +104,33 @@ export default function FiltersScreen() {
 
   const [locationMode, setLocationMode] = useState<'current' | 'manual'>('manual');
 
+  const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.GOOGLE_MAPS_API_KEY;
 
-const toggleUsageType = (type: string) => {
-  setUsageType((prev) =>
-    prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
-  );
-};
+    
+  const toggleUsageType = (type: string) => {
+    setUsageType((prev) =>
+      prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
+    );
+  };
 
-const toggleSecurity = (type: string) => {
-  setSecurityFeatures((prev) =>
-    prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
-  );
-};
+  const toggleSecurity = (type: string) => {
+    setSecurityFeatures((prev) =>
+      prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
+    );
+  };
 
-const toggleAccessibility = (type: string) => {
-  setAccessibility(prev => (prev.includes(type) ? [] : [type]));
-};
+  const toggleAccessibility = (type: string) => {
+    setAccessibility(prev => (prev.includes(type) ? [] : [type]));
+  };
 
-// Usage Type options
-const usageTypeOptions = ['Cars/Trucks', 'RV', 'Boats', 'Personal', 'Business'];
+  // Usage Type options
+  const usageTypeOptions = ['Cars/Trucks', 'RV', 'Boats', 'Personal', 'Business'];
 
-// Security options
-const securityOptions = ['Video Surveillance', 'Pinpad/Keys', 'Gated Area', 'Smoke Detectors'];
+  // Security options
+  const securityOptions = ['Video Surveillance', 'Pinpad/Keys', 'Gated Area', 'Smoke Detectors'];
 
-// Accessibility options
-const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
+  // Accessibility options
+  const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
 
 
 
@@ -263,19 +269,18 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
 <View style={{ flex: 1 }}>
 
 
-<ScrollView
+{/* <ScrollView
+  contentContainerStyle={styles.scrollContainer}
+  showsVerticalScrollIndicator={false}
+  keyboardShouldPersistTaps="handled"
+  nestedScrollEnabled={true} // <-- this allows inner scrolling
+> */}
+
+<KeyboardAwareScrollView
   contentContainerStyle={styles.scrollContainer}
   showsVerticalScrollIndicator={false}
   keyboardShouldPersistTaps="handled"
 >
-
-
-
-
-
-  <Text style={styles.sectionTitle}>Select Your Location</Text>
-
-
 
   <Text style={styles.sectionTitle}>Location</Text>
 
@@ -298,6 +303,8 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
       </Text>
     </TouchableOpacity>
 
+
+
     <TouchableOpacity
       onPress={() => setLocationMode('manual')}
       style={[
@@ -314,45 +321,75 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
         Enter Address
       </Text>
     </TouchableOpacity>
+
+
+
   </View>
 
 
+{locationMode === 'current' ? (
+  <TouchableOpacity
+    style={styles.locationButton}
+    onPress={async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission to access location was denied.');
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({});
+      setSelectedLocation({
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      });
+      setLocationAddress('Current Location');
+      Alert.alert('Location Set', 'Your current location has been captured.');
+    }}
+  >
+    <Text style={styles.locationButtonText}>
+      {selectedLocation ? 'Current Location Set ✓' : 'Use Current Location'}
+    </Text>
+  </TouchableOpacity>
+) : (
+<View style={{ maxHeight: 250, zIndex: 1000 }}>
 
-  {locationMode === 'current' ? (
-    <TouchableOpacity
-      style={styles.locationButton}
-      onPress={async () => {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Permission to access location was denied.');
-          return;
-        }
-        const location = await Location.getCurrentPositionAsync({});
-        setSelectedLocation({
-          lat: location.coords.latitude,
-          lng: location.coords.longitude,
-        });
-        setLocationAddress('Current Location');
-        Alert.alert('Location Set', 'Your current location has been captured.');
-      }}
-    >
-      <Text style={styles.locationButtonText}>
-        {selectedLocation ? 'Current Location Set ✓' : 'Use Current Location'}
-      </Text>
-    </TouchableOpacity>
-  ) : (
-    <View>
-      <TextInput
-        style={styles.textInput}
-        value={locationAddress}
-        onChangeText={setLocationAddress}
-        placeholder="Start typing address or city..."
-        placeholderTextColor="#A0A0A0"
-      />
-      {/* Autocomplete suggestions will go here */}
 
-    </View>
-  )}
+<GooglePlacesAutocomplete
+  placeholder="Start typing address or city..."
+  fetchDetails={true}
+  onPress={(data, details = null) => {
+    if (!details) return;
+    setLocationAddress(data.description);
+    setSelectedLocation({
+      lat: details.geometry.location.lat,
+      lng: details.geometry.location.lng,
+    });
+  }}
+  query={{
+    key: GOOGLE_MAPS_API_KEY,
+    language: 'en',
+    components: 'country:ca|country:us',
+  }}
+  styles={{
+    container: { flex: 0 },
+    textInput: styles.textInput,
+    listView: [styles.autocompleteList, { scrollEnabled: false }], // Extra safety
+  }}
+  enablePoweredByContainer={false}
+  textInputProps={{
+    value: locationAddress,
+    onChangeText: setLocationAddress,
+  }}
+  disableScroll={true} // The main fix for the VirtualizedList error
+/>
+
+  </View>
+)}
+
+
+
+
+
+
 
 
 <Text style={styles.sectionTitle}>Search Radius: {radius} km</Text>
@@ -370,12 +407,6 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
 
 
 </View>
-
-
-
-
-
-
 
  {/* Calendar */}
  <Text style={styles.sectionTitle}>Select Storage Dates</Text>
@@ -437,12 +468,6 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
   </View>
 
 
-
-
-
-
-
-
   <Text style={styles.sectionTitle}>Post Type</Text>
   <View style={styles.cardRow}>
     {postTypesOptions.map((type) => (
@@ -468,96 +493,104 @@ const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
 
 
 
-{/* Usage Type */}
-<Text style={styles.sectionTitle}>Usage Type</Text>
-<View style={styles.cardRowWrap}>
-  {usageTypeOptions.map((type) => {
-    const selected = usageType.includes(type);
-    return (
+  {/* Usage Type */}
+  <Text style={styles.sectionTitle}>Usage Type</Text>
+  <View style={styles.cardRowWrap}>
+    {usageTypeOptions.map((type) => {
+      const selected = usageType.includes(type);
+      return (
+        <TouchableOpacity
+          key={type}
+          onPress={() => toggleUsageType(type)}
+          style={[styles.optionButton, selected && styles.optionButtonSelected]}
+        >
+          <Text
+            style={[styles.optionText, selected && styles.optionTextSelected]}
+          >
+            {type}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+
+  {/* Security Features */}
+  <Text style={styles.sectionTitle}>Security Features</Text>
+  <View style={styles.cardRowWrap}>
+    {securityOptions.map((type) => {
+      const selected = securityFeatures.includes(type);
+      return (
+        <TouchableOpacity
+          key={type}
+          onPress={() => toggleSecurity(type)}
+          style={[styles.optionButton, selected && styles.optionButtonSelected]}
+        >
+          <Text
+            style={[styles.optionText, selected && styles.optionTextSelected]}
+          >
+            {type}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+
+  {/* Accessibility */}
+  <Text style={styles.sectionTitle}>Accessibility</Text>
+  <View style={styles.cardRowWrap}>
+    {accessibilityOptions.map((type) => {
+      const selected = accessibility.includes(type);
+      return (
+        <TouchableOpacity
+          key={type}
+          onPress={() => toggleAccessibility(type)}
+          style={[styles.optionButton, selected && styles.optionButtonSelected]}
+        >
+          <Text
+            style={[styles.optionText, selected && styles.optionTextSelected]}
+          >
+            {type}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+
+  {/* Storage Type */}
+  <Text style={styles.sectionTitle}>Storage Type</Text>
+  <View style={styles.cardRow}>
+    {storageTypeOptions.map((type) => (
       <TouchableOpacity
         key={type}
-        onPress={() => toggleUsageType(type)}
-        style={[styles.optionButton, selected && styles.optionButtonSelected]}
-      >
-        <Text
-          style={[styles.optionText, selected && styles.optionTextSelected]}
-        >
-          {type}
-        </Text>
-      </TouchableOpacity>
-    );
-  })}
-</View>
-
-{/* Security Features */}
-<Text style={styles.sectionTitle}>Security Features</Text>
-<View style={styles.cardRowWrap}>
-  {securityOptions.map((type) => {
-    const selected = securityFeatures.includes(type);
-    return (
-      <TouchableOpacity
-        key={type}
-        onPress={() => toggleSecurity(type)}
-        style={[styles.optionButton, selected && styles.optionButtonSelected]}
-      >
-        <Text
-          style={[styles.optionText, selected && styles.optionTextSelected]}
-        >
-          {type}
-        </Text>
-      </TouchableOpacity>
-    );
-  })}
-</View>
-
-{/* Accessibility */}
-<Text style={styles.sectionTitle}>Accessibility</Text>
-<View style={styles.cardRowWrap}>
-  {accessibilityOptions.map((type) => {
-    const selected = accessibility.includes(type);
-    return (
-      <TouchableOpacity
-        key={type}
-        onPress={() => toggleAccessibility(type)}
-        style={[styles.optionButton, selected && styles.optionButtonSelected]}
-      >
-        <Text
-          style={[styles.optionText, selected && styles.optionTextSelected]}
-        >
-          {type}
-        </Text>
-      </TouchableOpacity>
-    );
-  })}
-</View>
-
-{/* Storage Type */}
-<Text style={styles.sectionTitle}>Storage Type</Text>
-<View style={styles.cardRow}>
-  {storageTypeOptions.map((type) => (
-    <TouchableOpacity
-      key={type}
-      onPress={() => setStorageType(type)}
-      style={[
-        styles.optionButton,
-        storageType === type && styles.optionButtonSelected,
-      ]}
-    >
-      <Text
+        onPress={() => setStorageType(type)}
         style={[
-          styles.optionText,
-          storageType === type && styles.optionTextSelected,
+          styles.optionButton,
+          storageType === type && styles.optionButtonSelected,
         ]}
       >
-        {type}
-      </Text>
-    </TouchableOpacity>
-  ))}
-</View>
+        <Text
+          style={[
+            styles.optionText,
+            storageType === type && styles.optionTextSelected,
+          ]}
+        >
+          {type}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+
+</KeyboardAwareScrollView>
 
 
 
-</ScrollView>
+
+
+
+
+
+
+
 
 
 
@@ -738,6 +771,14 @@ const styles = StyleSheet.create({
   
   disabledText: {
     color: '#777',
+  },
+  autocompleteList: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginTop: 4,
+    maxHeight: 200
   },
   
 });

@@ -6,7 +6,7 @@ import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, Timestamp, up
 import { auth, db } from '../../firebase/config';
 import { AuthError } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import BlockedCalendar from 'src/components/BlockedCalendar';
 // import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -327,6 +327,7 @@ useEffect(() => {
 {space.location.lat && space.location.lng && (
   <View style={styles.mapContainer}>
     <MapView
+      provider={PROVIDER_GOOGLE}
       style={styles.map}
       initialRegion={{
         latitude: space.location.lat,
@@ -343,8 +344,8 @@ useEffect(() => {
         coordinate={{ latitude: space.location.lat, longitude: space.location.lng }}
         title={space.title}
         description={space.address || ''}
-
       />
+      
     </MapView>
     {space.postalCode && (
       <Text style={styles.postalCode}>Postal Code: {space.postalCode}</Text>
@@ -489,11 +490,6 @@ useEffect(() => {
     <View style={styles.bookingContainer}>
       <Text style={styles.bookingTitle}>Book Reservation</Text>
 
-      {/* <BlockedCalendar
-        blockedTimes={space.blockedTimes || []}
-        onSelectRange={(range) => setSelectedRange(range)}
-        editable={false}
-      /> */}
       <BlockedCalendar
         blockedTimes={space.blockedTimes || []}
         reservedTimes={space.reservedTimes || []} // ✅ add reserved times here
@@ -501,16 +497,14 @@ useEffect(() => {
         editable={false}
       />
 
-<View style={styles.dateSummary}>
-  <Text style={styles.dateText}>
-    Start: {selectedRange.start ? selectedRange.start.toDateString() : 'Not selected'}
-  </Text>
-  <Text style={styles.dateText}>
-    End: {selectedRange.end ? selectedRange.end.toDateString() : 'Not selected'}
-  </Text>
-</View>
-
-
+      <View style={styles.dateSummary}>
+        <Text style={styles.dateText}>
+          Start: {selectedRange.start ? selectedRange.start.toDateString() : 'Not selected'}
+        </Text>
+        <Text style={styles.dateText}>
+          End: {selectedRange.end ? selectedRange.end.toDateString() : 'Not selected'}
+        </Text>
+      </View>
 
       <TextInput
         style={styles.descriptionInput}
@@ -520,7 +514,6 @@ useEffect(() => {
         multiline
       />
 
-            
       <TouchableOpacity
         style={[
           styles.confirmButton,
@@ -543,8 +536,6 @@ useEffect(() => {
           {booking ? 'Booking...' : 'Confirm Reservation'}
         </Text>
       </TouchableOpacity>
-
-
 
     </View>
 

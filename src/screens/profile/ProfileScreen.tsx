@@ -20,6 +20,8 @@ import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firesto
 import SpaceCard from '../../components/SpaceCard';
 const { height: screenHeight } = Dimensions.get('window');
 const { width } = Dimensions.get('window');
+const verifiedBadge = '../../../assets/badges/complete/verifiedBadge.png'
+
 
 type ProfileStackParamList = {
   ProfileMain: { userId?: string };
@@ -47,6 +49,7 @@ export default function ProfileScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [listings, setListings] = useState<any[]>([]);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState<boolean>(false);
 
 
   const badgeList = [
@@ -195,8 +198,39 @@ export default function ProfileScreen() {
     if (isFocused) {
       fetchUserData();
       fetchUserListings();
+      fetchVerificationStatus();
     }
   }, [isFocused]);
+
+
+  const fetchVerificationStatus = async () => {
+    if (!viewingUserId) return;
+    try {
+      const idToken = await auth.currentUser?.getIdToken(true);
+      const response = await fetch(
+        "https://us-central1-our-space-8b8cd.cloudfunctions.net/checkStripeVerification",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+      const data = await response.json();
+      if (response.ok) {
+        setIsVerified(data.verified);
+      } else {
+        console.warn("Error fetching verification:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching verification:", error);
+    }
+  };
+  
+
+
+
+
 
   if (loading) {
     return (
@@ -205,6 +239,17 @@ export default function ProfileScreen() {
       </View>
     );
   }
+
+
+
+  const updatedBadgeList = badgeList.map((badge) => {
+    if (badge.id === "verifiedHero") {
+      return { ...badge, isCompleted: isVerified };
+    }
+    return badge;
+  });
+
+
 
   return (
     <ScrollView 
@@ -231,12 +276,24 @@ export default function ProfileScreen() {
             style={styles.profileImage}
           />
 
+
+
+
           <Text style={styles.name}>{name}</Text>
+          {isVerified && (
+            <View style={styles.verifiedBadge}>
+              <Image
+                source={require(verifiedBadge)}
+                style={styles.verifiedIcon}
+              />
+              <Text style={styles.verifiedText}>Verified</Text>
+            </View>
+          )}
 
           <Text style={styles.aboutText}>{bio || 'No bio provided yet.'}</Text>
           {createdAt && (
-    <Text style={styles.memberSince}>Member since: {createdAt}</Text>
-  )}
+            <Text style={styles.memberSince}>Member since: {createdAt}</Text>
+          )}
           {isOwnProfile && (
             <View style={styles.buttonRow}>
               <TouchableOpacity
@@ -264,8 +321,7 @@ export default function ProfileScreen() {
 
           {activeTab === 'Badges' && (
             <View style={styles.badgeList}>
-              {badgeList
-                .filter((badge) => !badge.isCompleted)
+              {updatedBadgeList
                 .slice(0, 10)
                 .map((badge) => (
                   <TouchableOpacity
@@ -273,12 +329,18 @@ export default function ProfileScreen() {
                     style={styles.badgeSingleItem}
                     onPress={() => Alert.alert(badge.title, badge.description)}
                   >
-                    <Image source={badge.iconIncomplete} style={styles.badgeIcon} />
+                    <Image
+                      source={badge.isCompleted ? badge.iconCompleted : badge.iconIncomplete}
+                      style={styles.badgeIcon}
+                    />
                     <Text style={styles.badgeTitle}>{badge.title}</Text>
                   </TouchableOpacity>
                 ))}
             </View>
           )}
+
+
+
 
           {activeTab === 'Listings' && (
             listings.length > 0 ? (
@@ -293,6 +355,10 @@ export default function ProfileScreen() {
               <Text style={styles.message}>No listings found.</Text>
             )
           )}
+
+
+
+
 
 
         </View>
@@ -530,6 +596,27 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 4,
     textAlign: 'center',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EAF5F1', // light green background
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  
+  verifiedIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 4,
+  },
+  
+  verifiedText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0F6B5B', // emerald green text
   },
   
 });

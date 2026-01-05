@@ -1,35 +1,4 @@
 
-/* NOTES 
-- Firestore automatically creates collections when no document of the type exists yet. 
-- Subcollections are used to associate objects to other objects. For example a user will have posts references etc. 
-- Firestore does not require a full schema, you can add or change fields at any time. 
-
-- Firebase auth fields: (these are all accessible using auth().currentUser)
-	- uid
-	- email
-	- emailverified
-	- phonenumber
-	- displayname
-	- photoURL
-	- providerData
-	- created at / last login at
-	
-- Firebase Metadata I define for profile stuff
-	- firstname
-	- lastname
-	- username
-	- profilepicture
-	- bio
-	- location, preferences etc
-	- email (optional)
-	- last online
-	- created at (so you can see a post and see 'member since ...')
-
-- Is it ever worth duplicating the fields like email? 
-	- yes, so you don't have to call auth all the time. 
-	- firestore let's you structure and query data more freely than auth 
-
-*/
 import { db } from '../config';
 import { doc, setDoc, getDoc, serverTimestamp, deleteDoc, updateDoc } from 'firebase/firestore';
 
@@ -48,7 +17,7 @@ export const createUser = async (uid, data) => {
 	  throw error;
 	}
   };
-
+ 
 // Get User data
 export const getUser = async (uid) => {
   const docSnap = await getDoc(doc(db, 'users', uid));

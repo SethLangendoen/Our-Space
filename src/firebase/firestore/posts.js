@@ -59,4 +59,19 @@ export const deletePost = async (postId) => {
 	  throw err;
 	}
   };
+
+  
+  export const getSpaceById = async (spaceId) => {
+	try {
+	  const spaceRef = doc(db, 'spaces', spaceId);
+	  const snap = await getDoc(spaceRef);
+  
+	  if (!snap.exists()) return null;
+  
+	  return { id: snap.id, ...snap.data() };
+	} catch (err) {
+	  console.error('Error fetching space:', err);
+	  throw err;
+	}
+  };
   

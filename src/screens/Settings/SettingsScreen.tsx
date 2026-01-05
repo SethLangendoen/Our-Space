@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../../firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 
+
 type Navigation = {
   navigate: (screen: string) => void;
 };
@@ -27,19 +28,29 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function SettingsScreen() {
   const navigation = useNavigation<Navigation>();
-  const [user, setUser] = useState<{ stripeOnboardingComplete: boolean } | null>(null);
+  // const [user, setUser] = useState<{ stripeOnboardingComplete: boolean } | null>(null);
+
+  const [user, setUser] = useState<{
+    stripe?: {
+      onboardingComplete?: boolean;
+    };
+  } | null>(null);
+  
+
 
 
   // -------------------------------
   // GROUPS WITH DROPDOWN SUBITEMS
   // -------------------------------
 
+
+
   const groupedSettings = [
     {
       groupTitle: "Payments & Payouts",
       screens: [
         { title: "Get Started / Onboarding", screen: "StripeOnboarding" },
-        { title: "Add / Remove Payment Methods", screen: "PaymentMethods", requiresOnboarding: true },
+        { title: "Add / Remove Payment Methods", screen: "PaymentMethods" },
         { title: "Manage Payout Account", screen: "PayoutAccounts", requiresOnboarding: true },
         { title: "Transaction History", screen: "TransactionHistory", requiresOnboarding: true },
         { title: "Billing & Receipts", screen: "BillingReceipts", requiresOnboarding: true },
@@ -48,6 +59,7 @@ export default function SettingsScreen() {
     }
   ];
   
+
 
   // -------------------------------
   // FLAT, SINGLE-CLICK SETTINGS
@@ -63,6 +75,8 @@ export default function SettingsScreen() {
     { title: 'Language', screen: 'Language' },
     { title: "What's New?", screen: 'WhatsNew' },
   ];
+
+
 
   // -------------------------------
   // EXPAND STATE
@@ -111,10 +125,14 @@ export default function SettingsScreen() {
     const fetchUserData = async () => {
       const userId = auth.currentUser?.uid;
       if (!userId) return;
+
       const userDoc = await getDoc(doc(db, 'users', userId));
       if (userDoc.exists()) {
-        setUser(userDoc.data() as { stripeOnboardingComplete: boolean });
+        setUser(userDoc.data());
       }
+      
+
+
     };
 
     fetchUserData();
@@ -148,19 +166,8 @@ export default function SettingsScreen() {
 
             <View style={styles.subItemsContainer}>
 
-
-              {/* {group.screens.map(({ title, screen }) => (
-                <TouchableOpacity
-                  key={title}
-                  style={[styles.row, styles.subRow]}
-                  onPress={() => navigation.navigate(screen)}
-                >
-                  <Text style={styles.rowText}>{title}</Text>
-                </TouchableOpacity>
-              ))} */}
-
               {group.screens.map(({ title, screen, requiresOnboarding }) => {
-                const isDisabled = requiresOnboarding && !user?.stripeOnboardingComplete;
+                const isDisabled = requiresOnboarding && !user?.stripe?.onboardingComplete;
 
                 return (
                   <TouchableOpacity
@@ -220,6 +227,11 @@ export default function SettingsScreen() {
     </ScrollView>
   );
 }
+
+
+
+
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },

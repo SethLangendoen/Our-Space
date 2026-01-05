@@ -20,7 +20,6 @@ type RootStackParamList = {
   CreateSpaceScreen: undefined;
   EditSpaceScreen: { spaceId: string };
   RequestDetailScreen: { reservationId: string };
-  ConfirmedReservationScreen: { reservationId: string };
 };
 
 
@@ -32,11 +31,12 @@ type MySpacesScreenNavigationProp = NativeStackNavigationProp<
 
 export default function MySpacesScreen() {
   const navigation = useNavigation<MySpacesScreenNavigationProp>();
-  const [selectedTab, setSelectedTab] = useState<'Awaiting' | 'Requested' | 'Confirmed'>('Requested');
+  const [selectedTab, setSelectedTab] = useState<'My Spaces' | 'Bookings'>('Bookings');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [userReservations, setUserReservations] = useState<any[]>([]);
+  const [bookingFilter, setBookingFilter] = useState<'Requests' | 'Ongoing' | 'Previous'>('Requests');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -186,130 +186,196 @@ useFocusEffect(
 
 
 
+
+
 const renderContent = () => {
+  const awaitingPosts = userPosts.filter(post => {
+    const contracts = post.contracts as { [key: string]: any } | undefined;
+    return !contracts || Object.keys(contracts).length === 0;
+  });
 
-	const awaitingPosts = userPosts.filter(post => {
-		const contracts = post.contracts as { [key: string]: any } | undefined;
-		// Awaiting means no contracts or contracts object is empty
-		return !contracts || Object.keys(contracts).length === 0;
-	  });
-	
-	  const ongoingPosts = userPosts.filter((post) => {
-		const contracts = post.contracts as { [key: string]: any } | undefined;
-		if (!contracts) return false;
-	  
-		return Object.values(contracts).some((contract) =>
-		  ['requested', 'accepted', 'confirmed'].includes(contract.state)
-		);
-	  });
-	  
-  
-	switch (selectedTab) {
+  switch (selectedTab) {
+    case 'My Spaces':
+      return awaitingPosts.length > 0 ? (
+        awaitingPosts.map((post) => (
+          <SpaceCard
+            key={post.id}
+            item={post}
+            onPress={() =>
+              navigation.navigate('EditSpaceScreen', { spaceId: post.id })
+            }
+          />
+        ))
+      ) : (
+        <View style={styles.placeholderImage}>
+          <Text style={styles.message}>Spaces you create will show up here</Text>
+          <Image
+            source={require('../../../assets/mySpaces/awaitingPosts.png')}
+            style={styles.awaitingImage}
+          />
+        </View>
+      );
 
+    case 'Bookings':
+      let filteredReservations = [];
 
-
-        case 'Awaiting':
-        return awaitingPosts.length > 0 ? (
-          awaitingPosts.map((post) => (
-            <SpaceCard
-              key={post.id}
-              item={post}
-              onPress={() =>
-                navigation.navigate('EditSpaceScreen', { spaceId: post.id })
-              }
-            />
-          ))
-        ) : (
-          <View style={styles.placeholderImage}>
-            <Text style={styles.message}>Spaces you create will show up here</Text>
-            <Image
-              source={require('../../../assets/mySpaces/awaitingPosts.png')}
-              style={styles.awaitingImage}
-              resizeMode="contain"
-            />
-          </View>
-        );
-
-
-
-
-        case 'Requested':
-          // const requested = userReservations.filter(r => r.status === 'requested' || 'awaiting_acceptance');
-          const requested = userReservations.filter(
+      switch (bookingFilter) {
+        case 'Requests':
+          filteredReservations = userReservations.filter(
             r => r.status === 'requested' || r.status === 'awaiting_acceptance'
           );
+          break;
+        case 'Ongoing':
+          filteredReservations = userReservations.filter(
+            r => r.status === 'accepted' || r.status === 'confirmed'
+          );
+          break;
+        case 'Previous':
+          filteredReservations = userReservations.filter(
+            r => r.status === 'completed' || r.status === 'rejected' || r.status === 'cancelled'
+          );
+          break;
+      }
+
+      return filteredReservations.length > 0 ? (
+        filteredReservations.map((reservation) => {
+          const isOwner = reservation.ownerId === userId;
+          return (
+            <ReservationCard
+              key={reservation.id}
+              reservation={reservation}
+              isOwner={isOwner}
+              onPress={() =>
+                navigation.navigate('RequestDetailScreen', { reservationId: reservation.id })
+              }
+            />
+          );
+        })
+      ) : (
+        <View style={styles.placeholderImage}>
+          <Text style={styles.message}>No reservations found</Text>
+          <Image
+            source={require('../../../assets/mySpaces/requests.png')}
+            style={styles.awaitingImage}
+          />
+        </View>
+      );
+
+    default:
+      return null;
+  }
+};
+
+
+
+// const renderContent = () => {
+
+// 	const awaitingPosts = userPosts.filter(post => {
+// 		const contracts = post.contracts as { [key: string]: any } | undefined;
+// 		// Awaiting means no contracts or contracts object is empty
+// 		return !contracts || Object.keys(contracts).length === 0;
+// 	  });
+	
+// 	  const ongoingPosts = userPosts.filter((post) => {
+// 		const contracts = post.contracts as { [key: string]: any } | undefined;
+// 		if (!contracts) return false;
+	  
+// 		return Object.values(contracts).some((contract) =>
+// 		  ['requested', 'accepted', 'confirmed'].includes(contract.state)
+// 		);
+// 	  });
+	  
+  
+// 	switch (selectedTab) {
+
+
+
+//         case 'My Spaces':
+//         return awaitingPosts.length > 0 ? (
+//           awaitingPosts.map((post) => (
+//             <SpaceCard
+//               key={post.id}
+//               item={post}
+//               onPress={() =>
+//                 navigation.navigate('EditSpaceScreen', { spaceId: post.id })
+//               }
+//             />
+//           ))
+//         ) : (
+//           <View style={styles.placeholderImage}>
+//             <Text style={styles.message}>Spaces you create will show up here</Text>
+//             <Image
+//               source={require('../../../assets/mySpaces/awaitingPosts.png')}
+//               style={styles.awaitingImage}
+//               resizeMode="contain"
+//             />
+//           </View>
+//         );
+
+
+
+
+//         case 'Bookings':
+//           // const requested = userReservations.filter(r => r.status === 'requested' || 'awaiting_acceptance');
+//           const requested = userReservations.filter(
+//             r => r.status === 'requested' || r.status === 'awaiting_acceptance'
+//           );
           
-          console.log(requested.length);
-          return requested.length > 0 ? (
-            requested.map((reservation) => {
-              const isOwner = reservation.ownerId === userId;
-              return (
-                <ReservationCard
-                  key={reservation.id}
-                  reservation={reservation}
-                  isOwner={isOwner}
-                  onPress={() => navigation.navigate('RequestDetailScreen', { reservationId: reservation.id })}
-                />
-              );
-            })
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Text style={styles.message}>Space requests will show up here</Text>
-              <Image
-                source={require('../../../assets/mySpaces/requests.png')}
-                style={styles.awaitingImage}
-                resizeMode="contain"
-              />
-            </View>
-          );
-
-
-        
-        
-        case 'Confirmed':
-          const confirmed = userReservations.filter(r => r.status === 'confirmed');
-          return confirmed.length > 0 ? (
-            confirmed.map((reservation) => (
-              <TouchableOpacity
-                key={reservation.id}
-                onPress={() => navigation.navigate('ConfirmedReservationScreen', { reservationId: reservation.id })}
-                style={styles.postBox}
-              >
-                <Text style={styles.postTitle}>{reservation.spaceTitle}</Text>
-                <Text style={styles.postDesc}>{reservation.description}</Text>
-                <Text style={styles.postDate}>
-                  {reservation.startDate?.toDate().toDateString()} → {reservation.endDate?.toDate().toDateString()}
-                </Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Text style={styles.message}>No confirmed reservations yet</Text>
-              <Image
-                source={require('../../../assets/mySpaces/ongoingContract.png')}
-                style={styles.awaitingImage}
-                resizeMode="contain"
-              />
-            </View>
-          );
-        
+//           console.log(requested.length);
+//           return requested.length > 0 ? (
+//             requested.map((reservation) => {
+//               const isOwner = reservation.ownerId === userId;
+//               return (
+//                 <ReservationCard
+//                   key={reservation.id}
+//                   reservation={reservation}
+//                   isOwner={isOwner}
+//                   onPress={() => navigation.navigate('RequestDetailScreen', { reservationId: reservation.id })}
+//                 />
+//               );
+//             })
+//           ) : (
+//             <View style={styles.placeholderImage}>
+//               <Text style={styles.message}>Space requests will show up here</Text>
+//               <Image
+//                 source={require('../../../assets/mySpaces/requests.png')}
+//                 style={styles.awaitingImage}
+//                 resizeMode="contain"
+//               />
+//             </View>
+//           );
 
 
 
+// 	  default:
+// 		return null;
+// 	}
+//   };
   
 
 
-	  default:
-		return null;
-	}
-  };
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   return (
     <View style={styles.container}>
       <View style={styles.tabContainer}>
 
-      {['Awaiting', 'Requested', 'Confirmed'].map((tab) => (
+      {['My Spaces', 'Bookings'].map((tab) => (
         <TouchableOpacity
           key={tab}
           style={[
@@ -336,7 +402,7 @@ const renderContent = () => {
       <View style={styles.content}>{renderContent()}</View>
 
  
-      {selectedTab === 'Awaiting' && (
+      {selectedTab === 'My Spaces' && (
     <TouchableOpacity
       style={[
         styles.createButton,
@@ -354,6 +420,34 @@ const renderContent = () => {
       <Text style={styles.createButtonText}>Create Post</Text>
     </TouchableOpacity>
   )}
+
+
+{selectedTab === 'Bookings' && (
+  <View style={{ flexDirection: 'row', marginVertical: 8 }}>
+    {['Requests', 'Ongoing', 'Previous'].map(filter => (
+      <TouchableOpacity
+        key={filter}
+        style={{
+          flex: 1,
+          paddingVertical: 8,
+          marginHorizontal: 4,
+          backgroundColor: bookingFilter === filter ? '#0F6B5B' : '#E6E6E6',
+          borderRadius: 8,
+          alignItems: 'center',
+        }}
+        onPress={() => setBookingFilter(filter as typeof bookingFilter)}
+      >
+        <Text style={{
+          color: bookingFilter === filter ? '#FFF' : '#333',
+          fontFamily: 'Poppins-Medium',
+        }}>{filter}</Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+)}
+
+
+
 
     </View>
   );

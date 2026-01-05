@@ -57,3 +57,25 @@ export async function getStripeOnboardingLink() {
 }
 
 
+// this calls the backend function for checking verification. 
+export async function checkStripeVerification() {
+  const user = auth.currentUser;
+  if (!user) throw new Error("User must be signed in");
+
+  const idToken = await user.getIdToken(true);
+
+  const response = await fetch(
+    "https://us-central1-our-space-8b8cd.cloudfunctions.net/checkStripeVerification",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    }
+  );
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to check verification");
+
+  return data.verified; // true or false
+}

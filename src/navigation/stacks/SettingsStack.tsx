@@ -26,7 +26,6 @@ export default function SettingsStack() {
   return (
     <Stack.Navigator>
 
-
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: 'Settings' }} />
      
       {/* Payments and Payouts screen */}

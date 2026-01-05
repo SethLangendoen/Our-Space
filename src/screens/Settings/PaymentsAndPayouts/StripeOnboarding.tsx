@@ -1,70 +1,135 @@
 
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Button, ActivityIndicator, Alert } from "react-native";
 import { auth } from "../../../firebase/config";
-import { createStripeAccount, getStripeOnboardingLink } from "../../../firebase/firestore/stripeFunctions";
-import * as WebBrowser from 'expo-web-browser';
+import {
+  createStripeAccount,
+  getStripeOnboardingLink,
+} from "../../../firebase/firestore/stripeFunctions";
+import { getUser } from "../../../firebase/firestore/users";
+import * as WebBrowser from "expo-web-browser";
+
+
+function StatusRow({ label, done }: { label: string; done: boolean }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 6 }}>
+      <Text style={{ fontSize: 18, marginRight: 8 }}>
+        {done ? "✅" : "❌"}
+      </Text>
+      <Text style={{ fontSize: 16 }}>{label}</Text>
+    </View>
+  );
+}
 
 export default function StripeOnboarding() {
-  const [loading, setLoading] = useState(false);
-  const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [stripe, setStripe] = useState<StripeStatus | null>(null);
+
+  // 🔹 Load Stripe account + status
+  useEffect(() => {
+    const loadStripeAccount = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const userData = await getUser(user.uid);
+        setStripe(userData?.stripe?.host ?? null);
+      } catch (err) {
+        console.error("Failed to load Stripe account", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStripeAccount();
+  }, []);
+
+
 
   const handleCreateStripeAccount = async () => {
     setLoading(true);
-
     try {
       const user = auth.currentUser;
       if (!user?.email) throw new Error("User not logged in");
 
-      // create Stripe account
       const result = await createStripeAccount({ email: user.email });
-      setStripeAccountId(result.stripeAccountId);
 
-      Alert.alert("Success", result.message || "Stripe account created!");
+      setStripe({
+        accountId: result.stripeAccountId,
+        detailsSubmitted: false,
+        chargesEnabled: false,
+        payoutsEnabled: false,
+      });
     } catch (err: unknown) {
-      if (err instanceof Error) Alert.alert("Error", err.message);
-      else Alert.alert("Error", "An unexpected error occurred");
+      Alert.alert("Error", err instanceof Error ? err.message : "Unexpected error");
     } finally {
       setLoading(false);
     }
   };
+
+  
 
   const startOnboarding = async () => {
     try {
       const url = await getStripeOnboardingLink();
       await WebBrowser.openBrowserAsync(url);
     } catch (err: unknown) {
-      if (err instanceof Error) Alert.alert("Error", err.message);
-      else Alert.alert("Error", "An unexpected error occurred");
+      Alert.alert("Error", err instanceof Error ? err.message : "Unexpected error");
     }
   };
 
+  if (loading) {
+    return <ActivityIndicator size="large" />;
+  }
+
+  type StripeStatus = {
+    accountId?: string;
+    detailsSubmitted?: boolean;
+    chargesEnabled?: boolean;
+    payoutsEnabled?: boolean;
+    onboardingComplete?: boolean;
+  };
+
+const onboardingComplete = !!stripe?.onboardingComplete;
+
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
-      <Text style={{ marginBottom: 16, fontSize: 20, fontWeight: "600" }}>
+    <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
+      <Text style={{ marginBottom: 16, fontSize: 20, fontWeight: "600", textAlign: "center" }}>
         Stripe Onboarding
       </Text>
 
-      {loading ? (
-        <ActivityIndicator size="large" />
+      {!stripe?.accountId ? (
+        <Button title="Create Stripe Account" onPress={handleCreateStripeAccount} />
       ) : (
         <>
-          <Button title="Create Stripe Account" onPress={handleCreateStripeAccount} />
+          {/* ✅ Status Checklist */}
+          <View style={{ marginBottom: 20 }}>
+            <StatusRow label="Stripe account created" done={!!stripe.accountId} />
+            <StatusRow label="Details submitted" done={!!stripe.detailsSubmitted} />
+            <StatusRow label="Payments enabled" done={!!stripe.chargesEnabled} />
+            <StatusRow label="Payouts enabled" done={!!stripe.payoutsEnabled} />
+          </View>
 
-          {stripeAccountId && (
-            <View style={{ marginTop: 24 }}>
-              <Text>Your Stripe Account:</Text>
-              <Text style={{ fontWeight: "bold" }}>{stripeAccountId}</Text>
+          {/* ℹ️ Review message */}
+          {!onboardingComplete && stripe.detailsSubmitted && !stripe.chargesEnabled && (
+            <Text style={{ marginBottom: 12, color: "#666" }}>
+              Stripe is reviewing your information. This can take some time.
+            </Text>
+          )}
 
-              <View style={{ marginTop: 12 }}>
-                <Button title="Continue Onboarding" onPress={startOnboarding} />
-              </View>
-            </View>
+          {/* 🔁 Resume onboarding if needed */}
+          {!onboardingComplete && (
+            <Button title="Continue onboarding" onPress={startOnboarding} />
+          )}
+
+          {/* 🎉 Complete */}
+          {onboardingComplete && (
+            <Text style={{ color: "green", fontWeight: "600", textAlign: "center" }}>
+              🎉 Stripe onboarding complete!
+            </Text>
           )}
         </>
       )}
     </View>
   );
 }
-

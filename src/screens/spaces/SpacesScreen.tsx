@@ -22,7 +22,6 @@ import MapView, { Marker, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import SpaceCard from '../../components/SpaceCard'; // ✅ Reusable component
-import * as Location from 'expo-location'; // Also needed here for distance
 import { FilterData, useFilterContext } from '../../context/FilterContext';
 
 const { width } = Dimensions.get('window');
@@ -134,6 +133,7 @@ export default function SpacesScreen() {
   const route = useRoute<SpacesScreenRouteProp>(); // Correctly type the useRoute hook
   const [searchInfo, setSearchInfo] = useState<{ address: string; radius: number; location: { lat: number; lng: number } } | null>(null); // **Updated searchInfo type**
 
+
   
   const toggleView = useCallback(() => setIsMapView(prev => !prev), []);
 
@@ -178,7 +178,7 @@ export default function SpacesScreen() {
   };
   
 
-  
+
 
   const computeMatchScore = (space: Space, filters: FilterData) => {
     let score = 0;
@@ -214,10 +214,9 @@ if (filters.accessibility?.length && space.accessibility?.length) {
   };
   
   
+  
 
-
-  const { filters } = useFilterContext(); // ✅
-
+  const { filters } = useFilterContext(); 
 
 
   const fetchAndFilterSpaces = useCallback(async () => {
@@ -502,12 +501,6 @@ if (filters.accessibility?.length && space.accessibility?.length) {
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
 
-            // <SpaceCard
-            //   item={item}
-            //   matchScore={selectedSpace?.matchScore}  // ✅ use selectedSpace
-            //   totalFilters={selectedSpace?.totalFilters}
-            //   onPress={() => navigation.navigate('SpaceDetail', { spaceId: item.id })}
-            // />
             <SpaceCard
             item={item}
             matchScore={item.matchScore}         // <-- use item, not selectedSpace
