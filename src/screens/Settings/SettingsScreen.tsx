@@ -51,9 +51,9 @@ export default function SettingsScreen() {
       screens: [
         { title: "Get Started / Onboarding", screen: "StripeOnboarding" },
         { title: "Add / Remove Payment Methods", screen: "PaymentMethods" },
-        { title: "Manage Payout Account", screen: "PayoutAccounts", requiresOnboarding: true },
-        { title: "Transaction History", screen: "TransactionHistory", requiresOnboarding: true },
-        { title: "Billing & Receipts", screen: "BillingReceipts", requiresOnboarding: true },
+        { title: "Manage Payout Account", screen: "PayoutAccounts" },
+        { title: "Transaction History", screen: "TransactionHistory" },
+        { title: "Billing & Receipts", screen: "BillingReceipts" },
         { title: "Tax Forms (Hosts)", screen: "TaxForms", requiresOnboarding: true },
       ]
     }

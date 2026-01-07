@@ -8,6 +8,7 @@ import AppHeader from 'src/components/AppHeader';
 
 const Stack = createNativeStackNavigator();
 
+
 export default function ChatsStack() {
   return (
     <Stack.Navigator

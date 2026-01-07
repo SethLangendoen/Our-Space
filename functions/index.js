@@ -2,11 +2,14 @@
 
 const { https, setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
-// const { processWeeklyPayments } = require("./payments/processWeeklyPayments");
 const { createStripeAccountLogic } = require("./stripe/createStripeAccount");
 const { createOnboardingLinkLogic } = require("./stripe/generateOnboardingLink");
 const { isStripeAccountVerified } = require("./stripe/checkVerification");
 const { handleStripeAccountUpdate } = require("./stripe/stripeAccountWebhook");
+const { processRecurringPayments } = require('./payments/processRecurringPayments');
+const { handleStripePaymentWebhook } = require("./stripe/stripePaymentWebhook");
+
+
 const {
   ensureStripeCustomerLogic,
   createSetupIntentLogic,
@@ -91,8 +94,7 @@ exports.checkStripeVerification = https.onRequest(async (req, res) => {
 
 exports.handleStripeAccountUpdate = handleStripeAccountUpdate;
 
-// KEEP THIS FOR NOW
-// exports.processWeeklyPayments = processWeeklyPayments;
+exports.processRecurringPayments = processRecurringPayments;
 
 
 
@@ -204,4 +206,9 @@ exports.setDefaultPaymentMethod = https.onRequest(async (req, res) => {
   }
 });
 
-
+exports.handleStripePaymentWebhook = https.onRequest(
+  {
+    secrets: ["STRIPE_SECRET", "STRIPE_WEBHOOK_SECRET"],
+  },
+  handleStripePaymentWebhook
+);

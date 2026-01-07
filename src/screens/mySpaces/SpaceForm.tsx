@@ -7,16 +7,12 @@ import { auth, db } from '../../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect } from 'react';
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
-// import { v4 as uuidv4 } from 'uuid'; // for unique image names
 import * as Crypto from 'expo-crypto';
 import { storage } from '../../firebase/config';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Alert } from 'react-native'; // Add this import if not already present
-// import { Calendar } from 'react-native-calendars';
 import BlockedCalendar from '../../components/BlockedCalendar';
 
-// import { createPost } from '../../firebase/firestore/posts';
-// import { getAuth } from 'firebase/auth';
+
 
 import {
   View,
@@ -46,8 +42,6 @@ export default function SpaceForm({ mode, initialData, onSubmit }: SpaceFormProp
 const [showStartPicker, setShowStartPicker] = useState(false);
 const [showEndPicker, setShowEndPicker] = useState(false);
 
-
-
 const [title, setTitle] = useState(initialData?.title || '');
 const [description, setDescription] = useState(initialData?.description || '');
 const [width, setWidth] = useState(initialData?.dimensions?.width || '');
@@ -64,9 +58,10 @@ const [security, setSecurity] = useState(initialData?.security || []);
 // const [deliveryMethod, setDeliveryMethod] = useState(initialData?.deliveryMethod || []);
 const [images, setImages] = useState<string[]>(initialData?.images || []);
 const [mainImage, setMainImage] = useState<string | null>(initialData?.mainImage || null);
-// const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[]>(
-//   initialData?.blockedTimes || []
-// );
+const [priceFrequency, setPriceFrequency] = useState<
+  'daily' | 'weekly' | 'monthly'
+>(initialData?.priceFrequency || 'daily');
+
 const [convertedPrices, setConvertedPrices] = useState<{ daily: number; weekly: number; monthly: number }>({
   daily: 0,
   weekly: 0,
@@ -98,10 +93,6 @@ const [reservedTimes, setReservedTimes] = useState<{ start: string; end: string 
 
 const navigation = useNavigation();
 
-
-
-
-1
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -297,6 +288,7 @@ const handleSubmit = async () => {
 		userId,
 		postType,
 		price,
+    priceFrequency,
 		address: fullAddress,
 		location: coordinates,
 		accessibility,
@@ -370,10 +362,6 @@ const handleSubmit = async () => {
       </View>
 
 
-
-
-          
-
       <TextInput
         style={styles.input}
         placeholder="Title"
@@ -403,15 +391,6 @@ const handleSubmit = async () => {
 />
 
 
-{/* <TextInput
-  style={styles.input}
-  placeholder="Price ($)"
-  value={price}
-  onChangeText={setPrice}
-  keyboardType="numeric"
-/> */}
-
-
 
 <View style={styles.sizeContainer}>
   <TextInput
@@ -439,7 +418,8 @@ const handleSubmit = async () => {
 
 
 
-<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+{/* <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+  
   <TextInput
     style={[styles.sizeInput, { flex: 1 }]}
     placeholder="Daily Price"
@@ -448,14 +428,47 @@ const handleSubmit = async () => {
     keyboardType="numeric"
   />
 
+</View> */}
 
+<View style={styles.priceRow}>
+  <TextInput
+    style={[styles.sizeInput, { flex: 1 }]}
+    placeholder="Price"
+    value={price}
+    onChangeText={setPrice}
+    keyboardType="numeric"
+  />
 
-  
+  <View style={styles.frequencyGroup}>
+    {(['daily', 'weekly', 'monthly'] as const).map(freq => {
+      const selected = priceFrequency === freq;
+      return (
+        <TouchableOpacity
+          key={freq}
+          style={[
+            styles.frequencyButton,
+            selected && styles.frequencyButtonSelected,
+          ]}
+          onPress={() => setPriceFrequency(freq)}
+        >
+          <Text
+            style={[
+              styles.frequencyText,
+              selected && styles.frequencyTextSelected,
+            ]}
+          >
+            {freq.charAt(0).toUpperCase() + freq.slice(1)}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
 </View>
 
-<Text style={{ marginBottom: 10, fontFamily: 'Poppins-Regular', color: '#1F1F1F' }}>
-  Equivalent prices: Weekly ${convertedPrices.weekly} | Monthly ${convertedPrices.monthly}
+<Text style={styles.priceHint}>
+  Billed {priceFrequency}. Cancellation notice will match this frequency.
 </Text>
+
 
 
 
@@ -795,6 +808,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
     gap: 8,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
+  },
+  
+  frequencyGroup: {
+    flexDirection: 'row',
+  },
+  
+  frequencyButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    marginLeft: 4,
+    backgroundColor: '#FFF',
+  },
+  
+  frequencyButtonSelected: {
+    backgroundColor: '#0F6B5B',
+    borderColor: '#0F6B5B',
+  },
+  
+  frequencyText: {
+    fontFamily: 'Poppins-SemiBold',
+    color: '#1F1F1F',
+    fontSize: 14,
+  },
+  
+  frequencyTextSelected: {
+    color: '#FFF',
+    fontFamily: 'Poppins-Bold',
+  },
+  
+  priceHint: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 10,
+    fontFamily: 'Poppins-Regular',
   },
   
   

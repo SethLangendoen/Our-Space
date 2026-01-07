@@ -63,9 +63,15 @@ const SpaceCard = ({ item, onPress, matchScore, totalFilters }: SpaceCardProps) 
 
       {/* Price + Icons */}
       <View style={styles.priceRow}>
-        {item.price && (
-          <Text style={styles.price}>${parseFloat(item.price).toFixed(2)} / Day</Text>
-        )}
+      {item.price && (
+        <Text style={styles.price}>
+          ${parseFloat(item.price).toFixed(2)} {' '}
+          {(item.priceFrequency ?? 'daily').charAt(0).toUpperCase() +
+            (item.priceFrequency ?? 'daily').slice(1)}
+        </Text>
+      )}
+
+
         <View style={styles.iconRow}>
           {item.usageType &&
             item.usageType.map((type: string) =>
