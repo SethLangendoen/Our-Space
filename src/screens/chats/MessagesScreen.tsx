@@ -122,10 +122,33 @@ export default function MessagesScreen({ route }: Props) {
         })
       : '';
 
+
+
     // Reference / Reservation messages
     if (item.isReference && item.referenceData) {
       const isReservation = !!item.referenceData.reservationId;
+
+
+
+
       return (
+
+        <View
+        style={[
+          styles.receivedContainer,
+          isCurrentUser && styles.sentContainer,
+        ]}
+      >
+        {!isCurrentUser && (
+          <Image
+            source={
+              otherUserData?.profileImage
+                ? { uri: otherUserData.profileImage }
+                : require('../../../assets/blankProfile.png')
+            }
+            style={styles.avatar}
+          />
+        )}
         <TouchableOpacity
           onPress={() => {
             if (isReservation) {
@@ -141,8 +164,8 @@ export default function MessagesScreen({ route }: Props) {
             }
           }}
           style={[
-            styles.referenceContainer,
-            isReservation && styles.reservationContainer,
+            styles.bubble,
+            isCurrentUser ? styles.sentBubble : styles.receivedBubble,
           ]}
         >
           {item.referenceData.image && (
@@ -162,9 +185,62 @@ export default function MessagesScreen({ route }: Props) {
               : `Responding to: ${item.referenceData.title}`}
           </Text>
         </TouchableOpacity>
+      </View>
+
+
+
+        // <TouchableOpacity
+        //   onPress={() => {
+        //     if (isReservation) {
+        //       navigation.navigate('MySpaces', {
+        //         screen: 'RequestDetailScreen',
+        //         params: { reservationId: item.referenceData?.reservationId },
+        //       });
+        //     } else if (item.referenceData?.spaceId) {
+        //       navigation.navigate('Spaces', {
+        //         screen: 'SpaceDetail',
+        //         params: { spaceId: item.referenceData?.spaceId },
+        //       });
+        //     }
+        //   }}
+        //   style={[
+        //     styles.referenceContainer,
+        //     isReservation && styles.reservationContainer,
+        //   ]}
+        // >
+        //   {item.referenceData.image && (
+        //     <Image
+        //       source={{ uri: item.referenceData.image }}
+        //       style={styles.referenceImage}
+        //     />
+        //   )}
+        //   <Text
+        //     style={[
+        //       styles.referenceTitle,
+        //       isReservation && styles.reservationTitle,
+        //     ]}
+        //   >
+        //     {isReservation
+        //       ? `Requested: ${item.referenceData.title}`
+        //       : `Responding to: ${item.referenceData.title}`}
+        //   </Text>
+        // </TouchableOpacity>
+
+
+
+
       );
     }
 
+
+
+
+
+
+
+
+
+    
     // Normal messages
     if (isCurrentUser) {
       return (
@@ -204,44 +280,24 @@ export default function MessagesScreen({ route }: Props) {
       {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
         <View style={styles.container}>
 
-          {/* <FlatList
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            contentContainerStyle={{ paddingVertical: 10 }}
-          /> */}
 
 
-          {/* <FlatList
-  ref={flatListRef}
-  data={messages}
-  keyExtractor={(item) => item.id}
-  renderItem={renderItem}
-  contentContainerStyle={{ paddingVertical: 10 }}
-  onContentSizeChange={() =>
-    flatListRef.current?.scrollToEnd({ animated: true })
-  }
-  onLayout={() =>
-    flatListRef.current?.scrollToEnd({ animated: true })
-  }
-/> */}
-
-<FlatList
-  ref={flatListRef}
-  data={messages}
-  keyExtractor={(item) => item.id}
-  renderItem={renderItem}
-  contentContainerStyle={{ paddingVertical: 10 }}
-  onContentSizeChange={() =>
-    flatListRef.current?.scrollToEnd({ animated: true })
-  }
-  onLayout={() =>
-    flatListRef.current?.scrollToEnd({ animated: true })
-  }
-  keyboardShouldPersistTaps="handled" // allows taps to go through when keyboard is open
-  keyboardDismissMode="on-drag"       // dismiss keyboard when user drags
-  showsVerticalScrollIndicator={false}
-/>
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={(item) => item.id}
+              renderItem={renderItem}
+              contentContainerStyle={{ paddingVertical: 10 }}
+              onContentSizeChange={() =>
+                flatListRef.current?.scrollToEnd({ animated: true })
+              }
+              onLayout={() =>
+                flatListRef.current?.scrollToEnd({ animated: true })
+              }
+              keyboardShouldPersistTaps="handled" // allows taps to go through when keyboard is open
+              keyboardDismissMode="on-drag"       // dismiss keyboard when user drags
+              showsVerticalScrollIndicator={false}
+            />
 
 
 
@@ -266,115 +322,6 @@ export default function MessagesScreen({ route }: Props) {
   );
 }
 
-// const styles = StyleSheet.create({
-//   container: { flex: 1, padding: 12, backgroundColor: '#fff' },
-
-//   // Sent message
-//   sentContainer: {
-//     alignSelf: 'flex-end',
-//     alignItems: 'flex-end',
-//     marginVertical: 6,
-//     maxWidth: '75%',
-//   },
-//   sent: {
-//     backgroundColor: '#007AFF',
-//     color: '#fff',
-//     padding: 8,
-//     borderRadius: 6,
-//   },
-
-//   // Received message
-//   receivedContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'flex-start',
-//     marginVertical: 6,
-//     maxWidth: '75%',
-//   },
-//   received: {
-//     backgroundColor: '#eee',
-//     padding: 8,
-//     borderRadius: 6,
-//   },
-
-//   // Common
-//   bubble: {
-//     flexShrink: 1,
-//   },
-//   timestamp: {
-//     fontSize: 10,
-//     color: '#888',
-//     marginTop: 2,
-//     alignSelf: 'flex-end',
-//   },
-//   avatar: {
-//     width: 28,
-//     height: 28,
-//     borderRadius: 14,
-//     marginRight: 8,
-//     marginTop: 4,
-//   },
-
-//   // Input
-//   inputRow: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginTop: 8,
-//   },
-//   input: {
-//     flex: 1,
-//     borderColor: '#ccc',
-//     borderWidth: 1,
-//     borderRadius: 8,
-//     padding: 10,
-//   },
-//   sendButton: {
-//     marginLeft: 8,
-//     backgroundColor: '#007AFF',
-//     padding: 10,
-//     borderRadius: 8,
-//   },
-//   sendText: {
-//     color: 'white',
-//     fontWeight: '500',
-//   },
-
-//   referenceContainer: {
-//     backgroundColor: '#f5f5f5',
-//     borderRadius: 10,
-//     padding: 10,
-//     marginBottom: 8,
-//     maxWidth: '75%',
-//     alignSelf: 'center',
-//     alignItems: 'center',
-//   },
-//   referenceImage: {
-//     width: 200,
-//     height: 120,
-//     borderRadius: 8,
-//     marginBottom: 8,
-//   },
-//   referenceTitle: {
-//     fontWeight: '600',
-//     color: '#333',
-//     textAlign: 'center',
-//   },
-//   reservationContainer: {
-//     backgroundColor: '#e0f7fa',
-//     borderWidth: 1,
-//     borderColor: '#26c6da',
-//     borderRadius: 10,
-//     padding: 12,
-//     marginBottom: 8,
-//     maxWidth: '75%',
-//     alignSelf: 'center',
-//     alignItems: 'center',
-//   },
-//   reservationTitle: {
-//     fontWeight: '700',
-//     color: '#00796b',
-//     textAlign: 'center',
-//   },
-// });
 
 
 const styles = StyleSheet.create({
@@ -490,7 +437,7 @@ const styles = StyleSheet.create({
   },
   referenceTitle: {
     fontWeight: '600',
-    color: '#0F6B5B', // emerald green
+    color: '#FFFFFF', // emerald green
     textAlign: 'center',
     fontFamily: 'Poppins',
   },
@@ -507,8 +454,21 @@ const styles = StyleSheet.create({
   },
   reservationTitle: {
     fontWeight: '700',
-    color: '#0F6B5B', // emerald green text
+    color: '#FFFFFF', // emerald green text
     textAlign: 'center',
     fontFamily: 'Poppins',
   },
+  sentBubble: {
+    backgroundColor: '#0F6B5B',
+    borderRadius: 12,
+    padding: 10,
+    maxWidth: '75%',
+  },
+  receivedBubble: {
+    backgroundColor: '#629447',
+    borderRadius: 12,
+    padding: 10,
+    maxWidth: '75%',
+  },
+  
 });

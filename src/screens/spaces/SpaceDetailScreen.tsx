@@ -406,7 +406,7 @@ useEffect(() => {
       {space.description && <Text style={styles.description}>{space.description}</Text>}
 
       {space.price && (
-        <Text style={styles.price}>${parseFloat(space.price).toFixed(2)} {space.billingFrequency} </Text>
+        <Text style={styles.price}>${parseFloat(space.price).toFixed(2)} CAD {space.priceFrequency} </Text>
       )}
 
 

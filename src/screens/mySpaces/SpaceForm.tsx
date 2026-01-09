@@ -1,7 +1,7 @@
 
 
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { collection, addDoc, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -11,7 +11,11 @@ import * as Crypto from 'expo-crypto';
 import { storage } from '../../firebase/config';
 import { Alert } from 'react-native'; // Add this import if not already present
 import BlockedCalendar from '../../components/BlockedCalendar';
-
+import { Dimensions } from 'react-native';
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SIDE_MARGIN = 16; // gap on left & right of carousel
+const IMAGE_GAP = 12; // gap between images
+const IMAGE_WIDTH = SCREEN_WIDTH - SIDE_MARGIN * 2; // image width leaves room on sides
 
 
 import {
@@ -55,6 +59,10 @@ const [address, setAddress] = useState(initialData?.address?.split(',')[0] || ''
 const [postalCode, setPostalCode] = useState(initialData?.address?.split(',')[1]?.trim() || '');
 const [accessibility, setAccessibility] = useState(initialData?.accessibility || null);
 const [security, setSecurity] = useState(initialData?.security || []);
+const scrollRef = useRef<ScrollView>(null);
+const [currentIndex, setCurrentIndex] = useState(0);
+const [submitting, setSubmitting] = useState(false);
+
 // const [deliveryMethod, setDeliveryMethod] = useState(initialData?.deliveryMethod || []);
 const [images, setImages] = useState<string[]>(initialData?.images || []);
 const [mainImage, setMainImage] = useState<string | null>(initialData?.mainImage || null);
@@ -253,58 +261,114 @@ const uploadImageAsync = async (uri: string, userId: string): Promise<string> =>
 
 
 
-const handleSubmit = async () => {
-	if (!userId) {
-	  alert('You must be logged in.');
-	  return;
-	}
+// const handleSubmit = async () => {
+// 	if (!userId) {
+// 	  alert('You must be logged in.');
+// 	  return;
+// 	}
 
-	try {
-	  const fullAddress = `${address}, ${postalCode}`;
-	  const coordinates = await geocodeAddress(fullAddress);
+// 	try {
+// 	  const fullAddress = `${address}, ${postalCode}`;
+// 	  const coordinates = await geocodeAddress(fullAddress);
 	  
-	  const uploadedImageURLs: string[] = [];
+// 	  const uploadedImageURLs: string[] = [];
   
-	  for (const uri of images) {
-		// If already a URL (edit mode), skip upload
-		if (uri.startsWith('http')) {
-		  uploadedImageURLs.push(uri);
-		} else {
-		  const url = await uploadImageAsync(uri, userId);
-		  uploadedImageURLs.push(url);
-		}
-	  }
+// 	  for (const uri of images) {
+// 		// If already a URL (edit mode), skip upload
+// 		if (uri.startsWith('http')) {
+// 		  uploadedImageURLs.push(uri);
+// 		} else {
+// 		  const url = await uploadImageAsync(uri, userId);
+// 		  uploadedImageURLs.push(url);
+// 		}
+// 	  }
   
-	  const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
+// 	  const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
   
-	  const postData = {
-		title,
-		description,
-		dimensions: { width, length, height },
-		storageType,
-		usageType,
-		mainImage: mainImageURL,
-		images: uploadedImageURLs,
-		userId,
-		postType,
-		price,
-    priceFrequency,
-		address: fullAddress,
-		location: coordinates,
-		accessibility,
-		security,
-    blockedTimes: blockedTimes,
-    reservedTimes,
+// 	  const postData = {
+// 		title,
+// 		description,
+// 		dimensions: { width, length, height },
+// 		storageType,
+// 		usageType,
+// 		mainImage: mainImageURL,
+// 		images: uploadedImageURLs,
+// 		userId,
+// 		postType,
+// 		price,
+//     priceFrequency,
+// 		address: fullAddress,
+// 		location: coordinates,
+// 		accessibility,
+// 		security,
+//     blockedTimes: blockedTimes,
+//     reservedTimes,
 
-		// deliveryMethod
-	  };
+// 		// deliveryMethod
+// 	  };
   
-	  await onSubmit(postData);
-	} catch (error: any) {
-	  console.error('Form submission error:', error);
-	  alert(`Error: ${error.message}`);
-	}
-  };
+// 	  await onSubmit(postData);
+// 	} catch (error: any) {
+// 	  console.error('Form submission error:', error);
+// 	  alert(`Error: ${error.message}`);
+// 	}
+//   };
+
+const handleSubmit = async () => {
+  if (!userId) {
+    alert('You must be logged in.');
+    return;
+  }
+
+  try {
+    setSubmitting(true); // <-- start submitting
+
+    const fullAddress = `${address}, ${postalCode}`;
+    const coordinates = await geocodeAddress(fullAddress);
+
+    const uploadedImageURLs: string[] = [];
+
+    for (const uri of images) {
+      // If already a URL (edit mode), skip upload
+      if (uri.startsWith('http')) {
+        uploadedImageURLs.push(uri);
+      } else {
+        const url = await uploadImageAsync(uri, userId);
+        uploadedImageURLs.push(url);
+      }
+    }
+
+    const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
+
+    const postData = {
+      title,
+      description,
+      dimensions: { width, length, height },
+      storageType,
+      usageType,
+      mainImage: mainImageURL,
+      images: uploadedImageURLs,
+      userId,
+      postType,
+      price,
+      priceFrequency,
+      address: fullAddress,
+      location: coordinates,
+      accessibility,
+      security,
+      blockedTimes: blockedTimes,
+      reservedTimes,
+      // deliveryMethod
+    };
+
+    await onSubmit(postData);
+  } catch (error: any) {
+    console.error('Form submission error:', error);
+    alert(`Error: ${error.message}`);
+  } finally {
+    setSubmitting(false); // <-- stop submitting
+  }
+};
   
 
 
@@ -353,13 +417,50 @@ const handleSubmit = async () => {
         <Text style={styles.addPhotoText}>Add Photo ({images.length}/{MAX_IMAGES})</Text>
       </TouchableOpacity>
 
-      <View style={styles.imageGrid}>
+      {/* <View style={styles.imageGrid}>
         {images.map((uri) => (
           <TouchableOpacity key={uri} onPress={() => prioritizeImage(uri)} onLongPress={() => removeImage(uri)}>
             <Image source={{ uri }} style={[styles.image, mainImage === uri && styles.mainImage]} />
           </TouchableOpacity>
         ))}
+      </View> */}
+
+<View style={styles.carouselContainer}>
+<ScrollView
+    horizontal
+    pagingEnabled={false} // we’ll use snapToInterval
+    showsHorizontalScrollIndicator={false}
+    contentContainerStyle={{ paddingHorizontal: SIDE_MARGIN }}
+    snapToInterval={IMAGE_WIDTH + IMAGE_GAP} // width + gap
+    snapToAlignment="center" // ensures item centers
+    decelerationRate="fast"
+  >
+
+    {images.map((uri, index) => (
+      <View key={uri} style={styles.imageSlide}>
+        <Image source={{ uri }} style={styles.carouselImage} />
+
+        {/* Delete button */}
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => removeImage(uri)}
+        >
+          <Text style={styles.deleteText}>✕</Text>
+        </TouchableOpacity>
+
+        {/* Main image indicator */}
+        {mainImage === uri && (
+          <View style={styles.mainBadge}>
+            <Text style={styles.mainBadgeText}>Main</Text>
+          </View>
+        )}
       </View>
+    ))}
+  </ScrollView>
+</View>
+
+
+
 
 
       <TextInput
@@ -624,7 +725,7 @@ const handleSubmit = async () => {
 
 
 
-	<TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+	{/* <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
 		<Text style={styles.submitText}>
 			{mode === 'edit' ? 'Update Space' : 'Create Space'}
 		</Text>
@@ -637,7 +738,35 @@ const handleSubmit = async () => {
 		>
 			<Text style={[styles.submitText, { color: 'white' }]}>Delete Post</Text>
 		</TouchableOpacity>
-	)}
+	)} */}
+
+<TouchableOpacity
+  style={[styles.submitButton, submitting && { opacity: 0.6 }]}
+  onPress={handleSubmit}
+  disabled={submitting} // ⬅️ disables button
+>
+  <Text style={styles.submitText}>
+    {submitting ? (mode === 'edit' ? 'Updating post...' : 'Creating post...') 
+                : (mode === 'edit' ? 'Update Space' : 'Create Space')}
+  </Text>
+</TouchableOpacity>
+
+{mode === 'edit' && initialData?.postId && (
+  <TouchableOpacity
+    style={[
+      styles.submitButton,
+      { backgroundColor: 'red', marginTop: 10 },
+      submitting && { opacity: 0.6 }, // visually show disabled
+    ]}
+    onPress={handleDeletePost}
+    disabled={submitting} // ⬅️ disables button
+  >
+    <Text style={[styles.submitText, { color: 'white' }]}>
+      {submitting ? 'Deleting post...' : 'Delete Post'}
+    </Text>
+  </TouchableOpacity>
+)}
+
 
 
 
@@ -851,6 +980,60 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 10,
     fontFamily: 'Poppins-Regular',
+  },
+  carouselContainer: {
+    height: 'auto',
+    marginBottom: 16,
+  },
+  
+  imageSlide: {
+    width: IMAGE_WIDTH * .5 ,
+    height: 150,
+    marginHorizontal: 8, // 👈 spacing between images
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  
+  carouselImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  
+  
+  deleteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  deleteText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  
+  mainBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    backgroundColor: '#0F6B5B',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  
+  mainBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: 'Poppins-Bold',
   },
   
   

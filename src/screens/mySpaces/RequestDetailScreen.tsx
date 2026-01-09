@@ -10,6 +10,7 @@ import { addReservedTime } from 'src/firebase/firestore/posts';
 import { getSpaceById } from 'src/firebase/firestore/posts';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
+import ReviewCard from 'src/components/reviewCard'; 
 
 // import { Space } from 'src/types/space';
 import {
@@ -60,6 +61,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           const docSnap = await getDoc(doc(db, 'reservations', reservationId));
           if (docSnap.exists()) {
             setReservation(docSnap.data());
+
           }
         } catch (e) {
           console.error(e);
@@ -286,12 +288,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     try {
       const updateData: any = { status: newStatus };
   
-      // if moving to confirmed, set payment tracking fields
-      // if (newStatus === 'confirmed') {
-      //   updateData.lastPaymentDate = null; // no payments yet
-      //   updateData.nextPaymentDate = reservation.startDate; // first payment due on start date
-      // }
-
       if (newStatus === 'confirmed') {
         updateData.lastPaymentDate = null;
         updateData.nextPaymentDate = reservation.startDate;
@@ -303,8 +299,11 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             photoUrl: null,
             photoUploaded: false,
             completed: false,
+            reviews: { host: false, renter: false }, // ✅ make sure reviews exists
           };
         }
+        
+        
       }
       
 
@@ -319,6 +318,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
       Alert.alert('Error', 'Failed to update status.');
     }
   };
+
+
 
   const canEdit =
   userId === reservation?.requesterId &&
@@ -425,6 +426,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   
     await updateDoc(doc(db, 'reservations', reservationId), {
       'security.codeVerified': true,
+      'security.reviews': reservation.security?.reviews || { host: false, renter: false }, // ensures reviews exists in Firestore
+
     });
   
     setReservation({
@@ -432,8 +435,10 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
       security: {
         ...reservation.security,
         codeVerified: true,
+        reviews: reservation.security?.reviews || { host: false, renter: false }, // ✅ preserve
       },
     });
+    
   
     Alert.alert('Success', 'Security code verified.');
   };
@@ -464,6 +469,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
       await updateDoc(doc(db, 'reservations', reservationId), {
         'security.photoUrl': photoUrl,
         'security.photoUploaded': true,
+        'security.reviews': reservation.security?.reviews || { host: false, renter: false },
+
       });
   
       setReservation({
@@ -472,8 +479,12 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           ...reservation.security,
           photoUrl,
           photoUploaded: true,
+          reviews: reservation.security?.reviews || { host: false, renter: false }, // ✅ preserve
         },
       });
+      
+
+
     } catch (err) {
       Alert.alert('Error', 'Failed to upload image.');
     } finally {
@@ -489,6 +500,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     ) {
       updateDoc(doc(db, 'reservations', reservationId), {
         'security.completed': true,
+        'security.reviews': reservation.security?.reviews || { host: false, renter: false }, // ensures reviews exists in Firestore
       });
     }
   }, [reservation?.security]);
@@ -758,6 +770,33 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             )}
           </>
         )}
+
+
+
+        {reservation.security?.completed === true &&
+          ((userId === reservation.ownerId && !reservation.security.reviews.host) ||
+          (userId === reservation.requesterId && !reservation.security.reviews.renter)) && (
+            <ReviewCard
+              reservationId={reservationId}
+              hostId={reservation.ownerId}
+              renterId={reservation.requesterId}
+              role={role}
+            />
+        )}
+
+        {/* Review status */}
+        {reservation.security?.reviews && (
+          <>
+            {userId === reservation.ownerId && reservation.security.reviews.host && (
+              <Text style={styles.successText}>✅ Review submitted</Text>
+            )}
+            {userId === reservation.requesterId && reservation.security.reviews.renter && (
+              <Text style={styles.successText}>✅ Review submitted</Text>
+            )}
+          </>
+        )}
+
+
 
 
       </View>

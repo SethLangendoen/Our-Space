@@ -144,7 +144,7 @@ async function processRecurringPaymentsLogic() {
 
 const processRecurringPayments = onSchedule(
   { 
-    schedule: "* * * * *", // Once an hour for right now. 
+    schedule: "0 * * * *", // Once an hour for right now. 
     timeZone: "America/Edmonton",
     secrets: ["STRIPE_SECRET"], // IMPORTANT: This injects the secret into process.env
     timeoutSeconds: 300 // Giving it 5 minutes to process the loop
@@ -158,3 +158,4 @@ const processRecurringPayments = onSchedule(
 module.exports = { processRecurringPayments };
 
 module.exports = { processRecurringPayments, processRecurringPaymentsLogic };
+

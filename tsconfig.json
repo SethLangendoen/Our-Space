@@ -17,7 +17,7 @@
 	  "noEmit": true,
 	  "jsx": "react"
 	},
-	"include": ["src", "**/*.ts", "**/*.tsx"],
+	"include": ["src", "**/*.ts", "**/*.tsx", "functions/payments/processRecurringPayments.js"],
 	"exclude": ["node_modules"]
   }
   

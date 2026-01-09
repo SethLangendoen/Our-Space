@@ -1,16 +1,3 @@
-/*
-
-/conversations/{conversationId}
-/conversations/{conversationId}/messages/{messageId}
-
-{
-  senderId: 'user1Uid',
-  text: "Hey there!",
-  timestamp: Timestamp,
-  readBy: ['user1Uid'] // Optional, for read receipts
-}
-
-*/
 
 // firebase/firestore/messages.js
 import { db } from '../config';

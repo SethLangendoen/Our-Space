@@ -34,6 +34,26 @@ type ProfileScreenNavigationProp = NativeStackNavigationProp<
   'ProfileMain'
 >;
 
+const StarRating = ({ rating }: { rating: number }) => {
+  return (
+    <View style={{ flexDirection: 'row', marginVertical: 4 }}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Text
+          key={i}
+          style={{
+            fontSize: 18,
+            color: i < rating ? '#FFD700' : '#CCC',
+            marginRight: 2,
+          }}
+        >
+          ★
+        </Text>
+      ))}
+    </View>
+  );
+};
+
+
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<'Listings' | 'Reviews' | 'Badges'>('Listings');
   const navigation = useNavigation<ProfileScreenNavigationProp>();
@@ -50,7 +70,9 @@ export default function ProfileScreen() {
   const [listings, setListings] = useState<any[]>([]);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState<boolean>(false);
-
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  
 
   const badgeList = [
     {
@@ -136,6 +158,7 @@ export default function ProfileScreen() {
   ];
 
 
+
   
   const fetchUserData = async () => {
     if (!viewingUserId) return;
@@ -179,6 +202,10 @@ export default function ProfileScreen() {
     }
   };
 
+
+
+
+
   const fetchUserListings = async () => {
     if (!viewingUserId) return;
     try {
@@ -202,6 +229,29 @@ export default function ProfileScreen() {
     }
   }, [isFocused]);
 
+  useEffect(() => {
+    if (activeTab !== 'Reviews') return; // only fetch when Reviews tab is active
+  
+    const fetchReviews = async () => {
+      setLoadingReviews(true);
+      try {
+        const q = query(
+          collection(db, 'reviews'),
+          where('revieweeId', '==', viewingUserId) // 👈 use viewingUserId
+        );
+        const querySnapshot = await getDocs(q);
+        const fetchedReviews = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setReviews(fetchedReviews);
+      } catch (err) {
+        console.error('Failed to fetch reviews', err);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+  
+    fetchReviews();
+  }, [activeTab, viewingUserId]);
+  
 
   const fetchVerificationStatus = async () => {
     if (!viewingUserId) return;
@@ -357,6 +407,42 @@ export default function ProfileScreen() {
           )}
 
 
+          {activeTab === 'Reviews' && (
+            <View style={styles.reviewList}>
+              {loadingReviews ? (
+                <ActivityIndicator size="small" color="#000" style={{ marginTop: 20 }} />
+              ) : reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <View key={review.id} style={styles.reviewCard}>
+
+                  <View style={styles.reviewHeader}>
+                    {/* Left side: name + date */}
+                      <Text style={styles.reviewerName}>
+                        {review.reviewerName || 'User'}{' '}
+                        <Text style={styles.saysText}>says</Text>
+                      </Text>
+
+                      {/* Right side: stars */}
+                      <StarRating rating={review.rating} />
+                  </View>
+
+
+
+
+                    {/* Description */}
+                    <Text style={styles.reviewText}>
+                      {review.description}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.message}>No reviews yet.</Text>
+              )}
+            </View>
+          )}
+
+
+
 
 
 
@@ -396,7 +482,11 @@ const styles = StyleSheet.create({
     width: '100%',
     top: 30,
   },
-
+  reviewDate: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
   statBox: {
     alignItems: 'center',
   },
@@ -585,6 +675,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFCF1', // wheat background covers scroll too
   },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  
+  saysText: {
+    fontWeight: '400',
+    color: '#666',
+  },
   
   scrollContent: {
     paddingBottom: 0,
@@ -618,5 +719,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#0F6B5B', // emerald green text
   },
+  reviewList: {
+    marginTop: 16,
+  },
+  reviewCard: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    elevation: 1,
+  },
+  reviewerName: {
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  reviewRating: {
+    color: '#FFD700',
+    marginBottom: 4,
+  },
+  reviewText: {
+    color: '#333',
+  },
+  
   
 });

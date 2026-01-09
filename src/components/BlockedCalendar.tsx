@@ -6,13 +6,7 @@ type BlockedTime = { start: string; end: string };
 
 
 
-// interface BlockedCalendarProps {
-// 	blockedTimes: BlockedTime[];
-// 	onAddBlockedTime?: (time: BlockedTime) => void;
-// 	onRemoveBlockedTime?: (index: number) => void;
-// 	onSelectRange?: (range: { start: Date | null; end: Date | null }) => void; // ✅ allow null
-// 	editable?: boolean;
-//   }
+
   
 interface BlockedCalendarProps {
 	blockedTimes: BlockedTime[];
@@ -22,61 +16,6 @@ interface BlockedCalendarProps {
 	onSelectRange?: (range: { start: Date | null; end: Date | null }) => void;
 	editable?: boolean;
 }
-
-
-
-
-
-
-  // const BlockedCalendar: React.FC<BlockedCalendarProps> = ({
-	// blockedTimes,
-	// onAddBlockedTime,
-	// onRemoveBlockedTime,
-	// onSelectRange,  
-	// editable = false,
-  // }) => {
-  // const [rangeStart, setRangeStart] = useState<string | null>(null);
-  // const [rangeEnd, setRangeEnd] = useState<string | null>(null);
-
-  // // Helper: get all dates between start and end
-  // const getRangeDates = (start: string, end: string) => {
-  //   const dates: string[] = [];
-  //   let current = new Date(start);
-  //   const last = new Date(end);
-
-  //   while (current <= last) {
-  //     dates.push(current.toISOString().split('T')[0]);
-  //     current.setDate(current.getDate() + 1);
-  //   }
-  //   return dates;
-  // };
-
-  // // Build marked dates
-  // const markedDates = blockedTimes.reduce((acc, bt) => {
-  //   const range = getRangeDates(bt.start, bt.end);
-  //   range.forEach((date, idx) => {
-  //     acc[date] = {
-  //       startingDay: idx === 0,
-  //       endingDay: idx === range.length - 1,
-  //       color: '#FF6B6B',
-  //       textColor: 'white',
-  //     };
-  //   });
-  //   return acc;
-  // }, {} as Record<string, any>);
-
-  // // Add temporary selection
-  // if (rangeStart) {
-  //   const tempRange = rangeEnd ? getRangeDates(rangeStart, rangeEnd) : [rangeStart];
-  //   tempRange.forEach((date, idx) => {
-  //     markedDates[date] = {
-  //       startingDay: idx === 0,
-  //       endingDay: idx === tempRange.length - 1,
-  //       color: '#6B83FF',
-  //       textColor: 'white',
-  //     };
-  //   });
-  // }
 
 
   const BlockedCalendar: React.FC<BlockedCalendarProps> = ({
@@ -198,22 +137,6 @@ interface BlockedCalendarProps {
 
       {editable && (
         <>
-
-
-          {/* <TouchableOpacity
-            style={{ padding: 10, backgroundColor: '#eee', marginTop: 10 }}
-            onPress={() => {
-              if (rangeStart && rangeEnd) {
-                onAddBlockedTime?.({ start: rangeStart, end: rangeEnd });
-                setRangeStart(null);
-                setRangeEnd(null);
-              } else {
-                Alert.alert('Invalid range', 'Please select a start and end date.');
-              }
-            }}
-          >
-            <Text style={{ textAlign: 'center' }}>Add Blocked Range</Text>
-          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={{ padding: 10, backgroundColor: '#eee', marginTop: 10 }}

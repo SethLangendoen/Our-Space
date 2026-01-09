@@ -1,7 +1,7 @@
 
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -253,7 +253,7 @@ const renderContent = () => {
         })
       ) : (
         <View style={styles.placeholderImage}>
-          <Text style={styles.message}>No reservations found</Text>
+          <Text style={styles.message}>No {bookingFilter} Spaces found</Text>
           <Image
             source={require('../../../assets/mySpaces/requests.png')}
             style={styles.awaitingImage}
@@ -268,110 +268,10 @@ const renderContent = () => {
 
 
 
-// const renderContent = () => {
-
-// 	const awaitingPosts = userPosts.filter(post => {
-// 		const contracts = post.contracts as { [key: string]: any } | undefined;
-// 		// Awaiting means no contracts or contracts object is empty
-// 		return !contracts || Object.keys(contracts).length === 0;
-// 	  });
-	
-// 	  const ongoingPosts = userPosts.filter((post) => {
-// 		const contracts = post.contracts as { [key: string]: any } | undefined;
-// 		if (!contracts) return false;
-	  
-// 		return Object.values(contracts).some((contract) =>
-// 		  ['requested', 'accepted', 'confirmed'].includes(contract.state)
-// 		);
-// 	  });
-	  
-  
-// 	switch (selectedTab) {
-
-
-
-//         case 'My Spaces':
-//         return awaitingPosts.length > 0 ? (
-//           awaitingPosts.map((post) => (
-//             <SpaceCard
-//               key={post.id}
-//               item={post}
-//               onPress={() =>
-//                 navigation.navigate('EditSpaceScreen', { spaceId: post.id })
-//               }
-//             />
-//           ))
-//         ) : (
-//           <View style={styles.placeholderImage}>
-//             <Text style={styles.message}>Spaces you create will show up here</Text>
-//             <Image
-//               source={require('../../../assets/mySpaces/awaitingPosts.png')}
-//               style={styles.awaitingImage}
-//               resizeMode="contain"
-//             />
-//           </View>
-//         );
-
-
-
-
-//         case 'Bookings':
-//           // const requested = userReservations.filter(r => r.status === 'requested' || 'awaiting_acceptance');
-//           const requested = userReservations.filter(
-//             r => r.status === 'requested' || r.status === 'awaiting_acceptance'
-//           );
-          
-//           console.log(requested.length);
-//           return requested.length > 0 ? (
-//             requested.map((reservation) => {
-//               const isOwner = reservation.ownerId === userId;
-//               return (
-//                 <ReservationCard
-//                   key={reservation.id}
-//                   reservation={reservation}
-//                   isOwner={isOwner}
-//                   onPress={() => navigation.navigate('RequestDetailScreen', { reservationId: reservation.id })}
-//                 />
-//               );
-//             })
-//           ) : (
-//             <View style={styles.placeholderImage}>
-//               <Text style={styles.message}>Space requests will show up here</Text>
-//               <Image
-//                 source={require('../../../assets/mySpaces/requests.png')}
-//                 style={styles.awaitingImage}
-//                 resizeMode="contain"
-//               />
-//             </View>
-//           );
-
-
-
-// 	  default:
-// 		return null;
-// 	}
-//   };
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   return (
+
     <View style={styles.container}>
       <View style={styles.tabContainer}>
 
@@ -394,15 +294,21 @@ const renderContent = () => {
           </Text>
         </TouchableOpacity>
       ))}
-
-
-
       </View>
 
-      <View style={styles.content}>{renderContent()}</View>
+
+      {/* <View style={styles.content}>{renderContent()}</View> */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {renderContent()}
+      </ScrollView>
 
  
       {selectedTab === 'My Spaces' && (
+        
     <TouchableOpacity
       style={[
         styles.createButton,
@@ -417,6 +323,7 @@ const renderContent = () => {
       }}
       disabled={!isLoggedIn}
     >
+
       <Text style={styles.createButtonText}>Create Post</Text>
     </TouchableOpacity>
   )}
@@ -451,6 +358,9 @@ const renderContent = () => {
 
     </View>
   );
+
+
+  
 }
 
 
@@ -607,12 +517,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // awaitingImage: {
-  //   width: 200,
-  //   height: 200,
-  //   opacity: 0.9,
-  // },
-
   awaitingImage: {
     width: width ,
     height: height * .5,
@@ -624,6 +528,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-  },
+    position: 'absolute',   // ✅ replace 'fixed' with 'absolute'
+    top: 0,
+    left: 0,
+    right: 0,
+  }
+  
 });
 
