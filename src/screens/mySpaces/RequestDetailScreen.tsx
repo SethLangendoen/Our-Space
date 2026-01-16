@@ -25,6 +25,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MySpacesStackParamList } from 'src/types/types';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { handleCancelReservation } from 'src/firebase/firestore/cancelReservation';
+import SecurityCheck from './helpers/securityCheck';
 // import { calculateCancellationPreview } from './calculateCancellationPreview';
 
 type Props = NativeStackScreenProps<MySpacesStackParamList, 'RequestDetailScreen'>;
@@ -318,44 +319,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   };
   
 
-
-  const updateStatus = async (newStatus: string) => {
-    if (!reservation) return;
-  
-    try {
-      const updateData: any = { status: newStatus };
-  
-      if (newStatus === 'confirmed') {
-        updateData.lastPaymentDate = null;
-        updateData.nextPaymentDate = reservation.startDate;
-      
-        if (!reservation.security) {
-          updateData.security = {
-            code: generateSecurityCode(),
-            codeVerified: false,
-            photoUrl: null,
-            photoUploaded: false,
-            completed: false,
-            reviews: { host: false, renter: false }, // ✅ make sure reviews exists
-          };
-        }
-        
-        
-      }
-      
-      await updateDoc(doc(db, 'reservations', reservationId), updateData);
-  
-      setReservation({ ...reservation, ...updateData });
-  
-      Alert.alert('Success', `Status updated to ${newStatus}`);
-    } catch (err) {
-      console.error('Failed to update status', err);
-      Alert.alert('Error', 'Failed to update status.');
-    }
-  };
-
-
-
   const canEdit =
   userId === reservation?.requesterId &&
   reservation?.status !== 'confirmed';
@@ -419,87 +382,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
 
-
-  // security stuff: 
-
-  const generateSecurityCode = () =>
-  Math.floor(1000 + Math.random() * 9000).toString();
-
-  const handleVerifyCode = async () => {
-    if (!reservation?.security) return;
-  
-    if (enteredCode !== reservation.security.code) {
-      Alert.alert('Invalid Code', 'The security code does not match.');
-      return;
-    }
-  
-    await updateDoc(doc(db, 'reservations', reservationId), {
-      'security.codeVerified': true,
-      'security.reviews': reservation.security?.reviews || { host: false, renter: false }, // ensures reviews exists in Firestore
-
-    });
-  
-    setReservation({
-      ...reservation,
-      security: {
-        ...reservation.security,
-        codeVerified: true,
-        reviews: reservation.security?.reviews || { host: false, renter: false }, // ✅ preserve
-      },
-    });
-    
-  
-    Alert.alert('Success', 'Security code verified.');
-  };
-
-  const handleUploadSecurityPhoto = async () => {
-    try {
-      setUploadingImage(true);
-  
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
-      });
-  
-      if (result.canceled) return;
-  
-      const uri = result.assets[0].uri;
-      const response = await fetch(uri);
-      const blob = await response.blob();
-  
-      const storageRef = ref(
-        storage,
-        `securityPhotos/${reservationId}.jpg`
-      );
-  
-      await uploadBytes(storageRef, blob);
-      const photoUrl = await getDownloadURL(storageRef);
-  
-      await updateDoc(doc(db, 'reservations', reservationId), {
-        'security.photoUrl': photoUrl,
-        'security.photoUploaded': true,
-        'security.reviews': reservation.security?.reviews || { host: false, renter: false },
-
-      });
-  
-      setReservation({
-        ...reservation,
-        security: {
-          ...reservation.security,
-          photoUrl,
-          photoUploaded: true,
-          reviews: reservation.security?.reviews || { host: false, renter: false }, // ✅ preserve
-        },
-      });
-      
-
-
-    } catch (err) {
-      Alert.alert('Error', 'Failed to upload image.');
-    } finally {
-      setUploadingImage(false);
-    }
-  };
 
   useEffect(() => {
     if (
@@ -629,61 +511,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
 
-      <ReservationStatusStepper status={reservation.status} userRole={'owner'} />
-
-
-{/* 
-        <View style={styles.statusExplanation}>
-
-        <Text style={styles.detailText}>
-          <Text style={styles.bold}>Status:</Text> {reservation.status}
-        </Text>
-
-        {reservation.status === 'requested' && userId === reservation.ownerId && (
-          <Text style={styles.explanationText}>
-            By confirming this reservation, you allow the requester to review and accept the booking.
-            Once they accept, the reservation will be confirmed and payment will be processed.
-          </Text>
-        )}
-
-        {reservation.status === 'requested' && userId === reservation.requesterId && (
-          <Text style={styles.explanationText}>
-            Your request is awaiting confirmation from the owner. Once they confirm, you'll be able to accept the booking and finalize payment.
-          </Text>
-        )}
-
-        {reservation.status === 'awaiting_acceptance' && userId === reservation.ownerId && (
-          <Text style={styles.explanationText}>
-            You've confirmed this reservation. Now waiting on the requester to accept and finalize the booking.
-          </Text>
-        )}
-
-        {reservation.status === 'awaiting_acceptance' && userId === reservation.requesterId && (
-          <Text style={styles.explanationText}>
-            The owner has confirmed your reservation. By accepting, the booking will be finalized and payment will be completed.
-          </Text>
-        )}
-
-        {reservation.status === 'confirmed' && (
-          <Text style={styles.explanationText}>
-            This reservation is confirmed. Both parties can now prepare for the move-in and storage process.
-          </Text>
-        )}
-
-        {reservation.status === 'cancelled_by_renter' && (
-          <Text style={styles.explanationText}>
-            This reservation has been cancelled by the renter. Cancellation fees may have applied. Check our policies for more details. 
-          </Text>
-        )}
-
-        {reservation.status === 'cancelled_by_host' && (
-          <Text style={styles.explanationText}>
-            This reservation has been cancelled by the Host. Check our policies for more details. 
-          </Text>
-        )}
-
-        </View> */}
-
+      <ReservationStatusStepper status={reservation.status} userRole={role} />
 
 
 
@@ -745,122 +573,27 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
       </View>
 
     {reservation.status === 'confirmed' && reservation.security && (
-  <View style={styles.securityBox}>
 
-    <Text style={styles.whatsNext}>What's Next?</Text>
+        <>
+        
+        <SecurityCheck
+          reservation={reservation}
+          reservationId={reservationId}
+          userId={userId}
+          type="dropOff"
+          role={role} 
+        />
+          
+        <SecurityCheck
+          reservation={reservation}
+          reservationId={reservationId}
+          userId={userId}
+          type="pickUp"
+          role={role} 
+        />
+            
+        </>
 
-    <Text style={styles.sectionTitle}>Drop-off Security Check</Text>
-
-        {/* REQUESTER VIEW */}
-        {userId === reservation.requesterId && (
-          <>
-            <Text style={styles.securityText}>
-              Ourspace wants to make sure that your dropoff goes smoothly. Arrange a time with the host to dropoff your items. Upon finishing, make sure you complete 
-              the drop-off security check!
-            </Text>
-
-            <Text style={styles.securityText}>
-              Share this code with the owner when placing your items.
-            </Text>
-
-            <View style={styles.codeRow}>
-              {!reservation.security.codeVerified && (
-                <Text style={styles.securityCode}>
-                  {reservation.security.code}
-                </Text>
-              )}
-
-              {reservation.security.codeVerified && (
-                <Text style={styles.successText}>✅ Code Verified</Text>
-              )}
-            </View>
-
-
-
-            {!reservation.security.photoUploaded && (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleUploadSecurityPhoto}
-                disabled={uploadingImage}
-              >
-                <Text style={styles.actionButtonText}>
-                  Upload Storage Photo
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {reservation.security.photoUploaded && (
-              <Text style={styles.successText}>✅ Photo uploaded</Text>
-            )}
-          </>
-        )}
-
-        {/* OWNER VIEW */}
-        {userId === reservation.ownerId && (
-          <>
-
-            <Text style={styles.securityText}>
-              Ourspace wants to make sure that your requesters dropoff goes smoothly. Arrange a time with the requester to dropoff your items. Upon finishing, make sure you complete 
-              the drop-off security check!
-            </Text>
-
-
-            {!reservation.security.codeVerified && (
-            <>
-
-              <Text style={styles.securityText}>
-                Enter the code provided by the requester:
-              </Text>
-
-              <TextInput
-                style={styles.codeInput}
-                value={enteredCode}
-                onChangeText={setEnteredCode}
-                keyboardType="number-pad"
-                maxLength={4}
-              />
-
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleVerifyCode}
-              >
-                <Text style={styles.actionButtonText}>Verify Code</Text>
-              </TouchableOpacity>
-            </>
-            )}
-
-            {reservation.security.codeVerified && (
-              <Text style={styles.successText}>✅ Code verified</Text>
-            )}
-          </>
-        )}
-
-
-
-        {reservation.security?.completed === true &&
-          ((userId === reservation.ownerId && !reservation.security.reviews.host) ||
-          (userId === reservation.requesterId && !reservation.security.reviews.renter)) && (
-            <ReviewCard
-              reservationId={reservationId}
-              hostId={reservation.ownerId}
-              renterId={reservation.requesterId}
-              role={role}
-            />
-        )}
-
-        {/* Review status */}
-        {reservation.security?.reviews && (
-          <>
-            {userId === reservation.ownerId && reservation.security.reviews.host && (
-              <Text style={styles.successText}>✅ Review submitted</Text>
-            )}
-            {userId === reservation.requesterId && reservation.security.reviews.renter && (
-              <Text style={styles.successText}>✅ Review submitted</Text>
-            )}
-          </>
-        )}
-
-      </View>
     )}
 
 
@@ -940,7 +673,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             if (hoursBeforeStart >= 168) percent = 0;
             else if (hoursBeforeStart >= 48) percent = 0.25;
             else percent = 0.5;
-
+ 
             const cancellationBase = Math.round(baseAmount * percent);
             const PLATFORM_FEE_RATE = 0.095;
             const renterFee = Math.round(cancellationBase * PLATFORM_FEE_RATE);
@@ -1028,13 +761,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={handleCancel}
-        >
-          <Text style={styles.cancelText}>Cancel reservation</Text>
-        </TouchableOpacity> */}
-
 
       </View>
     );
@@ -1086,6 +812,7 @@ const styles = StyleSheet.create({
   nameText: {
     marginTop: 6,
     fontWeight: '500',
+    textAlign: 'center'
   },
   details: {
     marginBottom: 20,
@@ -1293,7 +1020,7 @@ const styles = StyleSheet.create({
   horizontalDates: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     marginVertical: 16,
   },
   
@@ -1310,7 +1037,7 @@ const styles = StyleSheet.create({
   
   
   dateDay: {
-    fontSize: 32,
+    fontSize: 62,
     fontWeight: '700',
     color: '#000', // black day
   },
