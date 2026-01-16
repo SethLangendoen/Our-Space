@@ -178,6 +178,9 @@ export default function ChatsScreen() {
   );
 }
 
+
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

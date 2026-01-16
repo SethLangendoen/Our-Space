@@ -11,6 +11,7 @@ import { getSpaceById } from 'src/firebase/firestore/posts';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import ReviewCard from 'src/components/reviewCard'; 
+import ReservationStatusStepper from './helpers/reservationStatusStepper';
 
 // import { Space } from 'src/types/space';
 import {
@@ -23,6 +24,8 @@ import BlockedCalendar from 'src/components/BlockedCalendar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MySpacesStackParamList } from 'src/types/types';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { handleCancelReservation } from 'src/firebase/firestore/cancelReservation';
+// import { calculateCancellationPreview } from './calculateCancellationPreview';
 
 type Props = NativeStackScreenProps<MySpacesStackParamList, 'RequestDetailScreen'>;
 
@@ -207,6 +210,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     );
   };
   
+
+
   const sendDeniedMessage = async () => {
     if (!auth.currentUser || !reservation) return;
   
@@ -280,6 +285,38 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     );
   };
   
+  const handleCancel = async () => {
+    if (!reservation || !userId) return;
+  
+    // Determine role
+    const isHost = userId === reservation.ownerId;
+    const isRenter = userId === reservation.requesterId;
+  
+    if (isHost) {
+      // Just mark as cancelled by host
+      try {
+        await updateDoc(doc(db, "reservations", reservationId), {
+          status: "cancelled_by_host",
+        });
+  
+        setReservation({ ...reservation, status: "cancelled_by_host" });
+  
+        Alert.alert(
+          "Reservation Cancelled",
+          "You have successfully cancelled this reservation."
+        );
+      } catch (err) {
+        console.error("Failed to cancel as host", err);
+        Alert.alert("Error", "Failed to cancel reservation.");
+      }
+    } else if (isRenter) {
+      // Call the existing cancellation function that handles fees
+      handleCancelReservation(reservationId);
+    } else {
+      Alert.alert("Error", "You are not authorized to cancel this reservation.");
+    }
+  };
+  
 
 
   const updateStatus = async (newStatus: string) => {
@@ -306,8 +343,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         
       }
       
-
-  
       await updateDoc(doc(db, 'reservations', reservationId), updateData);
   
       setReservation({ ...reservation, ...updateData });
@@ -365,32 +400,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   };
   
   
-  const handleAcceptReservation = async () => {
-    if (!reservation) return;
-  
-    try {
-      // 1. Update reservation status
-      await updateStatus('confirmed');
-  
-      if (reservation.spaceId) {
-        const start = toJSDate(reservation.startDate);
-        const end = toJSDate(reservation.endDate);
-      
-        await addReservedTime(
-          reservation.spaceId,
-          start.toISOString().split('T')[0],
-          end.toISOString().split('T')[0]
-        );
-      }
-      
-  
-      Alert.alert('Success', 'Reservation confirmed and time added to space.');
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Error', 'Failed to finalize reservation.');
-    }
-  };
-
   
   const goToChat = () => {
     if (!reservation || !userId) return;
@@ -505,6 +514,12 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     }
   }, [reservation?.security]);
   
+  
+  // const canCancel =
+  // reservation?.status === "confirmed" &&
+  // new Date(reservation.startDate.seconds * 1000) > new Date();
+  // // const preview = calculateCancellationPreview(reservation, space);
+
 
   const canConfirm = userId === reservation?.ownerId && reservation?.status === 'requested';
   const canAccept = userId === reservation?.requesterId && reservation?.status === 'awaiting_acceptance';
@@ -551,25 +566,37 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
       <View style={styles.details}>
-        <Text style={styles.detailText}>
-          <Text style={styles.bold}>Status:</Text> {reservation.status}
-        </Text>
 
+        
         {!isEditing ? (
           <>
-            <Text style={styles.detailText}>
-              <Text style={styles.bold}>Start:</Text>{' '}
-              {toJSDate(reservation.startDate).toDateString()}
-            </Text>
+            <View style={styles.horizontalDates}>
+              {/* START DATE */}
+              <View style={styles.dateBlock}>
+                <Text style={styles.dateDay}>
+                  {toJSDate(reservation.startDate).getDate()}
+                </Text>
+                <Text style={styles.dateMonth}>
+                  {toJSDate(reservation.startDate).toLocaleString('default', { month: 'short' })}
+                </Text>
+              </View>
+
+              {/* Separator */}
+              <Text style={styles.dateSeparator}>→</Text>
+
+              {/* END DATE */}
+              <View style={styles.dateBlock}>
+                <Text style={styles.dateDay}>
+                  {toJSDate(reservation.endDate).getDate()}
+                </Text>
+                <Text style={styles.dateMonth}>
+                  {toJSDate(reservation.endDate).toLocaleString('default', { month: 'short' })}
+                </Text>
+              </View>
+            </View>
 
             <Text style={styles.detailText}>
-              <Text style={styles.bold}>End:</Text>{' '}
-              {toJSDate(reservation.endDate).toDateString()}
-            </Text>
-
-            <Text style={styles.detailText}>
-              <Text style={styles.bold}>Description:</Text>{' '}
-              {reservation.description}
+            <Text style={styles.nameText}>{requesterInfo?.firstName}'s request:  "{reservation.description}"</Text>
             </Text>
 
             {canEdit && (
@@ -599,7 +626,66 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             <Button title="Cancel Editing" onPress={() => setIsEditing(false)} />
           </>
         )}
-      </View>
+
+
+
+      <ReservationStatusStepper status={reservation.status} userRole={'owner'} />
+
+
+{/* 
+        <View style={styles.statusExplanation}>
+
+        <Text style={styles.detailText}>
+          <Text style={styles.bold}>Status:</Text> {reservation.status}
+        </Text>
+
+        {reservation.status === 'requested' && userId === reservation.ownerId && (
+          <Text style={styles.explanationText}>
+            By confirming this reservation, you allow the requester to review and accept the booking.
+            Once they accept, the reservation will be confirmed and payment will be processed.
+          </Text>
+        )}
+
+        {reservation.status === 'requested' && userId === reservation.requesterId && (
+          <Text style={styles.explanationText}>
+            Your request is awaiting confirmation from the owner. Once they confirm, you'll be able to accept the booking and finalize payment.
+          </Text>
+        )}
+
+        {reservation.status === 'awaiting_acceptance' && userId === reservation.ownerId && (
+          <Text style={styles.explanationText}>
+            You've confirmed this reservation. Now waiting on the requester to accept and finalize the booking.
+          </Text>
+        )}
+
+        {reservation.status === 'awaiting_acceptance' && userId === reservation.requesterId && (
+          <Text style={styles.explanationText}>
+            The owner has confirmed your reservation. By accepting, the booking will be finalized and payment will be completed.
+          </Text>
+        )}
+
+        {reservation.status === 'confirmed' && (
+          <Text style={styles.explanationText}>
+            This reservation is confirmed. Both parties can now prepare for the move-in and storage process.
+          </Text>
+        )}
+
+        {reservation.status === 'cancelled_by_renter' && (
+          <Text style={styles.explanationText}>
+            This reservation has been cancelled by the renter. Cancellation fees may have applied. Check our policies for more details. 
+          </Text>
+        )}
+
+        {reservation.status === 'cancelled_by_host' && (
+          <Text style={styles.explanationText}>
+            This reservation has been cancelled by the Host. Check our policies for more details. 
+          </Text>
+        )}
+
+        </View> */}
+
+
+
 
 
       {space && (
@@ -652,57 +738,27 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         </View>
       )}
 
+      <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
+        <Text style={styles.messageButtonText}>Message User</Text>
+      </TouchableOpacity>
 
-
-
-
-
-
-
-	  <View style={styles.statusExplanation}>
-
-      <Text style={styles.explanationTitle}>What this means:</Text>
-
-      {reservation.status === 'requested' && userId === reservation.ownerId && (
-        <Text style={styles.explanationText}>
-          By confirming this reservation, you allow the requester to review and accept the booking.
-          Once they accept, the reservation will be confirmed and payment will be processed.
-        </Text>
-      )}
-
-      {reservation.status === 'requested' && userId === reservation.requesterId && (
-        <Text style={styles.explanationText}>
-          Your request is awaiting confirmation from the owner. Once they confirm, you'll be able to accept the booking and finalize payment.
-        </Text>
-      )}
-
-      {reservation.status === 'awaiting_acceptance' && userId === reservation.ownerId && (
-        <Text style={styles.explanationText}>
-          You've confirmed this reservation. Now waiting on the requester to accept and finalize the booking.
-        </Text>
-      )}
-
-      {reservation.status === 'awaiting_acceptance' && userId === reservation.requesterId && (
-        <Text style={styles.explanationText}>
-          The owner has confirmed your reservation. By accepting, the booking will be finalized and payment will be completed.
-        </Text>
-      )}
-
-      {reservation.status === 'confirmed' && (
-        <Text style={styles.explanationText}>
-          This reservation is confirmed. Both parties can now prepare for the move-in and storage process.
-        </Text>
-      )}
-
-    </View>
+      </View>
 
     {reservation.status === 'confirmed' && reservation.security && (
   <View style={styles.securityBox}>
-    <Text style={styles.sectionTitle}>Security Check</Text>
+
+    <Text style={styles.whatsNext}>What's Next?</Text>
+
+    <Text style={styles.sectionTitle}>Drop-off Security Check</Text>
 
         {/* REQUESTER VIEW */}
         {userId === reservation.requesterId && (
           <>
+            <Text style={styles.securityText}>
+              Ourspace wants to make sure that your dropoff goes smoothly. Arrange a time with the host to dropoff your items. Upon finishing, make sure you complete 
+              the drop-off security check!
+            </Text>
+
             <Text style={styles.securityText}>
               Share this code with the owner when placing your items.
             </Text>
@@ -742,8 +798,16 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         {/* OWNER VIEW */}
         {userId === reservation.ownerId && (
           <>
+
+            <Text style={styles.securityText}>
+              Ourspace wants to make sure that your requesters dropoff goes smoothly. Arrange a time with the requester to dropoff your items. Upon finishing, make sure you complete 
+              the drop-off security check!
+            </Text>
+
+
             {!reservation.security.codeVerified && (
             <>
+
               <Text style={styles.securityText}>
                 Enter the code provided by the requester:
               </Text>
@@ -796,17 +860,12 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           </>
         )}
 
-
-
-
       </View>
     )}
 
 
 
-
-
-    <Button title="Message User" onPress={goToChat} />
+    {/* <Button title="Message User" onPress={goToChat} /> */}
       {userId === reservation.ownerId && reservation.status === 'requested' && (
           <View style={{ marginTop: 12 }}>
             <Button
@@ -859,12 +918,144 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         </TouchableOpacity>
       )}
 
+        {reservation &&
+        space &&
+        reservation.status === "confirmed" &&
+        (typeof reservation.startDate.toDate === "function"
+          ? reservation.startDate.toDate()
+          : new Date(reservation.startDate)) > new Date() && (
+          (() => {
+            // Calculate preview safely
+            const startDate =
+              typeof reservation.startDate.toDate === "function"
+                ? reservation.startDate.toDate()
+                : new Date(reservation.startDate);
+
+            const now = new Date();
+            const hoursBeforeStart = (startDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+            const baseAmount = Math.round(Number(space.price) * 100);
+
+            let percent = 0;
+            if (hoursBeforeStart >= 168) percent = 0;
+            else if (hoursBeforeStart >= 48) percent = 0.25;
+            else percent = 0.5;
+
+            const cancellationBase = Math.round(baseAmount * percent);
+            const PLATFORM_FEE_RATE = 0.095;
+            const renterFee = Math.round(cancellationBase * PLATFORM_FEE_RATE);
+            const totalCharge = cancellationBase + renterFee;
+
+            const preview = {
+              hoursBeforeStart,
+              percent,
+              cancellationBase,
+              renterFee,
+              totalCharge,
+            };
+
+    // Return the JSX
+    return (
+      <View>
+
+        {/* RENTER VIEW */}
+        {userId === reservation.requesterId && (
+          <View style={styles.warningBox}>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancel}
+            >
+              <Text style={styles.cancelText}>Cancel reservation</Text>
+            </TouchableOpacity>
+
+            {preview.cancellationBase === 0 ? (
+              <Text style={styles.infoText}>
+                You can cancel this reservation for free. No charges will be applied.
+              </Text>
+            ) : (
+              <View >
+                <Text style={styles.warningTitle}>
+                  Cancellation charges will apply
+                </Text>
+
+                <Text style={styles.warningText}>
+                  This reservation begins in {Math.ceil(preview.hoursBeforeStart / 24)} days.
+                </Text>
+
+                <Text style={styles.warningText}>
+                  Cancelling now will charge {Math.round(preview.percent * 100)}% of the reservation price.
+                </Text>
+
+                <Text style={styles.warningText}>
+                  • Cancellation fee: ${(preview.cancellationBase / 100).toFixed(2)}
+                </Text>
+
+                <Text style={styles.warningText}>
+                  • Platform fee (9.5%): ${(preview.renterFee / 100).toFixed(2)}
+                </Text>
+
+                <Text style={styles.warningTotal}>
+                  Total charge: ${(preview.totalCharge / 100).toFixed(2)}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* HOST VIEW */}
+        {userId === reservation.ownerId && (
+          <View style={styles.warningBox}>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancel}
+            >
+              <Text style={styles.cancelText}>Cancel reservation</Text>
+            </TouchableOpacity>
+
+
+            <Text style={styles.warningTitle}>
+              Are you sure you want to cancel?
+            </Text>
+
+            <Text style={styles.warningText}>
+              Cancelling a confirmed reservation prior to it's start date as a host does not charge you,
+              but it will be visible on your public profile. Repeated host cancellations may reduce renter trust.
+
+            </Text>
+
+          </View>
+        )}
+
+        {/* <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={handleCancel}
+        >
+          <Text style={styles.cancelText}>Cancel reservation</Text>
+        </TouchableOpacity> */}
+
+
+      </View>
+    );
+  })()
+)}
+
+
+
     {/* </View> */}
     </ScrollView>
 
 
   );
 }
+
+
+
+
+
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -899,7 +1090,7 @@ const styles = StyleSheet.create({
   details: {
     marginBottom: 20,
     padding: 10,
-    backgroundColor: '#f6f6f6',
+    // backgroundColor: '#f6f6f6',
     borderRadius: 8,
   },
   detailText: {
@@ -910,10 +1101,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   statusExplanation: {
-	backgroundColor: '#e6f4ea',
+	// backgroundColor: '#e6f4ea',
 	padding: 12,
 	borderRadius: 10,
-	marginBottom: 20,
+	marginBottom: 10,
 	borderWidth: 1,
 	borderColor: '#b5e0c6',
   },
@@ -943,9 +1134,8 @@ const styles = StyleSheet.create({
 	textAlign: 'center',
   },
   pricingBox: {
-    marginBottom: 20,
+    marginBottom: 10,
     padding: 12,
-    backgroundColor: '#eef3ff',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#c7d2fe',
@@ -979,7 +1169,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },  
   securityBox: {
-    marginTop: 20,
+    marginTop: 0,
     padding: 16,
     backgroundColor: '#F3F7F6',
     borderRadius: 10,
@@ -988,6 +1178,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 10,
+  },
+  whatsNext: {
+    fontSize: 34,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center'
   },
   securityText: {
     fontSize: 14,
@@ -1014,6 +1210,127 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 8,
   },
+  cancelButton: {
+    marginBottom: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E53935", // red outline
+
+    backgroundColor: "#FFF", // white background
+    alignItems: "center",
+  },
+
+  cancelText: {
+    color: "#E53935", // red text
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  warningBox: {
+    backgroundColor: "#FFF7ED", // soft amber background
+    borderColor: "#FDBA74",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 14,
+    marginVertical: 16,
+    
+  },
+
+  warningTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#9A3412", // dark amber
+    marginBottom: 6,
+  },
+
+  warningText: {
+    fontSize: 14,
+    color: "#7C2D12",
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+
+  warningTotal: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#7C2D12",
+    marginTop: 8,
+  },
+
+  infoText: {
+    fontSize: 14,
+    color: "#065F46", // calm green
+    backgroundColor: "#ECFDF5",
+    borderColor: "#6EE7B7",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  messageButton: {
+    backgroundColor: "#10B981", // soft emerald green
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 12,           // rounded edges
+    alignItems: "center",
+    marginVertical: 8,          // optional spacing
+    shadowColor: "#000",        // soft shadow for depth
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,               // Android shadow
+  },
+  
+  messageButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  horizontalDates: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginVertical: 16,
+  },
+  
+  dateBlock: {
+    alignItems: 'center',
+    marginHorizontal: 0,
+    backgroundColor: '#fff', // white background
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,           // thin border
+    borderColor: 'rgba(0,0,0,0.1)', // very subtle black
+  },
+  
+  
+  dateDay: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#000', // black day
+  },
+  
+  dateMonth: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000', // black month
+    marginTop: -4, // pull it up slightly for overlap effect
+  },
+  
+  dateSeparator: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000',
+  },
   
   
 });
+
+
+
+

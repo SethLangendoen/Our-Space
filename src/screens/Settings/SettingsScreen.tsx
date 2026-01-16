@@ -51,6 +51,7 @@ export default function SettingsScreen() {
       screens: [
         { title: "Get Started / Onboarding", screen: "StripeOnboarding" },
         { title: "Add / Remove Payment Methods", screen: "PaymentMethods" },
+        { title: "Earnings", screen: "Earnings" },
         { title: "Manage Payout Account", screen: "PayoutAccounts" },
         { title: "Transaction History", screen: "TransactionHistory" },
         { title: "Billing & Receipts", screen: "BillingReceipts" },
@@ -69,7 +70,6 @@ export default function SettingsScreen() {
     { title: 'Change Password', screen: 'ChangePassword' },
     { title: 'Verify ID', screen: 'VerifyID' },
     { title: 'Request for Views', screen: 'RequestForViews' },
-    { title: 'Earnings', screen: 'Earnings' },
     { title: 'Terms and Conditions', screen: 'TermsAndConditions' },
     { title: 'Version', screen: 'Version' },
     { title: 'Language', screen: 'Language' },

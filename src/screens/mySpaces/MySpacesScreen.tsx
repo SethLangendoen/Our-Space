@@ -232,7 +232,7 @@ const renderContent = () => {
           break;
         case 'Previous':
           filteredReservations = userReservations.filter(
-            r => r.status === 'completed' || r.status === 'rejected' || r.status === 'cancelled'
+            r => r.status === 'completed' || r.status === 'rejected' || r.status === 'cancelled_by_renter'|| r.status === 'cancelled_by_host'
           );
           break;
       }

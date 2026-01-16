@@ -79,3 +79,5 @@ export async function checkStripeVerification() {
 
   return data.verified; // true or false
 }
+
+

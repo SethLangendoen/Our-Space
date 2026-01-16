@@ -8,6 +8,8 @@ const { isStripeAccountVerified } = require("./stripe/checkVerification");
 const { handleStripeAccountUpdate } = require("./stripe/stripeAccountWebhook");
 const { processRecurringPayments } = require('./payments/processRecurringPayments');
 const { handleStripePaymentWebhook } = require("./stripe/stripePaymentWebhook");
+const { cancelReservationEarly } = require("./payments/cancelReservationEarly");
+const { getStripeEarningsLogic } = require("./stripe/getStripeEarningsLogic");
 
 
 const {
@@ -211,4 +213,32 @@ exports.handleStripePaymentWebhook = https.onRequest(
     secrets: ["STRIPE_SECRET", "STRIPE_WEBHOOK_SECRET"],
   },
   handleStripePaymentWebhook
+);
+
+exports.cancelReservationEarly = cancelReservationEarly;
+
+
+exports.getStripeEarnings = https.onRequest(
+  { cors: true },   // optional but useful
+  async (req, res) => {
+    try {
+      if (req.method !== "GET") {
+        return res.status(405).json({ error: "Method Not Allowed" });
+      }
+
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Missing Authorization header" });
+      }
+
+      const idToken = authHeader.split("Bearer ")[1];
+      const decoded = await admin.auth().verifyIdToken(idToken);
+
+      const earnings = await getStripeEarningsLogic({ userId: decoded.uid });
+      return res.status(200).json(earnings);
+    } catch (err) {
+      console.error("getStripeEarnings error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
 );
