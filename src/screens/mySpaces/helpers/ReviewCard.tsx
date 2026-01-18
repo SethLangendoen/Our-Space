@@ -5,19 +5,22 @@ import { doc, setDoc, updateDoc, serverTimestamp, collection, doc as docRef } fr
 import { db } from '../../../firebase/config';
 
 type ReviewCardProps = {
-  reservationId: string;
-  hostId: string;
-  renterId: string;
-  role: 'host' | 'renter';
-  securityType: 'dropOff' | 'pickUp';
-  onReviewSubmitted: () => void; // parent can refresh local security
-};
+	reservationId: string;
+	hostId: string;
+	renterId: string;
+	role: 'host' | 'renter';
+	securityType: 'dropOff' | 'pickUp';
+	reviewerFirstName?: string;
+	onReviewSubmitted: () => void;
+  };
+  
 
 export default function ReviewCard({
   reservationId,
   hostId,
   renterId,
   role,
+  reviewerFirstName,
   securityType,
   onReviewSubmitted,
 }: ReviewCardProps) {
@@ -37,17 +40,18 @@ export default function ReviewCard({
       const reviewerId = role === 'host' ? hostId : renterId;
       const revieweeId = role === 'host' ? renterId : hostId;
 
-      const reviewData = {
-        rating,
-        description,
-        reviewerId,
-        revieweeId,
-        reviewerName: role, // you can replace with actual user name
-        reservationId,
-        securityType,
-        role,
-        createdAt: serverTimestamp(),
-      };
+	  const reviewData = {
+		rating,
+		description,
+		reviewerId,
+		revieweeId,
+		reviewerName: reviewerFirstName || 'User', // store only the actual first name
+		reservationId,
+		securityType,
+		role,
+		createdAt: serverTimestamp(),
+	  };
+	  
 
       // Save review in main 'reviews' collection
       const reviewDocRef = docRef(collection(db, 'reviews'));

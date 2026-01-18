@@ -15,6 +15,8 @@ interface BlockedCalendarProps {
 	onRemoveBlockedTime?: (index: number) => void;
 	onSelectRange?: (range: { start: Date | null; end: Date | null }) => void;
 	editable?: boolean;
+  singleSelect?: boolean;
+
 }
 
 
@@ -25,10 +27,12 @@ interface BlockedCalendarProps {
     onRemoveBlockedTime,
     onSelectRange,  
     editable = false,
+    singleSelect
   }) => {
     const [rangeStart, setRangeStart] = useState<string | null>(null);
     const [rangeEnd, setRangeEnd] = useState<string | null>(null);
-  
+    const [isOpenEnded, setIsOpenEnded] = useState(false);
+
     // Helper: get all dates between start and end
     const getRangeDates = (start: string, end: string) => {
       const dates: string[] = [];
@@ -73,6 +77,7 @@ interface BlockedCalendarProps {
     }
   
   
+    const today = new Date().toISOString().split('T')[0];
 
 
 
@@ -81,61 +86,82 @@ interface BlockedCalendarProps {
       <Calendar
         markingType="period"
         markedDates={markedDates}
+        minDate={today}   
 
+        onDayPress={(day) => {
+          const selectedDate = day.dateString;
+        
+          // ✅ SINGLE-DAY MODE (Change End Date)
+          if (singleSelect) {
+            const isBlocked = allBlockedTimes.some(bt => {
+              const dates = getRangeDates(bt.start, bt.end);
+              return dates.includes(selectedDate);
+            });
+        
+            if (isBlocked) {
+              Alert.alert('Blocked Date', 'This date is unavailable.');
+              return;
+            }
+        
+            setRangeStart(selectedDate);
+            setRangeEnd(selectedDate);
+            onSelectRange?.({
+              start: null,
+              end: new Date(selectedDate),
+            });
+            return;
+          }
+        
+          // ⬇️ EXISTING RANGE LOGIC (unchanged)
+          if (rangeStart && rangeEnd) {
+            setRangeStart(day.dateString);
+            setRangeEnd(null);
+            setIsOpenEnded(true);
+            onSelectRange?.({ start: new Date(day.dateString), end: null });
+            return;
+          }
+        
+          if (!rangeStart) {
+            setRangeStart(day.dateString);
+            setRangeEnd(null);
+            setIsOpenEnded(true);
+            onSelectRange?.({ start: new Date(day.dateString), end: null });
+            return;
+          }
+        
+          if (!rangeEnd) {
+            let start = rangeStart;
+            let end = day.dateString;
+        
+            if (end < start) [start, end] = [end, start];
+        
+            const tempRange = getRangeDates(start, end);
+            const overlapsBlocked = tempRange.some(
+              date => markedDates[date]?.color === '#FF6B6B'
+            );
+        
+            if (overlapsBlocked) {
+              Alert.alert('Blocked Date', 'Your selected range overlaps a blocked date.');
+              setRangeStart(null);
+              setRangeEnd(null);
+              setIsOpenEnded(false);
+              onSelectRange?.({ start: null, end: null });
+              return;
+            }
+        
+            setRangeStart(start);
+            setRangeEnd(end);
+            setIsOpenEnded(false);
+            onSelectRange?.({ start: new Date(start), end: new Date(end) });
+          }
+        }}
+        
 
-
-
-
-		onDayPress={(day) => {
-			// Reset if full range already exists
-			if (rangeStart && rangeEnd) {
-			  setRangeStart(day.dateString);
-			  setRangeEnd(null);
-			  onSelectRange?.({ start: null, end: null });
-			  return;
-			}
-		  
-			// Temporary new range calculation
-			let newStart = rangeStart || day.dateString;
-			let newEnd = !rangeStart || rangeStart === day.dateString ? null : day.dateString;
-		  
-			// Swap if end is before start
-			if (newEnd && newEnd < newStart) {
-			  [newStart, newEnd] = [newEnd, newStart];
-			}
-		  
-			// If newEnd exists, check if range overlaps blocked dates
-			if (newEnd) {
-			  const tempRange = getRangeDates(newStart, newEnd);
-			  const overlapsBlocked = tempRange.some(date => markedDates[date]?.color === '#FF6B6B');
-			  if (overlapsBlocked) {
-				Alert.alert('Blocked Date', 'Your selected range overlaps a blocked date.');
-				setRangeStart(null);
-				setRangeEnd(null);
-				onSelectRange?.({ start: null, end: null });
-				return;
-			  }
-			}
-		  
-			// Normal selection logic
-			if (!rangeStart) {
-			  setRangeStart(day.dateString);
-			  setRangeEnd(null);
-			  onSelectRange?.({ start: null, end: null });
-			} else if (!rangeEnd) {
-			  setRangeEnd(day.dateString);
-			  const start = new Date(newStart);
-			  const end = new Date(newEnd!);
-			  onSelectRange?.({ start, end });
-			}
-		  }}
-		  
-		  
 
 
       />
 
-      {editable && (
+      {editable && !singleSelect && (
         <>
 
           <TouchableOpacity

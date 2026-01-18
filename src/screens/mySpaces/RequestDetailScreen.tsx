@@ -19,6 +19,7 @@ import {
   addDoc,
   collection,
   serverTimestamp,
+  Timestamp
 } from 'firebase/firestore';
 import BlockedCalendar from 'src/components/BlockedCalendar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -26,6 +27,7 @@ import { MySpacesStackParamList } from 'src/types/types';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { handleCancelReservation } from 'src/firebase/firestore/cancelReservation';
 import SecurityCheck from './helpers/securityCheck';
+import PaymentCalendar from 'src/components/PaymentCalendar';
 // import { calculateCancellationPreview } from './calculateCancellationPreview';
 
 type Props = NativeStackScreenProps<MySpacesStackParamList, 'RequestDetailScreen'>;
@@ -38,9 +40,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   const [userId, setUserId] = useState<string | null>(null);
   const [ownerInfo, setOwnerInfo] = useState<any>(null);
   const [requesterInfo, setRequesterInfo] = useState<any>(null);
-  const [totalDays, setTotalDays] = useState<number | null>(null);
   const [space, setSpace] = useState<any>(null);
-  const [totalCost, setTotalCost] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [enteredCode, setEnteredCode] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);  
@@ -48,6 +48,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   const [editedEnd, setEditedEnd] = useState<Date | null>(null);
   const [editedDescription, setEditedDescription] = useState('');
   const role = userId === reservation?.ownerId ? 'host' : 'renter';
+  const [editedEndDate, setEditedEndDate] = useState<Date | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
 
   useEffect(() => {
@@ -92,7 +94,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
           // setting the 
           setEditedStart(resData.startDate.toDate());
-          setEditedEnd(resData.endDate.toDate());
+          setEditedEnd(resData.endDate ? resData.endDate.toDate() : null);
+          
           setEditedDescription(resData.description || '');
     
           // 2️⃣ Fetch users
@@ -109,19 +112,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             const spaceData: any = await getSpaceById(resData.spaceId); // getSpaceById also returns loose object
             setSpace(spaceData);
     
-            // 4️⃣ Calculate total cost
-            if (spaceData?.price && resData.startDate && resData.endDate) {
-              const start = resData.startDate.toDate();
-              const end = resData.endDate.toDate();
-    
-              const MS_PER_DAY = 1000 * 60 * 60 * 24;
-              const days = Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
-    
-              const priceNumber = parseFloat(spaceData.price); // convert string to number
-              setTotalCost(days * priceNumber);
-              setTotalDays(days); // <-- store total days
-
-            }
           }
         } catch (err) {
           console.error('Failed to load reservation', err);
@@ -285,6 +275,9 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
       ]
     );
   };
+
+
+
   
   const handleCancel = async () => {
     if (!reservation || !userId) return;
@@ -323,7 +316,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   userId === reservation?.requesterId &&
   reservation?.status !== 'confirmed';
   const handleSaveEdit = async () => {
-    if (!editedStart || !editedEnd) {
+    if (!editedStart) {
       Alert.alert('Invalid dates', 'Please select a valid date range.');
       return;
     }
@@ -380,7 +373,52 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     
   };
 
+  // const handleSubmitEndDateChange = async () => {
+  //   if (!editedEndDate || editedEndDate <= new Date()) {
+  //     Alert.alert('Invalid date', 'End date must be in the future.');
+  //     return;
+  //   }
+  
+  //   try {
+  //     const reservationRef = doc(db, 'reservations', reservationId);
+  //     await updateDoc(reservationRef, {
+  //       endDate: Timestamp.fromDate(editedEndDate),
+  //       updatedAt: Timestamp.now(),
+  //       endDateChangeRequested: true,
+  //     });
+  //     setIsCalendarOpen(!isCalendarOpen)
+  //     Alert.alert('End date updated', 'The end date has been successfully changed.');
+  //   } catch (err) {
+  //     console.error(err);
+  //     Alert.alert('Error', 'Could not update end date.');
+  //   }
+  // };
 
+  const handleSubmitEndDateChange = async () => {
+    if (!editedEndDate || editedEndDate <= new Date()) {
+      Alert.alert('Invalid date', 'End date must be in the future.');
+      return;
+    }
+  
+    try {
+      const reservationRef = doc(db, 'reservations', reservationId);
+      await updateDoc(reservationRef, {
+        endDateChangeRequest: editedEndDate, // save as request
+        updatedAt: Timestamp.now(),
+      });
+  
+      setIsCalendarOpen(false);
+      Alert.alert(
+        'End Date Change Requested',
+        'Your request has been sent to the host for approval.'
+      );
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Could not submit end date change request.');
+    }
+  };
+  
+  
 
 
   useEffect(() => {
@@ -397,10 +435,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   }, [reservation?.security]);
   
   
-  // const canCancel =
-  // reservation?.status === "confirmed" &&
-  // new Date(reservation.startDate.seconds * 1000) > new Date();
-  // // const preview = calculateCancellationPreview(reservation, space);
 
 
   const canConfirm = userId === reservation?.ownerId && reservation?.status === 'requested';
@@ -468,13 +502,24 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
               {/* END DATE */}
               <View style={styles.dateBlock}>
-                <Text style={styles.dateDay}>
-                  {toJSDate(reservation.endDate).getDate()}
-                </Text>
-                <Text style={styles.dateMonth}>
-                  {toJSDate(reservation.endDate).toLocaleString('default', { month: 'short' })}
-                </Text>
+                {reservation?.endDate ? (
+                  <>
+                    <Text style={styles.dateDay}>
+                      {toJSDate(reservation?.endDate).getDate()}
+                    </Text>
+                    <Text style={styles.dateMonth}>
+                      {toJSDate(reservation?.endDate).toLocaleString('default', { month: 'short' })}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.dateDay}>TBD</Text>
+                    <Text style={styles.dateMonth}>—</Text>
+                  </>
+                )}
               </View>
+
+
             </View>
 
             <Text style={styles.detailText}>
@@ -512,7 +557,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
       <ReservationStatusStepper status={reservation.status} userRole={role} />
-
 
 
 
@@ -566,11 +610,116 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         </View>
       )}
 
+
+
       <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
         <Text style={styles.messageButtonText}>Message User</Text>
       </TouchableOpacity>
 
       </View>
+    
+
+      {reservation?.status === 'confirmed' &&
+        // reservation?.endDate &&
+        role === 'renter' && (
+          <View style={{ marginTop: 20 }}>
+            {/* Toggle button */}
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setIsCalendarOpen(prev => !prev)}
+            >
+              <Text style={styles.toggleButtonText}>
+                {isCalendarOpen ? 'Close Calendar' : 'Request End Date Change'}
+              </Text>
+            </TouchableOpacity>
+
+            {isCalendarOpen && (
+              <View style={{ marginTop: 15 }}>
+                <PaymentCalendar
+                  startDate={reservation.startDate.toDate()}
+                  endDate={reservation.endDate ? reservation.endDate.toDate() : undefined} // ✅ handle null
+                  selectableEndDate
+                  onSelectEndDate={setEditedEndDate}
+                />
+
+                {/* Pending request display (inside calendar panel, above submit) */}
+                {reservation.endDateChangeRequest && (
+                  <Text style={{ marginVertical: 10, color: '#8A6D3B', fontWeight: '500' }}>
+                    Pending End Date Request: {reservation.endDateChangeRequest.toDate().toDateString()}
+                  </Text>
+                )}
+
+                <TouchableOpacity
+                  style={styles.confirmButton}
+                  disabled={!editedEndDate || editedEndDate <= new Date()}
+                  onPress={handleSubmitEndDateChange}
+                >
+                  <Text style={styles.confirmText}>Submit End Date Request</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
+
+
+
+
+
+
+
+
+        {role === 'host' && reservation.endDateChangeRequest && (
+          <View style={{ marginTop: 20, padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 8 }}>
+            <Text style={{ fontWeight: '600' }}>End Date Change Requested:</Text>
+            <Text>Requested New End Date: {reservation.endDateChangeRequest.toDate().toDateString()}</Text>
+
+            <View style={{ flexDirection: 'row', marginTop: 10 }}>
+              <TouchableOpacity
+                style={[styles.confirmButton, { marginRight: 10 }]}
+                onPress={async () => {
+                  try {
+                    const reservationRef = doc(db, 'reservations', reservationId);
+                    await updateDoc(reservationRef, {
+                      endDate: reservation.endDateChangeRequest,
+                      endDateChangeRequest: null,
+                      updatedAt: Timestamp.now(),
+                    });
+                    Alert.alert('Accepted', 'The end date has been updated.');
+                  } catch (err) {
+                    console.error(err);
+                    Alert.alert('Error', 'Could not accept the request.');
+                  }
+                }}
+              >
+                <Text style={styles.confirmText}>Accept</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={async () => {
+                  try {
+                    const reservationRef = doc(db, 'reservations', reservationId);
+                    await updateDoc(reservationRef, {
+                      endDateChangeRequest: null,
+                      updatedAt: Timestamp.now(),
+                    });
+                    Alert.alert('Declined', 'The request has been declined.');
+                  } catch (err) {
+                    console.error(err);
+                    Alert.alert('Error', 'Could not decline the request.');
+                  }
+                }}
+              >
+                <Text style={styles.cancelText}>Decline</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+
+
+
 
     {reservation.status === 'confirmed' && reservation.security && (
 
@@ -598,7 +747,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
 
-    {/* <Button title="Message User" onPress={goToChat} /> */}
+
       {userId === reservation.ownerId && reservation.status === 'requested' && (
           <View style={{ marginTop: 12 }}>
             <Button
@@ -799,6 +948,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 20,
+  },
+  toggleButton: {
+    backgroundColor: '#6B83FF',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  toggleButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
   profileBox: {
     alignItems: 'center',
@@ -1017,6 +1177,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
+  
   horizontalDates: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1054,6 +1215,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
   },
+  // In your StyleSheet
+confirmButton: {
+  backgroundColor: "#10B981", // soft emerald green
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  borderRadius: 12,          // rounded edges
+  alignItems: "center",
+  marginTop: 12,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.15,
+  shadowRadius: 4,
+  elevation: 2,              // Android shadow
+},
+
+confirmText: {
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: "600",
+  textAlign: "center",
+},
+
   
   
 });

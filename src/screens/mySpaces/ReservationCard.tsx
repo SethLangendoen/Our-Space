@@ -9,13 +9,130 @@ type ReservationCardProps = {
   onPress: () => void;
 };
 
+const getStorageStatusText = (reservation: any) => {
+  if (reservation.status !== 'confirmed') return null;
+
+  const now = new Date();
+  const start = reservation.startDate?.toDate
+    ? reservation.startDate.toDate()
+    : reservation.startDate
+    ? new Date(reservation.startDate)
+    : null;
+
+  const end = reservation.endDate?.toDate
+    ? reservation.endDate.toDate()
+    : reservation.endDate
+    ? new Date(reservation.endDate)
+    : null;
+
+  if (!start) return null;
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+
+  // 1️⃣ Not started yet
+  if (now < start) {
+    const days = Math.ceil((start.getTime() - now.getTime()) / msPerDay);
+    return `Starts in ${days} day${days === 1 ? '' : 's'}`;
+  }
+
+  // 2️⃣ Started, no end date
+  if (!end) {
+    return 'Actively ongoing · No set end date';
+  }
+
+  // 3️⃣ Started, has end date
+  const daysLeft = Math.ceil((end.getTime() - now.getTime()) / msPerDay);
+
+  if (daysLeft > 0) {
+    return `Ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
+  }
+
+  return 'Storage period ended';
+};
+
+
+
+
+// export default function ReservationCard({ reservation, isOwner, onPress }: ReservationCardProps) {
+//   const otherUser = isOwner ? reservation.requester : reservation.owner;
+//   const space = reservation.space;
+
+//   return (
+//     <TouchableOpacity style={styles.card} onPress={onPress}>
+      
+//       {/* Top: User Info */}
+//       <View style={styles.userRow}>
+//         <Image
+//           source={{ uri: otherUser.photoUrl || 'https://placekitten.com/80/80' }}
+//           style={styles.avatar}
+//         />
+//         <Text style={styles.userName}>{otherUser.name || 'Unknown User'}</Text>
+//       </View>
+
+//       {/* Middle: Space Image */}
+//       {space?.mainImage ? (
+//         <Image source={{ uri: space.mainImage }} style={styles.spaceImage} />
+//       ) : (
+//         <View style={[styles.spaceImage, styles.spaceImagePlaceholder]}>
+//           <Text style={{ color: '#aaa' }}>No Image</Text>
+//         </View>
+//       )}
+
+//       {/* Bottom: Tags */}
+//       {/* <View style={styles.tagsRow}>
+//         <View style={styles.spaceTitleContainer}>
+//           <Text style={styles.spaceTitle}>{space?.title || 'Untitled'}</Text>
+//         </View>
+
+//         <View
+//           style={[
+//             styles.statusBadge,
+//             reservation.status === 'requested' ? styles.requestedBadge : styles.confirmedBadge,
+//           ]}
+//         >
+//           <Text style={styles.statusText}>{reservation.status.toUpperCase()}</Text>
+//         </View>
+//       </View> */}
+
+//       {/* Bottom: Tags */}
+//       <View style={styles.tagsRow}>
+//         <View style={styles.spaceTitleContainer}>
+//           <Text style={styles.spaceTitle}>{space?.title || 'Untitled'}</Text>
+
+//           {reservation.status === 'confirmed' && statusText && (
+//             <Text style={styles.dateStatusText}>{statusText}</Text>
+//           )}
+//         </View>
+
+//         <View
+//           style={[
+//             styles.statusBadge,
+//             reservation.status === 'requested'
+//               ? styles.requestedBadge
+//               : styles.confirmedBadge,
+//           ]}
+//         >
+//           <Text style={styles.statusText}>{reservation.status.toUpperCase()}</Text>
+//         </View>
+//       </View>
+
+
+
+
+      
+//     </TouchableOpacity>
+//   );
+// }
+
 export default function ReservationCard({ reservation, isOwner, onPress }: ReservationCardProps) {
   const otherUser = isOwner ? reservation.requester : reservation.owner;
   const space = reservation.space;
 
+  // ✅ compute per-card, using the actual reservation
+  const statusText = getStorageStatusText(reservation);
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
-      
       {/* Top: User Info */}
       <View style={styles.userRow}>
         <Image
@@ -38,21 +155,27 @@ export default function ReservationCard({ reservation, isOwner, onPress }: Reser
       <View style={styles.tagsRow}>
         <View style={styles.spaceTitleContainer}>
           <Text style={styles.spaceTitle}>{space?.title || 'Untitled'}</Text>
+
+          {reservation.status === 'confirmed' && statusText && (
+            <Text style={styles.dateStatusText}>{statusText}</Text>
+          )}
         </View>
 
         <View
           style={[
             styles.statusBadge,
-            reservation.status === 'requested' ? styles.requestedBadge : styles.confirmedBadge,
+            reservation.status === 'requested'
+              ? styles.requestedBadge
+              : styles.confirmedBadge,
           ]}
         >
           <Text style={styles.statusText}>{reservation.status.toUpperCase()}</Text>
         </View>
       </View>
-      
     </TouchableOpacity>
   );
 }
+
 
 const styles = StyleSheet.create({
   card: {
@@ -78,6 +201,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
     marginRight: 10,
   },
+  dateStatusText: {
+    marginTop: 4,
+    fontSize: 13,
+    color: '#555',
+    fontWeight: '500',
+  },
+  
   userName: {
     fontWeight: '600',
     fontSize: 16,
@@ -99,14 +229,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   spaceTitleContainer: {
-    backgroundColor: '#27ae60',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   spaceTitle: {
-    fontSize: 12,
-    color: 'white',
+    fontSize: 16,
+    color: 'green',
     fontWeight: '600',
   },
   statusBadge: {

@@ -1,26 +1,64 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../firebase/config';
-import ReviewCard from './ReviewCard'; // make sure you have a ReviewCard component
+import ReviewCard from './ReviewCard';
 
 export default function SecurityCheck({ reservation, reservationId, userId, type, role }) {
   const [enteredCode, setEnteredCode] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [localSecurity, setLocalSecurity] = useState(reservation.security[type]);
+  const [reviewerFirstName, setReviewerFirstName] = useState('');
 
-  // Local state to re-render when reservation updates
+  // Fetch current user's first name from Firestore
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          setReviewerFirstName(userDoc.data().firstName || '');
+        }
+      } catch (err) {
+        console.error('Failed to fetch user first name:', err);
+      }
+    };
+
+    fetchUserName();
+  }, [userId]);
+
+  // Re-render local security when reservation updates
   useEffect(() => {
     setLocalSecurity(reservation.security[type]);
   }, [reservation.security, type]);
 
-  // Pick-up is locked until drop-off is completed
-  const dropOffCompleted = reservation.security?.dropOff?.codeVerified && reservation.security?.dropOff?.photoUploaded;
-  const isPickUpLocked = type === 'pickUp' && !dropOffCompleted;
+  const now = new Date();
+  const reservationEnd =
+  reservation.endDate
+    ? reservation.endDate.toDate
+      ? reservation.endDate.toDate() // Firestore Timestamp
+      : new Date(reservation.endDate) // ISO / string
+    : null;
+    const hoursUntilEnd =
+    reservationEnd
+      ? (reservationEnd.getTime() - now.getTime()) / (1000 * 60 * 60)
+      : null;
+  
+// Pick-up is locked if drop-off not complete OR less than 48 hours before end date
+  const dropOffCompleted =
+    reservation.security?.dropOff?.codeVerified &&
+    reservation.security?.dropOff?.photoUploaded;
+
+    const isPickUpLocked =
+    type === 'pickUp' &&
+    (
+      !dropOffCompleted ||
+      hoursUntilEnd === null || // 🔒 TBD = locked
+      hoursUntilEnd > 48
+    );
+  
 
   const handleVerifyCode = async () => {
     if (enteredCode !== localSecurity.code) {
@@ -74,7 +112,8 @@ export default function SecurityCheck({ reservation, reservationId, userId, type
     }
   };
 
-  // Determine if we should show review form
+
+
   const showReviewForm =
     localSecurity?.codeVerified &&
     localSecurity?.photoUploaded &&
@@ -89,7 +128,7 @@ export default function SecurityCheck({ reservation, reservationId, userId, type
 
       {isPickUpLocked && (
         <Text style={styles.lockedText}>
-          Pick-up check will be available after drop-off is completed.
+          Pick-up check will be available 48 hours prior to the end date, and after drop-off is completed.
         </Text>
       )}
 
@@ -141,45 +180,21 @@ export default function SecurityCheck({ reservation, reservationId, userId, type
       )}
 
       {/* REVIEW FORM */}
-      {showReviewForm && (
-
-        // <ReviewCard
-        //   reservationId={reservationId}
-        //   hostId={reservation.ownerId}
-        //   renterId={reservation.requesterId}
-        //   role={role} // current user role
-        //   securityType={type} // pass dropOff or pickUp so ReviewCard knows where to save
-        //   onReviewSubmitted={review => {
-        //     // update local security reviews immediately
-        //     setLocalSecurity(prev => ({
-        //       ...prev,
-        //       reviews: {
-        //         ...prev.reviews,
-        //         [role]: review, // host or renter
-        //       },
-        //     }));
-        //   }}
-        // />
+      {showReviewForm && reviewerFirstName && (
         <ReviewCard
-  reservationId={reservationId}
-  hostId={reservation.ownerId}
-  renterId={reservation.requesterId}
-  role={role} // current user role
-  securityType={type} // pass dropOff or pickUp so ReviewCard knows where to save
-  onReviewSubmitted={() => {
-    // Update local state immediately to show "Review submitted" check
-    setLocalSecurity(prev => ({
-      ...prev,
-      reviews: {
-        ...prev.reviews,
-        [role]: true, // mark host or renter review as done
-      },
-    }));
-  }}
-/>
-
-
-
+          reservationId={reservationId}
+          hostId={reservation.ownerId}
+          renterId={reservation.requesterId}
+          role={role}
+          securityType={type}
+          reviewerFirstName={reviewerFirstName} // now fetched from Firestore
+          onReviewSubmitted={() => {
+            setLocalSecurity(prev => ({
+              ...prev,
+              reviews: { ...prev.reviews, [role]: true },
+            }));
+          }}
+        />
       )}
 
       {/* REVIEW STATUS */}
@@ -192,6 +207,9 @@ export default function SecurityCheck({ reservation, reservationId, userId, type
     </View>
   );
 }
+
+// ...styles stay the same
+
 
 const styles = StyleSheet.create({
   container: {

@@ -406,42 +406,41 @@ export default function ProfileScreen() {
             )
           )}
 
+{activeTab === 'Reviews' && (
+  <View style={styles.reviewList}>
+    {loadingReviews ? (
+      <ActivityIndicator size="small" color="#000" style={{ marginTop: 20 }} />
+    ) : reviews.length > 0 ? (
+      reviews.map((review) => (
+        <View key={review.id} style={styles.reviewCard}>
+          <View style={styles.reviewHeader}>
+            {/* Left side: reviewer name + date */}
+            <Text style={styles.reviewerName}>
+              {review.reviewerName || 'User'}{' '}
+              <Text style={styles.saysText}>says</Text>
+            </Text>
+            {/* Right side: stars */}
+            <StarRating rating={review.rating} />
+          </View>
 
-          {activeTab === 'Reviews' && (
-            <View style={styles.reviewList}>
-              {loadingReviews ? (
-                <ActivityIndicator size="small" color="#000" style={{ marginTop: 20 }} />
-              ) : reviews.length > 0 ? (
-                reviews.map((review) => (
-                  <View key={review.id} style={styles.reviewCard}>
+          {/* Review description */}
+          <Text style={styles.reviewText}>
+            {review.description || 'No comment provided.'}
+          </Text>
 
-                  <View style={styles.reviewHeader}>
-                    {/* Left side: name + date */}
-                      <Text style={styles.reviewerName}>
-                        {review.reviewerName || 'User'}{' '}
-                        <Text style={styles.saysText}>says</Text>
-                      </Text>
-
-                      {/* Right side: stars */}
-                      <StarRating rating={review.rating} />
-                  </View>
-
-
-
-
-                    {/* Description */}
-                    <Text style={styles.reviewText}>
-                      {review.description}
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.message}>No reviews yet.</Text>
-              )}
-            </View>
+          {/* Optional: formatted date */}
+          {review.createdAt && (
+            <Text style={styles.reviewDate}>
+              {new Date(review.createdAt.seconds * 1000).toLocaleDateString()}
+            </Text>
           )}
-
-
+        </View>
+      ))
+    ) : (
+      <Text style={styles.message}>No reviews yet.</Text>
+    )}
+  </View>
+)}
 
 
 

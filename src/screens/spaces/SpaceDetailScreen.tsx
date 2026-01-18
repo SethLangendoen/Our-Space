@@ -198,7 +198,7 @@ useEffect(() => {
 
 
     const handleReservation = async () => {
-      if (!currentUser || !selectedRange.start || !selectedRange.end || !space?.id || currentUser === space.userId) return;
+      if (!currentUser || !selectedRange.start || !space?.id || currentUser === space.userId) return;
     
       try {
         setBooking(true);
@@ -219,8 +219,9 @@ useEffect(() => {
           userId: currentUser,
           requestedAt: Timestamp.now(),
           startDate: Timestamp.fromDate(selectedRange.start),
-          endDate: Timestamp.fromDate(selectedRange.end),
-          state: 'requested',
+          endDate: selectedRange.end
+          ? Timestamp.fromDate(selectedRange.end)
+          : null,          state: 'requested',
           description: reservationDescription,
         };
     
@@ -237,8 +238,9 @@ useEffect(() => {
           requesterId: currentUser,
           ownerId: space.userId,
           startDate: Timestamp.fromDate(selectedRange.start),
-          endDate: Timestamp.fromDate(selectedRange.end),
-          description: reservationDescription,
+          endDate: selectedRange.end
+          ? Timestamp.fromDate(selectedRange.end)
+          : null,          description: reservationDescription,
           createdAt: serverTimestamp(),
           status: 'requested',
         });
@@ -492,7 +494,7 @@ useEffect(() => {
 
       <BlockedCalendar
         blockedTimes={space.blockedTimes || []}
-        reservedTimes={space.reservedTimes || []} // ✅ add reserved times here
+        reservedTimes={space.reservedTimes || []} 
         onSelectRange={(range) => setSelectedRange(range)}
         editable={false}
       />
@@ -502,7 +504,7 @@ useEffect(() => {
           Start: {selectedRange.start ? selectedRange.start.toDateString() : 'Not selected'}
         </Text>
         <Text style={styles.dateText}>
-          End: {selectedRange.end ? selectedRange.end.toDateString() : 'Not selected'}
+          End: {selectedRange.end ? selectedRange.end.toDateString() : 'TBD'}
         </Text>
       </View>
 
@@ -514,30 +516,32 @@ useEffect(() => {
         multiline
       />
 
-      <TouchableOpacity
-        style={[
-          styles.confirmButton,
-          (
-            !selectedRange.start || 
-            !selectedRange.end || 
-            !reservationDescription.trim() || 
+        <TouchableOpacity
+          style={[
+            styles.confirmButton,
+            (
+              !selectedRange.start ||
+              !reservationDescription.trim() ||
+              booking
+            ) && styles.disabledButton,
+          ]}
+          disabled={
+            !selectedRange.start ||
+            !reservationDescription.trim() ||
             booking
-          ) && styles.disabledButton,
-        ]}
-        disabled={
-          !selectedRange.start || 
-          !selectedRange.end || 
-          !reservationDescription.trim() || 
-          booking
-        }
-        onPress={handleReservation}
-      >
+          }
+          onPress={handleReservation}
+        >
+
         <Text style={styles.confirmText}>
           {booking ? 'Booking...' : 'Confirm Reservation'}
         </Text>
       </TouchableOpacity>
 
     </View>
+
+
+
 
     <Text style={styles.questionText}>Have a question before booking?</Text>
 
