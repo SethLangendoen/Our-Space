@@ -59,9 +59,8 @@ const [address, setAddress] = useState(initialData?.address?.split(',')[0] || ''
 const [postalCode, setPostalCode] = useState(initialData?.address?.split(',')[1]?.trim() || '');
 const [accessibility, setAccessibility] = useState(initialData?.accessibility || null);
 const [security, setSecurity] = useState(initialData?.security || []);
-const scrollRef = useRef<ScrollView>(null);
-const [currentIndex, setCurrentIndex] = useState(0);
 const [submitting, setSubmitting] = useState(false);
+const [isPublic, setIsPublic] = useState<boolean>(initialData?.isPublic ?? true);
 
 // const [deliveryMethod, setDeliveryMethod] = useState(initialData?.deliveryMethod || []);
 const [images, setImages] = useState<string[]>(initialData?.images || []);
@@ -69,18 +68,6 @@ const [mainImage, setMainImage] = useState<string | null>(initialData?.mainImage
 const [priceFrequency, setPriceFrequency] = useState<
   'daily' | 'weekly' | 'monthly'
 >(initialData?.priceFrequency || 'daily');
-
-const [convertedPrices, setConvertedPrices] = useState<{ daily: number; weekly: number; monthly: number }>({
-  daily: 0,
-  weekly: 0,
-  monthly: 0,
-});
-
-
-
-const [lengthDiscountPercent, setLengthDiscountPercent] = useState<number>(0);
-const [lengthDiscountDays, setLengthDiscountDays] = useState<number | null>(null);
-
 
 
 const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[]>(
@@ -90,12 +77,6 @@ const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[
 const [reservedTimes, setReservedTimes] = useState<{ start: string; end: string }[]>(
   initialData?.reservedTimes || [] // default to empty array if creating a new space
 );
-
-
-
-
-
-
 
 
 
@@ -147,41 +128,6 @@ useEffect(() => {
 
 
 
-useEffect(() => {
-  const priceNum = parseFloat(price);
-  if (isNaN(priceNum)) return;
-
-  // Price is always daily
-  const daily = priceNum;
-  const weekly = priceNum * 7;
-  const monthly = priceNum * 30;
-
-  setConvertedPrices({
-    daily: parseFloat(daily.toFixed(2)),
-    weekly: parseFloat(weekly.toFixed(2)),
-    monthly: parseFloat(monthly.toFixed(2)),
-  });
-}, [price]);
-
-
-
-function getRangeDates(start: string, end: string): string[] {
-  const result = [];
-  let current = new Date(start);
-  const last = new Date(end);
-
-  while (current <= last) {
-    result.push(current.toISOString().split('T')[0]);
-    current.setDate(current.getDate() + 1);
-  }
-  return result;
-}
-
-
-
-
-
-
 const generateUUID = async () => {
   const randomBytes = await Crypto.getRandomBytesAsync(16);
   const hex = Array.from(randomBytes)
@@ -226,7 +172,6 @@ const uploadImageAsync = async (uri: string, userId: string): Promise<string> =>
     throw error;
   }
 
-
 };
 
 
@@ -253,66 +198,7 @@ const uploadImageAsync = async (uri: string, userId: string): Promise<string> =>
     if (mainImage === uri) setMainImage(updated[0] || null);
   };
 
-  const prioritizeImage = (uri: string) => {
-    setMainImage(uri);
-  };
 
-
-
-
-
-// const handleSubmit = async () => {
-// 	if (!userId) {
-// 	  alert('You must be logged in.');
-// 	  return;
-// 	}
-
-// 	try {
-// 	  const fullAddress = `${address}, ${postalCode}`;
-// 	  const coordinates = await geocodeAddress(fullAddress);
-	  
-// 	  const uploadedImageURLs: string[] = [];
-  
-// 	  for (const uri of images) {
-// 		// If already a URL (edit mode), skip upload
-// 		if (uri.startsWith('http')) {
-// 		  uploadedImageURLs.push(uri);
-// 		} else {
-// 		  const url = await uploadImageAsync(uri, userId);
-// 		  uploadedImageURLs.push(url);
-// 		}
-// 	  }
-  
-// 	  const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
-  
-// 	  const postData = {
-// 		title,
-// 		description,
-// 		dimensions: { width, length, height },
-// 		storageType,
-// 		usageType,
-// 		mainImage: mainImageURL,
-// 		images: uploadedImageURLs,
-// 		userId,
-// 		postType,
-// 		price,
-//     priceFrequency,
-// 		address: fullAddress,
-// 		location: coordinates,
-// 		accessibility,
-// 		security,
-//     blockedTimes: blockedTimes,
-//     reservedTimes,
-
-// 		// deliveryMethod
-// 	  };
-  
-// 	  await onSubmit(postData);
-// 	} catch (error: any) {
-// 	  console.error('Form submission error:', error);
-// 	  alert(`Error: ${error.message}`);
-// 	}
-//   };
 
 const handleSubmit = async () => {
   if (!userId) {
@@ -351,6 +237,7 @@ const handleSubmit = async () => {
       userId,
       postType,
       price,
+      isPublic, 
       priceFrequency,
       address: fullAddress,
       location: coordinates,
@@ -460,22 +347,39 @@ const handleSubmit = async () => {
 </View>
 
 
+<Text style={styles.sectionTitle}>Visibility</Text>
+<View style={styles.optionRow}>
+  {['Public', 'Private'].map(option => {
+    const selected = (option === 'Public') === isPublic;
+    return (
+      <TouchableOpacity
+        key={option}
+        style={[styles.optionButton, selected && styles.optionSelected]}
+        onPress={() => setIsPublic(option === 'Public')}
+      >
+        <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
+          {option}
+        </Text>
+      </TouchableOpacity>
+    );
+  })}
+</View>
 
 
 
-      <TextInput
-        style={styles.input}
-        placeholder="Title"
-        value={title}
-        onChangeText={setTitle}
-      />
-      <TextInput
-        style={[styles.input, { height: 100 }]}
-        placeholder="Description"
-        multiline
-        value={description}
-        onChangeText={setDescription}
-      />
+<TextInput
+  style={styles.input}
+  placeholder="Title"
+  value={title}
+  onChangeText={setTitle}
+/>
+<TextInput
+  style={[styles.input, { height: 100 }]}
+  placeholder="Description"
+  multiline
+  value={description}
+  onChangeText={setDescription}
+/>
 
 <TextInput
   style={styles.input}
@@ -517,20 +421,6 @@ const handleSubmit = async () => {
   />
 </View>
 
-
-
-{/* <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-  
-  <TextInput
-    style={[styles.sizeInput, { flex: 1 }]}
-    placeholder="Daily Price"
-    value={price}
-    onChangeText={setPrice}
-    keyboardType="numeric"
-  />
-
-</View> */}
-
 <View style={styles.priceRow}>
   <TextInput
     style={[styles.sizeInput, { flex: 1 }]}
@@ -569,41 +459,6 @@ const handleSubmit = async () => {
 <Text style={styles.priceHint}>
   Billed {priceFrequency}. Cancellation notice will match this frequency.
 </Text>
-
-
-
-
-
-
-
-
-
-
-<Text style={styles.sectionTitle}>Post Type</Text>
-<View style={styles.optionRow}>
-  {['Offering', 'Requesting'].map((type) => (
-    <TouchableOpacity
-      key={type}
-      style={[
-        styles.optionButton,
-        postType === type && styles.optionSelected,
-      ]}
-      onPress={() => setPostType(type as 'Offering' | 'Requesting')}
-    >
-      <Text
-        style={[
-          styles.optionText,
-          postType === type && styles.optionSelectedText,
-        ]}
-      >
-        {type}
-      </Text>
-    </TouchableOpacity>
-  ))}
-</View>
-
-
-
 
 
 {/* Accessibility (Radio Buttons) */}
@@ -648,15 +503,6 @@ const handleSubmit = async () => {
     );
   })}
 </View>
-
-
-
-
-
-
-
-
-
 
 
 <Text style={styles.sectionTitle}>Storage Type</Text>
@@ -719,26 +565,6 @@ const handleSubmit = async () => {
   editable={true}
 />
 
-
-
-
-
-
-
-	{/* <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-		<Text style={styles.submitText}>
-			{mode === 'edit' ? 'Update Space' : 'Create Space'}
-		</Text>
-	</TouchableOpacity>
-
-	{mode === 'edit' && initialData?.postId && (
-		<TouchableOpacity
-			style={[styles.submitButton, { backgroundColor: 'red', marginTop: 10 }]}
-			onPress={handleDeletePost}
-		>
-			<Text style={[styles.submitText, { color: 'white' }]}>Delete Post</Text>
-		</TouchableOpacity>
-	)} */}
 
 <TouchableOpacity
   style={[styles.submitButton, submitting && { opacity: 0.6 }]}

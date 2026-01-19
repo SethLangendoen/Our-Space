@@ -32,7 +32,6 @@ type FiltersObjectType = {
   endDate?: string;
   radius?: number;
   // pickupDropoff?: boolean;
-  postType?: 'Offering' | 'Requesting' | 'Both';
   storageType?: 'Indoor' | 'Outdoor' | 'Climate-Controlled';
 
   location?: { lat: number; lng: number };
@@ -91,12 +90,9 @@ export default function FiltersScreen() {
     'Climate-Controlled',
   ];
 
-  // This useState is already correctly typed as 'Offering' | 'Requesting' | 'Both'
-  const [postType, setPostType] = useState<'Offering' | 'Requesting' | 'Both'>('Both');
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationAddress, setLocationAddress] = useState<string>(''); // Added state for address input
 
-  const postTypesOptions: ('Offering' | 'Requesting' | 'Both')[] = ['Offering', 'Requesting', 'Both'];
 
   const [usageType, setUsageType] = useState<string[]>([]);
   const [securityFeatures, setSecurityFeatures] = useState<string[]>([]);
@@ -145,7 +141,6 @@ export default function FiltersScreen() {
       setEndDate(filters.endDate || '');
       setRadius(filters.radius ?? 10);
       // setPickupDropoff(filters.pickupDropoff ?? false);
-      setPostType(filters.postType ?? 'Both');
       setSelectedLocation(filters.location ?? null);
       setLocationAddress(filters.address || '');
       setUsageType(filters.usageType || []);
@@ -164,7 +159,6 @@ export default function FiltersScreen() {
     endDate: endDate || undefined,
     radius,
     // pickupDropoff: pickupDropoff || undefined,
-    postType: postType === 'Both' ? undefined : postType,
     location: selectedLocation || undefined,
     address: locationAddress || undefined,
     usageType: usageType || undefined,
@@ -208,7 +202,6 @@ export default function FiltersScreen() {
     setRadius(10);
     setMaxPrice(''); // Reset maxPrice
     // setPickupDropoff(false);
-    setPostType('Both'); // Reset postType
     setSelectedLocation(null); // Reset location
     setLocationAddress(''); // Reset address
     setUsageType([]); // Reset Usage Type
@@ -247,7 +240,6 @@ export default function FiltersScreen() {
       endDate: endDate || undefined,
       radius,
       // pickupDropoff: pickupDropoff || undefined,
-      postType: postType === 'Both' ? undefined : postType,
       location: locationCoords || undefined, // Now will have lat/lng
       address: locationAddress || undefined,
       usageType: usageType.length > 0 ? usageType : undefined,
@@ -466,31 +458,6 @@ export default function FiltersScreen() {
       markingType={'period'}
     />
   </View>
-
-
-  <Text style={styles.sectionTitle}>Post Type</Text>
-  <View style={styles.cardRow}>
-    {postTypesOptions.map((type) => (
-      <TouchableOpacity
-        key={type}
-        onPress={() => setPostType(type)}
-        style={[
-          styles.optionButton,
-          postType === type && styles.optionButtonSelected,
-        ]}
-      >
-        <Text
-          style={[
-            styles.optionText,
-            postType === type && styles.optionTextSelected,
-          ]}
-        >
-          {type}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-
 
 
   {/* Usage Type */}

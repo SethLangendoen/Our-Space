@@ -18,6 +18,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { auth, db } from '../../firebase/config';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import SpaceCard from '../../components/SpaceCard';
+import ProfileStatsBadge from './ProfileStatsBadge';
+import Badges from './Badges';
+import Reviews from './Reviews';
 const { height: screenHeight } = Dimensions.get('window');
 const { width } = Dimensions.get('window');
 const verifiedBadge = '../../../assets/badges/complete/verifiedBadge.png'
@@ -34,26 +37,6 @@ type ProfileScreenNavigationProp = NativeStackNavigationProp<
   'ProfileMain'
 >;
 
-const StarRating = ({ rating }: { rating: number }) => {
-  return (
-    <View style={{ flexDirection: 'row', marginVertical: 4 }}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Text
-          key={i}
-          style={{
-            fontSize: 18,
-            color: i < rating ? '#FFD700' : '#CCC',
-            marginRight: 2,
-          }}
-        >
-          ★
-        </Text>
-      ))}
-    </View>
-  );
-};
-
-
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<'Listings' | 'Reviews' | 'Badges'>('Listings');
   const navigation = useNavigation<ProfileScreenNavigationProp>();
@@ -68,95 +51,11 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [listings, setListings] = useState<any[]>([]);
-  const [createdAt, setCreatedAt] = useState<string | null>(null);
+  const [createdAt, setCreatedAt] = useState<Date | null>(null);
   const [isVerified, setIsVerified] = useState<boolean>(false);
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState(false);
+  // const [reviews, setReviews] = useState<any[]>([]);
+  // const [loadingReviews, setLoadingReviews] = useState(false);
   
-
-  const badgeList = [
-    {
-      id: '5StarStreak',
-      title: '5 Star Streak',
-      description: 'Maintain 5-star reviews for 5 consecutive stays.',
-      isCompleted: false,
-      iconCompleted: require('../../../assets/badges/complete/5StarStreak.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/5StarStreak.png'),
-    },
-    {
-      id: '10XHost',
-      title: '10X Host',
-      description: 'Host 10 unique guests on your listings.',
-      isCompleted: false,
-      iconCompleted: require('../../../assets/badges/complete/10XHost.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/10XHost.png'),
-    },
-    {
-      id: '100DayMVP',
-      title: '100 Day MVP',
-      description: 'Be active on the platform for 100 days.',
-      isCompleted: true,
-      iconCompleted: require('../../../assets/badges/complete/100DayMVP.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/100DayMVP.png'),
-    },
-    {
-      id: 'firstHost',
-      title: 'First Host',
-      description: 'Successfully host your first guest.',
-      isCompleted: false,
-      iconCompleted: require('../../../assets/badges/complete/firstHost.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/firstHost.png'),
-    },
-    {
-      id: 'firstStash',
-      title: 'First Stash',
-      description: 'Complete your first stash listing.',
-      isCompleted: false,
-      iconCompleted: require('../../../assets/badges/complete/firstStash.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/firstStash.png'),
-    },
-    {
-      id: 'fullHouse',
-      title: 'Full House',
-      description: 'Have 100% occupancy for a full week.',
-      isCompleted: false,
-      iconCompleted: require('../../../assets/badges/complete/fullHouse.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/fullHouse.png'),
-    },
-    {
-      id: 'respectedRoyalty',
-      title: 'Respected Royalty',
-      description: 'Earn the respect of fellow hosts and guests.',
-      isCompleted: false,
-      iconCompleted: require('../../../assets/badges/complete/respectedRoyalty.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/respectedRoyalty.png'),
-    },
-    {
-      id: 'socialStar',
-      title: 'Social Star',
-      description: 'Engage actively on social platforms.',
-      isCompleted: false,
-      iconCompleted: require('../../../assets/badges/complete/socialStar.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/socialStar.png'),
-    },
-    {
-      id: 'speedyReplier',
-      title: 'Speedy Replier',
-      description: 'Respond to guest inquiries in under an hour.',
-      isCompleted: false,
-      iconCompleted: require('../../../assets/badges/complete/speedyReplier.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/speedyReplier.png'),
-    },
-    {
-      id: 'verifiedHero',
-      title: 'Verified Hero',
-      description: 'Verify your identity and payment method.',
-      isCompleted: false,
-      iconCompleted: require('../../../assets/badges/complete/verifiedHero.png'),
-      iconIncomplete: require('../../../assets/badges/incomplete/verifiedHero.png'),
-    },
-  ];
-
 
 
   
@@ -190,8 +89,8 @@ export default function ProfileScreen() {
   
         if (data.createdAt) {
           const date = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+          setCreatedAt(date);
           const formattedDate = date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-          setCreatedAt(formattedDate);
           console.log("Member since:", formattedDate);
         }
       }
@@ -229,28 +128,7 @@ export default function ProfileScreen() {
     }
   }, [isFocused]);
 
-  useEffect(() => {
-    if (activeTab !== 'Reviews') return; // only fetch when Reviews tab is active
-  
-    const fetchReviews = async () => {
-      setLoadingReviews(true);
-      try {
-        const q = query(
-          collection(db, 'reviews'),
-          where('revieweeId', '==', viewingUserId) // 👈 use viewingUserId
-        );
-        const querySnapshot = await getDocs(q);
-        const fetchedReviews = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setReviews(fetchedReviews);
-      } catch (err) {
-        console.error('Failed to fetch reviews', err);
-      } finally {
-        setLoadingReviews(false);
-      }
-    };
-  
-    fetchReviews();
-  }, [activeTab, viewingUserId]);
+
   
 
   const fetchVerificationStatus = async () => {
@@ -292,14 +170,6 @@ export default function ProfileScreen() {
 
 
 
-  const updatedBadgeList = badgeList.map((badge) => {
-    if (badge.id === "verifiedHero") {
-      return { ...badge, isCompleted: isVerified };
-    }
-    return badge;
-  });
-
-
 
   return (
     <ScrollView 
@@ -326,9 +196,6 @@ export default function ProfileScreen() {
             style={styles.profileImage}
           />
 
-
-
-
           <Text style={styles.name}>{name}</Text>
           {isVerified && (
             <View style={styles.verifiedBadge}>
@@ -342,7 +209,13 @@ export default function ProfileScreen() {
 
           <Text style={styles.aboutText}>{bio || 'No bio provided yet.'}</Text>
           {createdAt && (
-            <Text style={styles.memberSince}>Member since: {createdAt}</Text>
+            <Text style={styles.memberSince}>
+              Member since: {createdAt ? createdAt.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }) : 'Unknown'}
+            </Text>
           )}
           {isOwnProfile && (
             <View style={styles.buttonRow}>
@@ -369,27 +242,15 @@ export default function ProfileScreen() {
             ))}
           </View>
 
+
           {activeTab === 'Badges' && (
-            <View style={styles.badgeList}>
-              {updatedBadgeList
-                .slice(0, 10)
-                .map((badge) => (
-                  <TouchableOpacity
-                    key={badge.id}
-                    style={styles.badgeSingleItem}
-                    onPress={() => Alert.alert(badge.title, badge.description)}
-                  >
-                    <Image
-                      source={badge.isCompleted ? badge.iconCompleted : badge.iconIncomplete}
-                      style={styles.badgeIcon}
-                    />
-                    <Text style={styles.badgeTitle}>{badge.title}</Text>
-                  </TouchableOpacity>
-                ))}
+            <View style={styles.badgeList}>         
+              <Badges
+                isVerified
+                createdAt={createdAt}
+              />
             </View>
           )}
-
-
 
 
           {activeTab === 'Listings' && (
@@ -406,44 +267,15 @@ export default function ProfileScreen() {
             )
           )}
 
-{activeTab === 'Reviews' && (
-  <View style={styles.reviewList}>
-    {loadingReviews ? (
-      <ActivityIndicator size="small" color="#000" style={{ marginTop: 20 }} />
-    ) : reviews.length > 0 ? (
-      reviews.map((review) => (
-        <View key={review.id} style={styles.reviewCard}>
-          <View style={styles.reviewHeader}>
-            {/* Left side: reviewer name + date */}
-            <Text style={styles.reviewerName}>
-              {review.reviewerName || 'User'}{' '}
-              <Text style={styles.saysText}>says</Text>
-            </Text>
-            {/* Right side: stars */}
-            <StarRating rating={review.rating} />
-          </View>
 
-          {/* Review description */}
-          <Text style={styles.reviewText}>
-            {review.description || 'No comment provided.'}
-          </Text>
-
-          {/* Optional: formatted date */}
-          {review.createdAt && (
-            <Text style={styles.reviewDate}>
-              {new Date(review.createdAt.seconds * 1000).toLocaleDateString()}
-            </Text>
+          {activeTab === 'Reviews' && (
+            <View style={styles.reviewList}>
+              <Reviews 
+              activeTab={activeTab}
+              viewingUserId={viewingUserId}
+              /> 
+            </View>
           )}
-        </View>
-      ))
-    ) : (
-      <Text style={styles.message}>No reviews yet.</Text>
-    )}
-  </View>
-)}
-
-
-
 
 
         </View>
@@ -456,9 +288,19 @@ export default function ProfileScreen() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 const styles = StyleSheet.create({
-
-
 
 
   container: {

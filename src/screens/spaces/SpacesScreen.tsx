@@ -63,11 +63,12 @@ type SpacesScreenRouteProp = RouteProp<RootStackParamList, 'SpacesMain'>;
 // Define the Space type for better data structure clarity
 type Space = {
   totalFilters: number | undefined;
-  matchScore?: number;  // Add this here for sorting/display
+  matchScore?: number;  
   blockedTimes: any;
   id: string;
   accessibility?: string;
   address?: string;
+  isPublic?: boolean; 
   availability?: {
     startDate?: string;
     endDate?: string;
@@ -75,13 +76,13 @@ type Space = {
   billingFrequency?: string;
   contracts?: {
     [userId: string]: {
-      startDate?: any; // Could use Firebase Timestamp or Date
+      startDate?: any; 
       endDate?: any;
       requestedAt?: any;
       state?: string;
     };
   };
-  createdAt?: any; // Firebase Timestamp
+  createdAt?: any; 
   deliveryMethod?: string[];
   description?: string;
   dimensions?: {
@@ -232,6 +233,8 @@ if (filters.accessibility?.length && space.accessibility?.length) {
           ...data,
         };
       });
+      allSpaces = allSpaces.filter(space => space.isPublic !== false); 
+
 
       if (filters) {
         let filtered = [...allSpaces];

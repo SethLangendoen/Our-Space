@@ -18,9 +18,10 @@ interface SpaceCardProps {
   onPress: () => void;
   matchScore?: number;        // number of matching filters
   totalFilters?: number;      // total filters considered
+  showPublicPrivateBadge?: boolean;
 }
 
-const SpaceCard = ({ item, onPress, matchScore, totalFilters }: SpaceCardProps) => {
+const SpaceCard = ({ item, onPress, matchScore, totalFilters, showPublicPrivateBadge }: SpaceCardProps) => {
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
@@ -36,27 +37,37 @@ const SpaceCard = ({ item, onPress, matchScore, totalFilters }: SpaceCardProps) 
       {/* Title and Tag Row */}
       <View style={styles.titleRow}>
         <Text style={styles.title}>{item.title || 'No Title'}</Text>
-        {item.postType && (
+
+
+        {showPublicPrivateBadge ? (
           <View
             style={[
-              styles.tag,
-              item.postType === 'Offering' ? styles.offeringTag : styles.requestingTag,
+              styles.matchBadge,
+              { backgroundColor: item.isPublic ? '#6BCB77' : '#FF6B6B', }, // Green for public, red for private
             ]}
           >
-            <Text style={styles.tagText}>{item.postType}</Text>
+          <Text style={[styles.matchBadgeText, { color: '#FFFFFF' }]}>
+              {item.isPublic ? 'Public' : 'Private'}
+            </Text>
           </View>
+        ) : (
+          matchScore !== undefined &&
+          totalFilters !== undefined && (
+            <View style={styles.matchBadge}>
+              <Text style={styles.matchBadgeText}>
+                Matched {matchScore} of {totalFilters} filters
+              </Text>
+            </View>
+          )
         )}
+
+
+
+
       </View>
 
       {/* Match Score Badge */}
-      {console.log(matchScore + " is the matchscore, " + totalFilters + 'Is the total filters')}
-      {matchScore !== undefined && totalFilters !== undefined && (
-        <View style={styles.matchBadge}>
-          <Text style={styles.matchBadgeText}>
-            Matched {matchScore} of {totalFilters} filters
-          </Text>
-        </View>
-      )}
+
 
       {/* Description */}
       {item.description && <Text style={styles.description}>{item.description}</Text>}

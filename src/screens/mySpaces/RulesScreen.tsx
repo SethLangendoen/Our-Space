@@ -122,80 +122,98 @@ export default function RulesScreen({ navigation, route }: Props) {
       setLoading(false);
     }
   };
+
+
+
+// const handleConfirm = async () => {
+//   if (checkedRules.length !== rules.length) {
+//     Alert.alert('Please check all rules before proceeding.');
+//     return;
+//   }
+
+//   setLoading(true);
+
+//   try {
+//     const reservationRef = doc(db, 'reservations', reservationId);
+//     const snap = await getDoc(reservationRef);
+//     if (!snap.exists()) throw new Error('Reservation not found');
+
+//     const reservation = snap.data();
+
+//     const updateData: any = {
+//       updatedAt: serverTimestamp(),
+//     };
+
+//     if (role === 'owner') {
+//       // Owner confirms: update status to awaiting_acceptance
+//       updateData.status = 'awaiting_acceptance';
+//       await updateDoc(reservationRef, updateData);
+//       Alert.alert('Success', 'Reservation confirmed! Waiting for requester to accept.');
+
+//       // Handle firstHost badge for host
+//       const hostRef = doc(db, 'users', reservation.hostId);
+//       const hostSnap = await getDoc(hostRef);
+//       if (hostSnap.exists()) {
+//         const hostData = hostSnap.data();
+//         if (!hostData.badges?.firstHost) {
+//           await updateDoc(hostRef, { 'badges.firstHost': true });
+//         }
+//       }
+//     } else {
+//       // Requester confirms: finalize booking
+//       updateData.status = 'confirmed';
+//       updateData.lastPaymentDate = null;
+//       updateData.nextPaymentDate = reservation.startDate;
+//       updateData.isProcessing = false;
+
+//       if (!reservation.security) {
+//         const generateSecurityCode = () =>
+//           Math.floor(1000 + Math.random() * 9000).toString();
+//         updateData.security = {
+//           dropOff: {
+//             code: generateSecurityCode(),
+//             codeVerified: false,
+//             photoUrl: null,
+//             photoUploaded: false,
+//             completed: false,
+//             reviews: { host: false, renter: false },
+//           },
+//           pickUp: {
+//             code: generateSecurityCode(),
+//             codeVerified: false,
+//             photoUrl: null,
+//             photoUploaded: false,
+//             completed: false,
+//             reviews: { host: false, renter: false },
+//           },
+//         };
+//       }
+
+//       await updateDoc(reservationRef, updateData);
+//       Alert.alert('Success', 'Booking finalized and confirmed!');
+
+//       // Handle firstStash badge for renter
+//       const renterRef = doc(db, 'users', reservation.renterId);
+//       const renterSnap = await getDoc(renterRef);
+//       if (renterSnap.exists()) {
+//         const renterData = renterSnap.data();
+//         if (!renterData.badges?.firstStash) {
+//           await updateDoc(renterRef, { 'badges.firstStash': true });
+//         }
+//       }
+//     }
+
+//     // Navigate back to RequestDetailScreen after confirming
+//     navigation.navigate('RequestDetailScreen', { reservationId });
+//   } catch (err) {
+//     console.error('Failed to update reservation status', err);
+//     Alert.alert('Error', 'Failed to update reservation status.');
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
   
-
-  // const handleConfirm = async () => {
-  //   if (checkedRules.length !== rules.length) {
-  //     Alert.alert('Please check all rules before proceeding.');
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     const reservationRef = doc(db, 'reservations', reservationId);
-
-  //     if (role === 'owner') {
-  //       // Owner confirms: update status to awaiting_acceptance
-
-  //       await updateDoc(reservationRef, {
-  //         status: 'awaiting_acceptance',
-  //         updatedAt: serverTimestamp(),
-  //       });
-
-
-  //       Alert.alert('Success', 'Reservation confirmed! Waiting for requester to accept.');
-      
-	
-	// } else {
-	// 	// Requester confirms: finalize booking
-	  
-	// 	const reservationRef = doc(db, 'reservations', reservationId);
-	// 	const snap = await getDoc(reservationRef);
-	  
-	// 	if (!snap.exists()) {
-	// 	  throw new Error('Reservation not found');
-	// 	}
-	  
-	// 	const reservation = snap.data();
-	  
-	// 	const updateData: any = {
-	// 	  status: 'confirmed',
-	// 	  lastPaymentDate: null,
-	// 	  nextPaymentDate: reservation.startDate,
-	// 	  isProcessing: false,
-	// 	  updatedAt: serverTimestamp(),
-	// 	};
-	  
-	// 	// Only create security if it doesn't exist
-	// 	if (!reservation.security) {
-	// 	  updateData.security = {
-	// 		code: generateSecurityCode(),
-	// 		codeVerified: false,
-	// 		photoUrl: null,
-	// 		photoUploaded: false,
-	// 		completed: false,
-	// 	  };
-	// 	}
-	  
-	// 	await updateDoc(reservationRef, updateData);
-	  
-	// 	Alert.alert('Success', 'Booking finalized and confirmed!');
-	//   }
-	  
-
-
-  //     // Navigate back to RequestDetailScreen after confirming
-  //     navigation.navigate('RequestDetailScreen', { reservationId });
-  //   } catch (err) {
-  //     console.error('Failed to update reservation status', err);
-  //     Alert.alert('Error', 'Failed to update reservation status.');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
 
 
   return (

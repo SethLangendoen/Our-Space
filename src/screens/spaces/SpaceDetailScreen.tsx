@@ -36,7 +36,6 @@ type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
   const [userData, setUserData] = useState<any | null>(null);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [booking, setBooking] = useState(false);
   const [showStart, setShowStart] = useState(false);
@@ -294,6 +293,16 @@ useEffect(() => {
     };
     
 
+    // Create a local constant that is only set if start exists
+const startDate = selectedRange.start;
+
+// Only run the .some() check if startDate is not null
+const futureBlocked = startDate
+  ? [...(space.blockedTimes || []), ...(space.reservedTimes || [])]
+      .some(bt => new Date(bt.start) > startDate)
+  : false;
+
+
 
 
 
@@ -383,19 +392,6 @@ useEffect(() => {
       : 'Unknown User'}
   </Text>
 
-  {space.postType && (
-    <View
-      style={[
-        styles.tag,
-        space.postType === 'Offering'
-          ? styles.offeringTag
-          : styles.requestingTag,
-        styles.inlineTag, // new style for spacing
-      ]}
-    >
-      <Text style={styles.tagText}>{space.postType}</Text>
-    </View>
-  )}
 </View>
 
 </TouchableOpacity>
@@ -490,57 +486,61 @@ useEffect(() => {
 
     {/* Reservation Section */}
     <View style={styles.bookingContainer}>
-      <Text style={styles.bookingTitle}>Book Reservation</Text>
+  <Text style={styles.bookingTitle}>Book Reservation</Text>
 
-      <BlockedCalendar
-        blockedTimes={space.blockedTimes || []}
-        reservedTimes={space.reservedTimes || []} 
-        onSelectRange={(range) => setSelectedRange(range)}
-        editable={false}
-      />
+  <BlockedCalendar
+    blockedTimes={space.blockedTimes || []}
+    reservedTimes={space.reservedTimes || []} 
+    onSelectRange={(range) => setSelectedRange(range)}
+    editable={false}
+  />
 
-      <View style={styles.dateSummary}>
-        <Text style={styles.dateText}>
-          Start: {selectedRange.start ? selectedRange.start.toDateString() : 'Not selected'}
-        </Text>
-        <Text style={styles.dateText}>
-          End: {selectedRange.end ? selectedRange.end.toDateString() : 'TBD'}
-        </Text>
-      </View>
+  <View style={styles.dateSummary}>
+    <Text style={styles.dateText}>
+      Start: {selectedRange.start ? selectedRange.start.toDateString() : 'Not selected'}
+    </Text>
 
-      <TextInput
-        style={styles.descriptionInput}
-        placeholder="Describe the items you are storing"
-        value={reservationDescription}
-        onChangeText={setReservationDescription}
-        multiline
-      />
-
-        <TouchableOpacity
-          style={[
-            styles.confirmButton,
-            (
-              !selectedRange.start ||
-              !reservationDescription.trim() ||
-              booking
-            ) && styles.disabledButton,
-          ]}
-          disabled={
-            !selectedRange.start ||
-            !reservationDescription.trim() ||
-            booking
-          }
-          onPress={handleReservation}
-        >
-
-        <Text style={styles.confirmText}>
-          {booking ? 'Booking...' : 'Confirm Reservation'}
-        </Text>
-      </TouchableOpacity>
-
-    </View>
+    <Text style={styles.dateText}>
+      End: {selectedRange.end
+        ? selectedRange.end.toDateString()
+        : futureBlocked
+          ? 'Selection required'
+          : 'TBD'}
+    </Text>
 
 
+  </View>
+
+  <TextInput
+    style={styles.descriptionInput}
+    placeholder="Describe the items you are storing"
+    value={reservationDescription}
+    onChangeText={setReservationDescription}
+    multiline
+  />
+
+
+<TouchableOpacity
+  style={[
+    styles.confirmButton,
+    (
+      !selectedRange.start ||
+      !reservationDescription.trim() ||
+      booking ||
+      futureBlocked
+    ) && styles.disabledButton,
+  ]}
+  disabled={!selectedRange.start || !reservationDescription.trim() || booking || futureBlocked}
+  onPress={handleReservation}
+>
+  <Text style={styles.confirmText}>
+    {booking ? 'Booking...' : 'Confirm Reservation'}
+  </Text>
+</TouchableOpacity>
+
+
+
+</View>
 
 
     <Text style={styles.questionText}>Have a question before booking?</Text>

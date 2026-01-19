@@ -204,6 +204,7 @@ const renderContent = () => {
             onPress={() =>
               navigation.navigate('EditSpaceScreen', { spaceId: post.id })
             }
+            showPublicPrivateBadge={true}
           />
         ))
       ) : (

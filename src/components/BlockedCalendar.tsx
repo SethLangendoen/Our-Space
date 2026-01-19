@@ -32,6 +32,7 @@ interface BlockedCalendarProps {
     const [rangeStart, setRangeStart] = useState<string | null>(null);
     const [rangeEnd, setRangeEnd] = useState<string | null>(null);
     const [isOpenEnded, setIsOpenEnded] = useState(false);
+    const [needsEndDateWarning, setNeedsEndDateWarning] = useState(false); // <-- new state
 
     // Helper: get all dates between start and end
     const getRangeDates = (start: string, end: string) => {
