@@ -1,10 +1,9 @@
 
 
-import { match } from 'assert';
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 
-// Import icons
+// Usage icons
 const iconsMap: { [key: string]: any } = {
   'Cars/Trucks': require('../../assets/postIcons/vehicle.png'),
   RV: require('../../assets/postIcons/rv.png'),
@@ -13,93 +12,127 @@ const iconsMap: { [key: string]: any } = {
   Business: require('../../assets/postIcons/business.png'),
 };
 
+// Save / unsave icons
+const saveIcons = {
+  saved: require('assets/filter/bookmark.png'),
+  unsaved: require('assets/filter/bookmark-outline.png'),
+};
+
 interface SpaceCardProps {
   item: any;
   onPress: () => void;
-  matchScore?: number;        // number of matching filters
-  totalFilters?: number;      // total filters considered
+
+  isSaved?: boolean;
+  onToggleSave?: () => void;
+
+  matchScore?: number;
+  totalFilters?: number;
   showPublicPrivateBadge?: boolean;
 }
 
-const SpaceCard = ({ item, onPress, matchScore, totalFilters, showPublicPrivateBadge }: SpaceCardProps) => {
-
+const SpaceCard = ({
+  item,
+  onPress,
+  isSaved,
+  onToggleSave,
+  matchScore,
+  totalFilters,
+  showPublicPrivateBadge,
+}: SpaceCardProps) => {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      {/* Main Image */}
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+
+      
+      {/* ---------- Title + Badge ---------- */}
+{/* ---------- Title + Badge / Filter Match ---------- */}
+<View style={styles.titleRow}>
+  <View style={{ flex: 1 }}>
+    <Text style={styles.title}>{item.title || 'No Title'}</Text>
+
+    {item.location?.city && (
+      <Text style={styles.locationText}>
+        {item.location.district
+          ? `${item.location.district}, ${item.location.city}`
+          : item.location.city}
+      </Text>
+    )}
+  </View>
+
+  {/* Public/Private badge or Match Filters */}
+  {showPublicPrivateBadge ? (
+    <View
+      style={[
+        styles.matchBadge,
+        { backgroundColor: item.isPublic ? '#6BCB77' : '#FF6B6B' },
+      ]}
+    >
+      <Text style={styles.matchBadgeText}>
+        {item.isPublic ? 'Public' : 'Private'}
+      </Text>
+    </View>
+  ) : matchScore !== undefined && totalFilters !== undefined ? (
+    <View style={[styles.matchBadge, { backgroundColor: '#DFF5D1' }]}>
+      <Text style={[styles.matchBadgeText, { color: '#0F6B5B' }]}>
+        Matched {matchScore} of {totalFilters} filters
+      </Text>
+    </View>
+  ) : null}
+</View>
+
+
+
+
+
+      {/* ---------- Image + Save Icon ---------- */}
       {item.mainImage && (
-        <Image
-          source={{ uri: item.mainImage }}
-          style={styles.mainImage}
-          resizeMode="cover"
-        />
+        <View style={styles.imageWrapper}>
+          {onToggleSave && (
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={onToggleSave}
+              hitSlop={10}
+            >
+              <Image
+                source={isSaved ? saveIcons.saved : saveIcons.unsaved}
+                style={styles.saveIcon}
+              />
+            </TouchableOpacity>
+          )}
+
+          <Image
+            source={{ uri: item.mainImage }}
+            style={styles.mainImage}
+            resizeMode="cover"
+          />
+        </View>
       )}
 
-      {/* Title and Tag Row */}
-      <View style={styles.titleRow}>
-        <Text style={styles.title}>{item.title || 'No Title'}</Text>
-
-
-        {showPublicPrivateBadge ? (
-          <View
-            style={[
-              styles.matchBadge,
-              { backgroundColor: item.isPublic ? '#6BCB77' : '#FF6B6B', }, // Green for public, red for private
-            ]}
-          >
-          <Text style={[styles.matchBadgeText, { color: '#FFFFFF' }]}>
-              {item.isPublic ? 'Public' : 'Private'}
-            </Text>
-          </View>
-        ) : (
-          matchScore !== undefined &&
-          totalFilters !== undefined && (
-            <View style={styles.matchBadge}>
-              <Text style={styles.matchBadgeText}>
-                Matched {matchScore} of {totalFilters} filters
-              </Text>
-            </View>
-          )
+      {/* ---------- Price + Usage Icons ---------- */}
+      <View style={styles.priceRow}>
+        {item.price && (
+          <Text style={styles.price}>
+            ${parseFloat(item.price).toFixed(0)}{' '}
+            {(item.priceFrequency ?? 'daily').charAt(0).toUpperCase() +
+              (item.priceFrequency ?? 'daily').slice(1)}
+          </Text>
         )}
 
-
-
-
-      </View>
-
-      {/* Match Score Badge */}
-
-
-      {/* Description */}
-      {item.description && <Text style={styles.description}>{item.description}</Text>}
-
-      {/* Price + Icons */}
-      <View style={styles.priceRow}>
-      {item.price && (
-        <Text style={styles.price}>
-          ${parseFloat(item.price).toFixed(2)} {' '}
-          {(item.priceFrequency ?? 'daily').charAt(0).toUpperCase() +
-            (item.priceFrequency ?? 'daily').slice(1)}
-        </Text>
-      )}
-
-
         <View style={styles.iconRow}>
-          {item.usageType &&
-            item.usageType.map((type: string) =>
-              iconsMap[type] ? (
-                <Image
-                  key={type}
-                  source={iconsMap[type]}
-                  style={styles.icon}
-                  resizeMode="contain"
-                />
-              ) : null
-            )}
+          {item.usageType?.map((type: string) =>
+            iconsMap[type] ? (
+              <Image
+                key={type}
+                source={iconsMap[type]}
+                style={styles.icon}
+              />
+            ) : null
+          )}
         </View>
       </View>
     </TouchableOpacity>
   );
 };
+
 
 const styles = StyleSheet.create({
   card: {
@@ -109,79 +142,73 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
     elevation: 2,
-  },
-
-  mainImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 10,
-    marginBottom: 12,
-    resizeMode: 'cover',
   },
 
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
 
   title: {
     fontSize: 18,
     fontFamily: 'Poppins-SemiBold',
     color: '#0F6B5B',
-    flex: 1,
   },
 
-  tag: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
+  locationText: {
+    fontSize: 13,
+    color: '#777',
+    marginTop: 2,
+    fontFamily: 'Poppins-Regular',
   },
 
-  offeringTag: {
-    backgroundColor: '#629447',
-  },
-
-  requestingTag: {
-    backgroundColor: '#F3AF1D',
-  },
-
-  tagText: {
-    color: '#FFFFFF',
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 12,
-  },
-
-  // Match Score Badge
   matchBadge: {
-    backgroundColor: '#DFF5D1',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 8,
-    alignSelf: 'flex-start',
-    marginTop: 6,
+    marginLeft: 8,
   },
 
   matchBadgeText: {
     fontSize: 12,
     fontFamily: 'Poppins-Medium',
-    color: '#0F6B5B',
+    color: '#FFFFFF',
   },
 
-  description: {
-    marginTop: 8,
-    fontSize: 14,
-    fontFamily: 'Poppins-Regular',
-    color: '#444',
+  imageWrapper: {
+    position: 'relative',
+    width: '100%',
+    marginTop: 10,
+  },
+
+  mainImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 10,
+  },
+
+  saveButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 10,
+    backgroundColor: 'transparent',
+    borderRadius: 16,
+    padding: 6,
+  },
+
+  saveIcon: {
+    width: 30,
+    height: 30,
   },
 
   priceRow: {
-    marginTop: 8,
+    marginTop: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -196,14 +223,14 @@ const styles = StyleSheet.create({
   iconRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 10,
   },
 
   icon: {
-    width: 22,
-    height: 22,
-    marginLeft: 6,
+    width: 32,
+    height: 32,
+    marginLeft: 4,
   },
 });
+
 
 export default SpaceCard;

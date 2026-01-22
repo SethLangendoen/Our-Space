@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, runTransaction } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../firebase/config';
@@ -51,7 +51,7 @@ export default function SecurityCheck({ reservation, reservationId, userId, type
     reservation.security?.dropOff?.codeVerified &&
     reservation.security?.dropOff?.photoUploaded;
 
-    const isPickUpLocked =
+  const isPickUpLocked =
     type === 'pickUp' &&
     (
       !dropOffCompleted ||
@@ -59,8 +59,97 @@ export default function SecurityCheck({ reservation, reservationId, userId, type
       hoursUntilEnd > 48
     );
   
+    const getBookingDurationMs = (startDate, completedAt) => {
+      const start =
+        startDate?.toDate ? startDate.toDate() : new Date(startDate);
+    
+      return completedAt.getTime() - start.getTime();
+    };
+    
 
-  const handleVerifyCode = async () => {
+// used for the respected royalty badge
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+
+
+const maybeMarkReservationCompleted = async (updatedSecurity) => {
+  const pickUp = updatedSecurity?.pickUp;
+
+  const isPickUpComplete =
+    pickUp?.codeVerified &&
+    pickUp?.photoUploaded &&
+    pickUp?.reviews?.host &&
+    pickUp?.reviews?.renter;
+
+  if (!isPickUpComplete) return;
+
+  const reservationRef = doc(db, 'reservations', reservationId);
+  const spaceRef = doc(db, 'spaces', reservation.spaceId);
+
+  try {
+
+
+    await runTransaction(db, async (transaction) => {
+      // ---- READS FIRST ----
+      const reservationSnap = await transaction.get(reservationRef);
+      if (!reservationSnap.exists()) return;
+
+      const reservationData = reservationSnap.data();
+
+      // 🔒 Guard against double completion
+      if (reservationData.status === 'completed') return;
+
+      const spaceSnap = await transaction.get(spaceRef);
+      if (!spaceSnap.exists()) return;
+
+      const spaceData = spaceSnap.data();
+
+      const hostRef = doc(db, 'users', reservationData.ownerId);
+      const hostSnap = await transaction.get(hostRef);
+      if (!hostSnap.exists()) return;
+
+      const hostData = hostSnap.data();
+
+      // ---- COMPUTE ----
+      const completedAt = new Date();
+
+      const bookingDurationMs = getBookingDurationMs(
+        reservationData.startDate,
+        completedAt
+      );
+
+      const currentTotal = spaceData.totalTimeBooked || 0;
+      const timeCheck = (currentTotal - THIRTY_DAYS_MS)
+
+      const qualifiesForRoyalty =
+      timeCheck >= 0 &&
+      !(hostData?.badges?.respectedRoyalty);
+
+      // ---- WRITES LAST ----
+      transaction.update(reservationRef, {
+        status: 'completed',
+        completedAt,
+      });
+
+      transaction.update(spaceRef, {
+        totalTimeBooked: currentTotal + bookingDurationMs,
+      });
+
+      if (qualifiesForRoyalty) {
+        transaction.update(hostRef, {
+          'badges.respectedRoyalty': true,
+        });
+      }
+    });
+    
+
+  } catch (err) {
+    console.error('Failed to complete reservation:', err);
+  }
+};
+    
+
+    const handleVerifyCode = async () => {
     if (enteredCode !== localSecurity.code) {
       Alert.alert('Invalid Code', 'The security code does not match.');
       return;
@@ -118,7 +207,7 @@ export default function SecurityCheck({ reservation, reservationId, userId, type
     localSecurity?.codeVerified &&
     localSecurity?.photoUploaded &&
     ((userId === reservation.ownerId && !localSecurity.reviews?.host) ||
-      (userId === reservation.requesterId && !localSecurity.reviews?.renter));
+    (userId === reservation.requesterId && !localSecurity.reviews?.renter));
 
   return (
     <View style={[styles.container, isPickUpLocked && styles.lockedContainer]}>
@@ -188,12 +277,23 @@ export default function SecurityCheck({ reservation, reservationId, userId, type
           role={role}
           securityType={type}
           reviewerFirstName={reviewerFirstName} // now fetched from Firestore
-          onReviewSubmitted={() => {
-            setLocalSecurity(prev => ({
-              ...prev,
-              reviews: { ...prev.reviews, [role]: true },
-            }));
+          onReviewSubmitted={async () => {
+            const updatedSecurity = {
+              ...localSecurity,
+              reviews: { ...localSecurity.reviews, [role]: true },
+            };
+          
+            setLocalSecurity(updatedSecurity);
+          
+            if (type === 'pickUp') {
+              await maybeMarkReservationCompleted({
+                ...reservation.security,
+                pickUp: updatedSecurity,
+              });
+            }
           }}
+          
+
         />
       )}
 

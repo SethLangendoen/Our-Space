@@ -37,6 +37,7 @@ export default function EditProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [role, setRole] = useState<'host' | 'renter'>('renter');
 
   const fetchUserData = async () => {
     const user = auth.currentUser;
@@ -52,6 +53,8 @@ export default function EditProfileScreen() {
         setLastName(data.lastName || '');
         setBio(data.bio || '');
         setProfileImage(data.profileImage || null);
+        setRole(data.role || 'renter'); // 👈 add this
+
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -122,6 +125,7 @@ export default function EditProfileScreen() {
           lastName,
           bio,
           profileImage: uploadedImageUrl || '',
+          role,
         },
         { merge: true }
       );
@@ -159,6 +163,45 @@ export default function EditProfileScreen() {
           </View>
         )}
       </TouchableOpacity>
+
+      <Text style={styles.sectionLabel}>I am using Our Space as a</Text>
+
+      <View style={styles.roleContainer}>
+        <TouchableOpacity
+          style={[
+            styles.roleOption,
+            role === 'host' && styles.roleSelected,
+          ]}
+          onPress={() => setRole('host')}
+        >
+          <Text
+            style={[
+              styles.roleText,
+              role === 'host' && styles.roleTextSelected,
+            ]}
+          >
+            Host
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.roleOption,
+            role === 'renter' && styles.roleSelected,
+          ]}
+          onPress={() => setRole('renter')}
+        >
+          <Text
+            style={[
+              styles.roleText,
+              role === 'renter' && styles.roleTextSelected,
+            ]}
+          >
+            Renter
+          </Text>
+        </TouchableOpacity>
+      </View>
+
 
       <TextInput
         style={styles.input}
@@ -253,4 +296,40 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: -10,
   },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#333',
+  },
+  
+  roleContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  
+  roleOption: {
+    flex: 1,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  
+  roleSelected: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  
+  roleText: {
+    fontWeight: '600',
+    color: '#000',
+  },
+  
+  roleTextSelected: {
+    color: '#fff',
+  },
+  
 });

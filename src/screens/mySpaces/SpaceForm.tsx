@@ -88,30 +88,39 @@ const navigation = useNavigation();
   const HERE_APP_ID = 'pFKaPvfjrv5rKal9FLUM';
   const HERE_API_KEY = 'tUaFheXRcT-OB0IJJnXIHemVIYMOHALHYXDYV32XG4E';
   
+
   async function geocodeAddress(fullAddress: string) {
-    try {
-      const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(fullAddress)}&apiKey=${HERE_API_KEY}`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch geocode data');
-      }
-      const data = await response.json();
+    const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(
+      fullAddress
+    )}&apiKey=${HERE_API_KEY}`;
   
-      if (data.items && data.items.length > 0) {
-        const location = data.items[0].position;
-        return {
-          lat: location.lat,
-          lng: location.lng,
-        };
-      } else {
-        throw new Error('No geocode results found');
-      }
-    } catch (error) {
-      console.error('Geocoding error:', error);
-      throw error;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to geocode address');
+  
+    const data = await response.json();
+    if (!data.items || data.items.length === 0) {
+      throw new Error('No geocode results found');
     }
+  
+    const item = data.items[0];
+  
+    return {
+      address: item.address.label, // normalized address
+      city: item.address.city || null,
+      province: item.address.stateCode || item.address.state || null,
+      country: item.address.countryName || null,
+      district:
+        item.address.district ||
+        item.address.subdistrict ||
+        item.address.neighborhood ||
+        null,
+      lat: item.position.lat,
+      lng: item.position.lng,
+    };
   }
   
+
+
 useEffect(() => {
   const unsubscribe = onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -210,7 +219,7 @@ const handleSubmit = async () => {
     setSubmitting(true); // <-- start submitting
 
     const fullAddress = `${address}, ${postalCode}`;
-    const coordinates = await geocodeAddress(fullAddress);
+    const location = await geocodeAddress(fullAddress);
 
     const uploadedImageURLs: string[] = [];
 
@@ -240,12 +249,19 @@ const handleSubmit = async () => {
       isPublic, 
       priceFrequency,
       address: fullAddress,
-      location: coordinates,
       accessibility,
       security,
       blockedTimes: blockedTimes,
       reservedTimes,
-      // deliveryMethod
+      location: {
+        address: location.address,
+        city: location.city,
+        province: location.province,
+        country: location.country,
+        district: location.district,
+        lat: location.lat,
+        lng: location.lng,
+      },
     };
 
     await onSubmit(postData);
@@ -299,7 +315,7 @@ const handleSubmit = async () => {
   return (
 
     
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} >
       <TouchableOpacity style={styles.addPhotoButton} onPress={pickImage}>
         <Text style={styles.addPhotoText}>Add Photo ({images.length}/{MAX_IMAGES})</Text>
       </TouchableOpacity>

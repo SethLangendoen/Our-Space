@@ -16,6 +16,11 @@ const ReservationStatusStepper = ({ status, userRole }: Props) => {
   const isCancelled =
     status === 'cancelled_by_renter' || status === 'cancelled_by_host';
 
+  const isCompleted =
+    status === 'completed';
+
+  
+
   /* -------------------- CANCELLED VIEW -------------------- */
   if (isCancelled) {
     return (
@@ -36,6 +41,18 @@ const ReservationStatusStepper = ({ status, userRole }: Props) => {
             ? 'This reservation was cancelled by the renter. Cancellation fees may have applied.'
             : 'This reservation was cancelled by the host. No charges were applied.'}
         </Text>
+      </View>
+    );
+  }
+
+  if (isCompleted) {
+    return (
+      <View>
+        <View style={styles.completedContainer}>
+          <Text style={styles.completedTitle}>
+            Reservation Completed
+          </Text>
+        </View>
       </View>
     );
   }
@@ -208,11 +225,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginVertical: 16,
   },
-
+  completedContainer: {
+    backgroundColor: '#E5E7EB',
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 16,
+  },
   cancelledTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#B91C1C',
+  },
+  completedTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#34D399',
   },
 
   cancelledSubtitle: {

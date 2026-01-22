@@ -70,8 +70,6 @@ async function processRecurringPaymentsLogic() {
       
       const amountChargedToRenter = baseAmount + renterFee;
       const applicationFee = hostFee + renterFee;
-      
-
 
       const frequency = post.priceFrequency;
       const hostId = post.userId;

@@ -11,6 +11,7 @@ import ReservationCard from './ReservationCard';  // adjust path if needed
 import { doc, getDoc } from 'firebase/firestore';
 import { Dimensions } from 'react-native';
 import SpaceCard from 'src/components/SpaceCard';
+import { COLORS } from '../Styles/theme';
 const { width, height } = Dimensions.get('window');
 
 
@@ -274,8 +275,9 @@ const renderContent = () => {
   return (
 
     <View style={styles.container}>
+      
       <View style={styles.tabContainer}>
-
+        
       {['My Spaces', 'Bookings'].map((tab) => (
         <TouchableOpacity
           key={tab}
@@ -298,7 +300,6 @@ const renderContent = () => {
       </View>
 
 
-      {/* <View style={styles.content}>{renderContent()}</View> */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={{ paddingBottom: 120 }}
@@ -309,50 +310,51 @@ const renderContent = () => {
 
  
       {selectedTab === 'My Spaces' && (
-        
-    <TouchableOpacity
-      style={[
-        styles.createButton,
-        !isLoggedIn && { backgroundColor: '#aaa' },
-      ]}
-      onPress={() => {
-        if (isLoggedIn) {
-          navigation.navigate('CreateSpaceScreen');
-        } else {
-          alert('Please log in to create a post.');
-        }
-      }}
-      disabled={!isLoggedIn}
-    >
-
-      <Text style={styles.createButtonText}>Create Post</Text>
-    </TouchableOpacity>
-  )}
+       <View style={{padding: 8 }}>
+        <TouchableOpacity
+          style={[
+            styles.createButton,
+            !isLoggedIn && { backgroundColor: '#aaa' },
+          ]}
+          onPress={() => {
+            if (isLoggedIn) {
+              navigation.navigate('CreateSpaceScreen');
+            } else {
+              alert('Please log in to create a post.');
+            }
+          }}
+          disabled={!isLoggedIn}
+        >
+          <Text style={styles.activeTabText}>Create Post</Text>
+        </TouchableOpacity>
+        </View>
+      )}
 
 
 {selectedTab === 'Bookings' && (
-  <View style={{ flexDirection: 'row', marginVertical: 8 }}>
+  <View style={{ flexDirection: 'row', padding: 8}}>
     {['Requests', 'Ongoing', 'Previous'].map(filter => (
       <TouchableOpacity
         key={filter}
-        style={{
-          flex: 1,
-          paddingVertical: 8,
-          marginHorizontal: 4,
-          backgroundColor: bookingFilter === filter ? '#0F6B5B' : '#E6E6E6',
-          borderRadius: 8,
-          alignItems: 'center',
-        }}
+        style={[
+          styles.tabButton, 
+          bookingFilter === filter && styles.activeTabButton, // <-- apply active style
+        ]}
         onPress={() => setBookingFilter(filter as typeof bookingFilter)}
       >
-        <Text style={{
-          color: bookingFilter === filter ? '#FFF' : '#333',
-          fontFamily: 'Poppins-Medium',
-        }}>{filter}</Text>
+        <Text
+          style={[
+            styles.tabText, 
+            bookingFilter === filter && styles.activeTabText, // <-- apply active text style
+          ]}
+        >
+          {filter}
+        </Text>
       </TouchableOpacity>
     ))}
   </View>
 )}
+
 
 
 
@@ -370,21 +372,22 @@ const renderContent = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#FFFCF1', // Wheat/Cream background
+    backgroundColor: COLORS.lighterGrey,
+
   },
 
   tabContainer: {
     flexDirection: 'row',
     width: '100%',
-    marginBottom: 12,
+    padding: 8,
+    // backgroundColor: COLORS.darkerGrey
   },
 
   tabButton: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 12,
-    backgroundColor: '#E6E6E6', // Light neutral for inactive tabs
+    backgroundColor: COLORS.white, // Light neutral for inactive tabs
     borderBottomWidth: 2,
     borderColor: 'transparent',
     borderRadius: 10,
@@ -409,6 +412,8 @@ const styles = StyleSheet.create({
 
   content: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 0
   },
 
   postBox: {
@@ -508,7 +513,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 12,
   },
 
   createButtonText: {

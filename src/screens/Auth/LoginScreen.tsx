@@ -15,6 +15,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { COLORS } from '../Styles/theme';
 
 type AuthStackParamList = {
   CreateAccount: undefined;
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#FFFCF1', // Wheat/Cream background for warmth and consistency
+    backgroundColor: COLORS.lighterGrey,
   },
   backIcon: {
     position: 'absolute',

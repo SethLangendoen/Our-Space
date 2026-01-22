@@ -47,173 +47,201 @@ export default function RulesScreen({ navigation, route }: Props) {
   Math.floor(1000 + Math.random() * 9000).toString();
 
 
-  const handleConfirm = async () => {
-    if (checkedRules.length !== rules.length) {
-      Alert.alert('Please check all rules before proceeding.');
-      return;
-    }
+
+
+
+  // const handleConfirm = async () => {
+  //   if (checkedRules.length !== rules.length) {
+  //     Alert.alert('Please check all rules before proceeding.');
+  //     return;
+  //   }
   
-    setLoading(true);
+  //   setLoading(true);
   
-    try {
-      const reservationRef = doc(db, 'reservations', reservationId);
+  //   try {
+  //     const reservationRef = doc(db, 'reservations', reservationId);
   
-      if (role === 'owner') {
-        // Owner confirms: update status to awaiting_acceptance
-        await updateDoc(reservationRef, {
-          status: 'awaiting_acceptance',
-          updatedAt: serverTimestamp(),
-        });
+  //     if (role === 'owner') {
+  //       // Owner confirms: update status to awaiting_acceptance
+  //       await updateDoc(reservationRef, {
+  //         status: 'awaiting_acceptance',
+  //         updatedAt: serverTimestamp(),
+  //       });
   
-        Alert.alert('Success', 'Reservation confirmed! Waiting for requester to accept.');
+  //       Alert.alert('Success', 'Reservation confirmed! Waiting for requester to accept.');
   
-      } else {
-        // Requester confirms: finalize booking
-        const snap = await getDoc(reservationRef);
-        if (!snap.exists()) throw new Error('Reservation not found');
+  //     } else {
+  //       // Requester confirms: finalize booking
+  //       const snap = await getDoc(reservationRef);
+  //       if (!snap.exists()) throw new Error('Reservation not found');
   
-        const reservation = snap.data();
+  //       const reservation = snap.data();
   
-        const updateData: any = {
-          status: 'confirmed',
-          lastPaymentDate: null,
-          nextPaymentDate: reservation.startDate,
-          isProcessing: false,
-          updatedAt: serverTimestamp(),
+  //       const updateData: any = {
+  //         status: 'confirmed',
+  //         lastPaymentDate: null,
+  //         nextPaymentDate: reservation.startDate,
+  //         isProcessing: false,
+  //         updatedAt: serverTimestamp(),
+  //       };
+  
+  //       // Only create security if it doesn't exist
+  //       if (!reservation.security) {
+  //         const generateSecurityCode = () =>
+  //           Math.floor(1000 + Math.random() * 9000).toString();
+  
+  //         updateData.security = {
+  //           dropOff: {
+  //             code: generateSecurityCode(),
+  //             codeVerified: false,
+  //             photoUrl: null,
+  //             photoUploaded: false,
+  //             completed: false,
+  //             reviews: { host: false, renter: false },
+  //           },
+  //           pickUp: {
+  //             code: generateSecurityCode(),
+  //             codeVerified: false,
+  //             photoUrl: null,
+  //             photoUploaded: false,
+  //             completed: false,
+  //             reviews: { host: false, renter: false },
+  //           },
+  //         };
+  //       }
+
+  //       // Here I want to add logic for updating a each users profile badges. We update the owneres
+  //       // first host badge to true if it is not already and we update the renters firstStash badge to true
+  //       // if it is not already. 
+  
+  //       await updateDoc(reservationRef, updateData);
+  
+  //       Alert.alert('Success', 'Booking finalized and confirmed!');
+  //     }
+  
+  //     navigation.navigate('RequestDetailScreen', { reservationId });
+  
+  //   } catch (err) {
+  //     console.error('Failed to update reservation status', err);
+  //     Alert.alert('Error', 'Failed to update reservation status.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+
+const handleConfirm = async () => {
+  if (checkedRules.length !== rules.length) {
+    Alert.alert('Please check all rules before proceeding.');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const reservationRef = doc(db, 'reservations', reservationId);
+
+    if (role === 'owner') {
+      // Owner confirms: update status to awaiting_acceptance
+      await updateDoc(reservationRef, {
+        status: 'awaiting_acceptance',
+        updatedAt: serverTimestamp(),
+      });
+
+      Alert.alert('Success', 'Reservation confirmed! Waiting for requester to accept.');
+
+    } else {
+      // Requester confirms: finalize booking
+      const snap = await getDoc(reservationRef);
+      if (!snap.exists()) throw new Error('Reservation not found');
+
+      const reservation = snap.data();
+
+      const updateData: any = {
+        status: 'confirmed',
+        lastPaymentDate: null,
+        nextPaymentDate: reservation.startDate,
+        isProcessing: false,
+        updatedAt: serverTimestamp(),
+      };
+
+      // Only create security if it doesn't exist
+      if (!reservation.security) {
+        const generateSecurityCode = () =>
+          Math.floor(1000 + Math.random() * 9000).toString();
+
+        updateData.security = {
+          dropOff: {
+            code: generateSecurityCode(),
+            codeVerified: false,
+            photoUrl: null,
+            photoUploaded: false,
+            completed: false,
+            reviews: { host: false, renter: false },
+          },
+          pickUp: {
+            code: generateSecurityCode(),
+            codeVerified: false,
+            photoUrl: null,
+            photoUploaded: false,
+            completed: false,
+            reviews: { host: false, renter: false },
+          },
         };
-  
-        // Only create security if it doesn't exist
-        if (!reservation.security) {
-          const generateSecurityCode = () =>
-            Math.floor(1000 + Math.random() * 9000).toString();
-  
-          updateData.security = {
-            dropOff: {
-              code: generateSecurityCode(),
-              codeVerified: false,
-              photoUrl: null,
-              photoUploaded: false,
-              completed: false,
-              reviews: { host: false, renter: false },
-            },
-            pickUp: {
-              code: generateSecurityCode(),
-              codeVerified: false,
-              photoUrl: null,
-              photoUploaded: false,
-              completed: false,
-              reviews: { host: false, renter: false },
-            },
-          };
-        }
-  
-        await updateDoc(reservationRef, updateData);
-  
-        Alert.alert('Success', 'Booking finalized and confirmed!');
       }
-  
-      // Navigate back to RequestDetailScreen after confirming
-      navigation.navigate('RequestDetailScreen', { reservationId });
-  
-    } catch (err) {
-      console.error('Failed to update reservation status', err);
-      Alert.alert('Error', 'Failed to update reservation status.');
-    } finally {
-      setLoading(false);
+
+      // ---------------- Update badges ----------------
+      // Owner
+      const ownerId = reservation.ownerId; // make sure this exists in reservation
+      const requesterId = reservation.requesterId;
+
+      if (ownerId) {
+        const ownerRef = doc(db, 'users', ownerId);
+        const ownerSnap = await getDoc(ownerRef);
+        if (ownerSnap.exists()) {
+          const ownerData = ownerSnap.data();
+          const ownerBadges = ownerData.badges || {};
+          if (!ownerBadges.firstHost) {
+            await updateDoc(ownerRef, {
+              'badges.firstHost': true
+            });
+          }
+        }
+      }
+
+      // Requester
+      if (requesterId) {
+        const requesterRef = doc(db, 'users', requesterId);
+        const requesterSnap = await getDoc(requesterRef);
+        if (requesterSnap.exists()) {
+          const requesterData = requesterSnap.data();
+          const requesterBadges = requesterData.badges || {};
+          if (!requesterBadges.firstStash) {
+            await updateDoc(requesterRef, {
+              'badges.firstStash': true
+            });
+          }
+        }
+      }
+
+      // Update reservation last
+      await updateDoc(reservationRef, updateData);
+
+      Alert.alert('Success', 'Booking finalized and confirmed!');
     }
-  };
+
+    navigation.navigate('RequestDetailScreen', { reservationId });
+
+  } catch (err) {
+    console.error('Failed to update reservation status', err);
+    Alert.alert('Error', 'Failed to update reservation status.');
+  } finally {
+    setLoading(false);
+  }
+};
 
 
-
-// const handleConfirm = async () => {
-//   if (checkedRules.length !== rules.length) {
-//     Alert.alert('Please check all rules before proceeding.');
-//     return;
-//   }
-
-//   setLoading(true);
-
-//   try {
-//     const reservationRef = doc(db, 'reservations', reservationId);
-//     const snap = await getDoc(reservationRef);
-//     if (!snap.exists()) throw new Error('Reservation not found');
-
-//     const reservation = snap.data();
-
-//     const updateData: any = {
-//       updatedAt: serverTimestamp(),
-//     };
-
-//     if (role === 'owner') {
-//       // Owner confirms: update status to awaiting_acceptance
-//       updateData.status = 'awaiting_acceptance';
-//       await updateDoc(reservationRef, updateData);
-//       Alert.alert('Success', 'Reservation confirmed! Waiting for requester to accept.');
-
-//       // Handle firstHost badge for host
-//       const hostRef = doc(db, 'users', reservation.hostId);
-//       const hostSnap = await getDoc(hostRef);
-//       if (hostSnap.exists()) {
-//         const hostData = hostSnap.data();
-//         if (!hostData.badges?.firstHost) {
-//           await updateDoc(hostRef, { 'badges.firstHost': true });
-//         }
-//       }
-//     } else {
-//       // Requester confirms: finalize booking
-//       updateData.status = 'confirmed';
-//       updateData.lastPaymentDate = null;
-//       updateData.nextPaymentDate = reservation.startDate;
-//       updateData.isProcessing = false;
-
-//       if (!reservation.security) {
-//         const generateSecurityCode = () =>
-//           Math.floor(1000 + Math.random() * 9000).toString();
-//         updateData.security = {
-//           dropOff: {
-//             code: generateSecurityCode(),
-//             codeVerified: false,
-//             photoUrl: null,
-//             photoUploaded: false,
-//             completed: false,
-//             reviews: { host: false, renter: false },
-//           },
-//           pickUp: {
-//             code: generateSecurityCode(),
-//             codeVerified: false,
-//             photoUrl: null,
-//             photoUploaded: false,
-//             completed: false,
-//             reviews: { host: false, renter: false },
-//           },
-//         };
-//       }
-
-//       await updateDoc(reservationRef, updateData);
-//       Alert.alert('Success', 'Booking finalized and confirmed!');
-
-//       // Handle firstStash badge for renter
-//       const renterRef = doc(db, 'users', reservation.renterId);
-//       const renterSnap = await getDoc(renterRef);
-//       if (renterSnap.exists()) {
-//         const renterData = renterSnap.data();
-//         if (!renterData.badges?.firstStash) {
-//           await updateDoc(renterRef, { 'badges.firstStash': true });
-//         }
-//       }
-//     }
-
-//     // Navigate back to RequestDetailScreen after confirming
-//     navigation.navigate('RequestDetailScreen', { reservationId });
-//   } catch (err) {
-//     console.error('Failed to update reservation status', err);
-//     Alert.alert('Error', 'Failed to update reservation status.');
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
-  
 
 
   return (

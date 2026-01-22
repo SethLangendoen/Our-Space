@@ -297,14 +297,30 @@ useEffect(() => {
 const startDate = selectedRange.start;
 
 // Only run the .some() check if startDate is not null
-const futureBlocked = startDate
+  const futureBlocked = startDate
   ? [...(space.blockedTimes || []), ...(space.reservedTimes || [])]
       .some(bt => new Date(bt.start) > startDate)
   : false;
+  const isOpenEnded = !!selectedRange.start && !selectedRange.end;
+  const invalidOpenEndedBooking = isOpenEnded && futureBlocked;
 
 
 
-
+  const formatTotalTimeBooked = (ms?: number) => {
+    if (!ms || ms <= 0) return null;
+  
+    const totalHours = Math.floor(ms / (1000 * 60 * 60));
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
+  
+    if (days > 0) {
+      return `${days}d${hours > 0 ? ` ${hours}h` : ''}`;
+    }
+  
+    return `${totalHours}h booked`;
+  };
+  const totalTimeLabel = formatTotalTimeBooked(space.totalTimeBooked);
+  
 
 
   return (
@@ -332,7 +348,7 @@ const futureBlocked = startDate
         </ScrollView>
       )}
 
-
+      
 
 
 {space.location.lat && space.location.lng && (
@@ -407,14 +423,22 @@ const futureBlocked = startDate
         <Text style={styles.price}>${parseFloat(space.price).toFixed(2)} CAD {space.priceFrequency} </Text>
       )}
 
+      {totalTimeLabel && (
+        <View >
+          <Text style={styles.label}>
+          Total Time Booked: 
+          <Text style={styles.value}>{totalTimeLabel}</Text>
+          </Text>
+        </View>
+      )}
+      
 
-
-	  <Text style={styles.label}>
-		Location:{' '}
-		<Text style={styles.value}>
-			{space.address ? space.address.slice(-7) : 'N/A'}
-		</Text>
-	</Text>
+      <Text style={styles.label}>
+        Location:{' '}
+        <Text style={styles.value}>
+          {space.address ? space.address.slice(-7) : 'N/A'}
+        </Text>
+      </Text>
 
 
       <Text style={styles.label}>
@@ -450,14 +474,6 @@ const futureBlocked = startDate
     {space.availability?.startDate || 'N/A'} - {space.availability?.endDate || 'N/A'}
   </Text>
 </Text>
-{/* 
-<Text style={styles.label}>
-  Delivery Method:
-  <Text style={styles.value}>
-    {' '}
-    {space.deliveryMethod?.length > 0 ? space.deliveryMethod.join(', ') : 'N/A'}
-  </Text>
-</Text> */}
 
 <Text style={styles.label}>
   Dimensions:
@@ -508,7 +524,6 @@ const futureBlocked = startDate
           : 'TBD'}
     </Text>
 
-
   </View>
 
   <TextInput
@@ -527,14 +542,14 @@ const futureBlocked = startDate
       !selectedRange.start ||
       !reservationDescription.trim() ||
       booking ||
-      futureBlocked
+      invalidOpenEndedBooking
     ) && styles.disabledButton,
   ]}
-  disabled={!selectedRange.start || !reservationDescription.trim() || booking || futureBlocked}
+  disabled={!selectedRange.start || !reservationDescription.trim() || booking || invalidOpenEndedBooking}
   onPress={handleReservation}
 >
   <Text style={styles.confirmText}>
-    {booking ? 'Booking...' : 'Confirm Reservation'}
+    {booking ? 'Booking...' : 'Request Space Reservation'}
   </Text>
 </TouchableOpacity>
 
@@ -546,28 +561,26 @@ const futureBlocked = startDate
     <Text style={styles.questionText}>Have a question before booking?</Text>
 
 
-<View style={styles.messageBox}>
-  <TextInput
-    style={styles.messageInput}
-    placeholder="Send message..."
-    value={message}
-    onChangeText={setMessage}
-    multiline
-  />
+    <View style={styles.messageBox}>
+      <TextInput
+        style={styles.messageInput}
+        placeholder="Send message..."
+        value={message}
+        onChangeText={setMessage}
+        multiline
+      />
 
-  <TouchableOpacity
-    onPress={sendMessage}
-    disabled={!message.trim() || sending}
-    style={[
-      styles.sendButton,
-      (!message.trim() || sending) && styles.disabledButton,
-    ]}
-  >
-    <Text style={styles.sendText}>{sending ? 'Sending...' : 'Send'}</Text>
-  </TouchableOpacity>
-</View>
-
-
+      <TouchableOpacity
+        onPress={sendMessage}
+        disabled={!message.trim() || sending}
+        style={[
+          styles.sendButton,
+          (!message.trim() || sending) && styles.disabledButton,
+        ]}
+      >
+        <Text style={styles.sendText}>{sending ? 'Sending...' : 'Send'}</Text>
+      </TouchableOpacity>
+    </View>
 
 
   </>

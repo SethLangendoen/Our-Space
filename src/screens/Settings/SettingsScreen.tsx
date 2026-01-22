@@ -15,6 +15,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../../firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
+import { COLORS } from '../Styles/theme';
 
 
 type Navigation = {
@@ -234,7 +235,10 @@ export default function SettingsScreen() {
 
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.lighterGrey 
+  },
 
   /* GROUP HEADER */
   groupHeader: {

@@ -24,6 +24,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'; // I
 import { useFilterContext } from '../../context/FilterContext';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import Constants from 'expo-constants';
+import { COLORS } from '../Styles/theme';
 
 type FiltersObjectType = {
   categories?: string[];
@@ -400,7 +401,7 @@ export default function FiltersScreen() {
 
 </View>
 
- {/* Calendar */}
+ {/* Calendar
  <Text style={styles.sectionTitle}>Select Storage Dates</Text>
   <View style={styles.card}>
     <Calendar
@@ -457,7 +458,7 @@ export default function FiltersScreen() {
       }}
       markingType={'period'}
     />
-  </View>
+  </View> */}
 
 
   {/* Usage Type */}
@@ -619,7 +620,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     padding: 16,
     paddingBottom: 48,
-    backgroundColor: '#FFFCF1', // Wheat/Cream
+    backgroundColor: COLORS.lighterGrey,
   },
   sectionTitle: {
     fontFamily: 'Poppins-Bold',

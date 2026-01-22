@@ -1,5 +1,4 @@
-import { setDoc, serverTimestamp } from 'firebase/firestore';
-
+import { setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -13,6 +12,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
+import { COLORS, FONT_SIZES, SPACING, COMMON_STYLES } from '../Styles/theme';
 import { useNavigation, useRoute, useIsFocused, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { auth, db } from '../../firebase/config';
@@ -21,6 +21,12 @@ import SpaceCard from '../../components/SpaceCard';
 import ProfileStatsBadge from './ProfileStatsBadge';
 import Badges from './Badges';
 import Reviews from './Reviews';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
+import { buildUnavailableHoursBlocks } from 'react-native-calendars/src/timeline/Packer';
+const star = require('assets/badges/profileIcon/star.png');
+const badge = require('assets/badges/profileIcon/trophy.png');
+
+
 const { height: screenHeight } = Dimensions.get('window');
 const { width } = Dimensions.get('window');
 const verifiedBadge = '../../../assets/badges/complete/verifiedBadge.png'
@@ -42,7 +48,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const route = useRoute<RouteProp<ProfileStackParamList, 'ProfileMain'>>();
   const isFocused = useIsFocused();
-
+  const [role, setRole] = useState(null);
   const viewingUserId = route.params?.userId ?? auth.currentUser?.uid;
   const isOwnProfile = viewingUserId === auth.currentUser?.uid;
 
@@ -53,8 +59,8 @@ export default function ProfileScreen() {
   const [listings, setListings] = useState<any[]>([]);
   const [createdAt, setCreatedAt] = useState<Date | null>(null);
   const [isVerified, setIsVerified] = useState<boolean>(false);
-  // const [reviews, setReviews] = useState<any[]>([]);
-  // const [loadingReviews, setLoadingReviews] = useState(false);
+  const [badgeCount, setBadgeCount] = useState<number>(0);
+  const [reviewCount, setReviewCount] = useState<number>(0);
   
 
 
@@ -82,16 +88,24 @@ export default function ProfileScreen() {
       const updatedSnap = await getDoc(userRef);
       if (updatedSnap.exists()) {
         const data = updatedSnap.data();
-        const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+        const fullName = `${data.firstName || ''} ${data.lastName ? data.lastName.charAt(0) + '.' : ''}`.trim();
         setName(fullName || 'No Name');
         setBio(data.bio || '');
         setProfileImage(data.profileImage || null);
+        setRole(data.role)
   
         if (data.createdAt) {
           const date = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
           setCreatedAt(date);
           const formattedDate = date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
           console.log("Member since:", formattedDate);
+        }
+
+        if (data.badges) {
+          const trueBadges = Object.values(data.badges).filter(Boolean).length;
+          setBadgeCount(trueBadges);
+        } else {
+          setBadgeCount(0);
         }
       }
     } catch (error) {
@@ -101,9 +115,37 @@ export default function ProfileScreen() {
     }
   };
 
+  const getRoleLabel = (role: string | undefined) => {
+    if (!role) return '';
+    if (role === 'host') return 'Space Host';
+    if (role === 'renter') return 'Space Renter';
+    return role; // fallback just in case
+  };
+  
 
 
+  const fetchReviewCount = async () => {
+    if (!viewingUserId) return;
+  
+    try {
+      const reviewsRef = collection(db, 'users', viewingUserId, 'reviews');
+      const snapshot = await getDocs(reviewsRef);
+      setReviewCount(snapshot.size);
+    } catch (error) {
+      console.error('Error fetching review count:', error);
+    }
+  };
 
+  useEffect(() => {
+    if (isFocused) {
+      fetchUserData();
+      fetchUserListings();
+      fetchVerificationStatus();
+      fetchReviewCount();
+    }
+  }, [isFocused]);
+  
+  
 
   const fetchUserListings = async () => {
     if (!viewingUserId) return;
@@ -130,11 +172,12 @@ export default function ProfileScreen() {
 
 
   
-
   const fetchVerificationStatus = async () => {
     if (!viewingUserId) return;
+  
     try {
       const idToken = await auth.currentUser?.getIdToken(true);
+  
       const response = await fetch(
         "https://us-central1-our-space-8b8cd.cloudfunctions.net/checkStripeVerification",
         {
@@ -144,9 +187,29 @@ export default function ProfileScreen() {
           },
         }
       );
+  
       const data = await response.json();
+  
       if (response.ok) {
         setIsVerified(data.verified);
+  
+        // ✅ Persist verifiedHero badge
+        if (data.verified) {
+          const userRef = doc(db, 'users', viewingUserId);
+          const userSnap = await getDoc(userRef);
+  
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const badges = userData.badges || {};
+  
+            // Only update if not already earned
+            if (!badges.verifiedHero) {
+              await updateDoc(userRef, {
+                'badges.verifiedHero': true,
+              });
+            }
+          }
+        }
       } else {
         console.warn("Error fetching verification:", data.error);
       }
@@ -155,7 +218,6 @@ export default function ProfileScreen() {
     }
   };
   
-
 
 
 
@@ -177,26 +239,61 @@ export default function ProfileScreen() {
     contentContainerStyle={styles.scrollContent}
     >
       <View style={styles.container}>
+
+
         <View style={styles.headerSection}>
           <View style={styles.statsRow}>
+            {/* Badge Stat */}
+
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>10</Text>
-              <Text style={styles.statLabel}>Space Badges</Text>
+              <View style={styles.statImageWrapper}>
+                <Image
+                  source={badge} // or badge
+                  style={styles.statImage}
+                />
+                <Text style={styles.statNumberOverlay}>{badgeCount}</Text>
+              </View>
+              <Text style={styles.statLabel}>Badges</Text>
             </View>
+
+
+            {/* Review Stat */}
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>3</Text>
+              <View style={styles.statImageWrapper}>
+
+              <Image
+                source={star} // replace with your review image
+                style={styles.statImage}
+              />
+              <Text style={styles.statNumberOverlay}>{reviewCount}</Text>
+              </View>
+
               <Text style={styles.statLabel}>Reviews</Text>
             </View>
+
           </View>
         </View>
 
-        <View style={styles.profileContainer}>
-          <Image
-            source={profileImage ? { uri: profileImage } : require('../../../assets/blankProfile.png')}
-            style={styles.profileImage}
-          />
 
-          <Text style={styles.name}>{name}</Text>
+
+
+
+
+
+        <View style={styles.profileContainer}>
+          <View style={styles.profileImageWrapper}>
+            <Image
+              source={profileImage ? { uri: profileImage } : require('../../../assets/blankProfile.png')}
+              style={styles.profileImage}
+            />
+          </View>
+
+
+          {role && (
+            <Text style={styles.role}>{getRoleLabel(role)}</Text>
+          )}
+
+
           {isVerified && (
             <View style={styles.verifiedBadge}>
               <Image
@@ -206,6 +303,7 @@ export default function ProfileScreen() {
               <Text style={styles.verifiedText}>Verified</Text>
             </View>
           )}
+          <Text style={styles.name}>{name}</Text>
 
           <Text style={styles.aboutText}>{bio || 'No bio provided yet.'}</Text>
           {createdAt && (
@@ -241,7 +339,6 @@ export default function ProfileScreen() {
               </Pressable>
             ))}
           </View>
-
 
           {activeTab === 'Badges' && (
             <View style={styles.badgeList}>         
@@ -287,32 +384,21 @@ export default function ProfileScreen() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 const styles = StyleSheet.create({
 
 
   container: {
     flex: 1,
-    backgroundColor: '#FFFCF1', // soft wheat background
+    backgroundColor: COLORS.lighterGrey, 
   },
+
 
   headerSection: {
     height: 100,
-    backgroundColor: '#F3AF1D', // mustard yellow
+    backgroundColor: 'white', 
     justifyContent: 'center',
     position: 'relative',
+    
   },
 
   statsRow: {
@@ -321,7 +407,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     position: 'absolute',
     width: '100%',
-    top: 30,
+    top: 10,
   },
   reviewDate: {
     fontSize: 12,
@@ -332,13 +418,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
     color: '#0F6B5B', // emerald green
   },
   statLabel: {
     fontSize: 12,
-    color: '#444',
+    color: 'black',
   },
 
   profileContainer: {
@@ -346,21 +432,39 @@ const styles = StyleSheet.create({
     marginTop: -60,
     paddingHorizontal: 20,
   },
-
+  profileImageWrapper: {
+    width: 150,
+    height: 150,
+    borderRadius: 75, // half of width/height
+    borderWidth: 3,   // this will be the outer border color
+    borderColor: '#13AD58', // outer border
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white', // this becomes the "inner border"
+  },
   profileImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 4,
-    borderColor: '#FFFCF1',
+    width: 140,  // slightly smaller than wrapper
+    height: 140,
+    borderRadius: 70,
     backgroundColor: '#ccc',
   },
-
   name: {
-    fontSize: 22,
+    fontSize: 32,
     fontWeight: '700',
     color: '#0F6B5B', // emerald headline
-    marginTop: 12,
+    marginTop: 0,
+  },
+  role: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F6B5B', // emerald headline
+    marginTop: -20,
+    backgroundColor: 'white',
+    paddingHorizontal: 10,
+    borderColor: '#13AD58',
+    borderRadius: 10,
+    borderWidth: 3
+
   },
 
   buttonRow: {
@@ -401,6 +505,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#DDD',
     width: '100%',
     marginBottom: 12,
+    
   },
 
   tab: {
@@ -546,7 +651,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 12,
-    marginLeft: 8,
+    marginLeft: 0,
+    marginTop: 20,
   },
   
   verifiedIcon: {
@@ -558,21 +664,12 @@ const styles = StyleSheet.create({
   verifiedText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0F6B5B', // emerald green text
+    color: '#0F6B5B',
   },
   reviewList: {
-    marginTop: 16,
-  },
-  reviewCard: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    elevation: 1,
-  },
-  reviewerName: {
-    fontWeight: '600',
-    marginBottom: 4,
+    flex: 1,          
+    width: '100%',    
+    paddingHorizontal: 0, 
   },
   reviewRating: {
     color: '#FFD700',
@@ -581,6 +678,25 @@ const styles = StyleSheet.create({
   reviewText: {
     color: '#333',
   },
-  
+
+  statImageWrapper: {
+    width: 60,           // match your image width
+    height: 60,          // match your image height
+    justifyContent: 'center', // vertical center
+    alignItems: 'center',     // horizontal center
+    position: 'relative',     // needed for absolute overlay
+  },
+  statNumberOverlay: {
+    position: 'absolute',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',       // text color on top of image
+  },
+  statImage: {
+    width: 60,
+    height: 60,
+    resizeMode: 'contain',
+  },
+
   
 });

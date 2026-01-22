@@ -1,7 +1,7 @@
 
   
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../firebase/config'; // adjust import
@@ -11,7 +11,7 @@ interface BadgesProps {
   createdAt: Date | null;
 }
 
-    
+
 
 const badgeList = [
 	{
@@ -54,18 +54,18 @@ const badgeList = [
 	  iconCompleted: require('../../../assets/badges/complete/firstStash.png'),
 	  iconIncomplete: require('../../../assets/badges/incomplete/firstStash.png'),
 	},
-	{
-	  id: 'fullHouse',
-	  title: 'Full House',
-	  description: 'Have 100% occupancy for a full week.',
-	  isCompleted: false,
-	  iconCompleted: require('../../../assets/badges/complete/fullHouse.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/fullHouse.png'),
-	},
+	// {
+	//   id: 'fullHouse',
+	//   title: 'Full House',
+	//   description: 'Have 100% occupancy for a full week.',
+	//   isCompleted: false,
+	//   iconCompleted: require('../../../assets/badges/complete/fullHouse.png'),
+	//   iconIncomplete: require('../../../assets/badges/incomplete/fullHouse.png'),
+	// },
 	{
 	  id: 'respectedRoyalty',
 	  title: 'Respected Royalty',
-	  description: 'Earn the respect of fellow hosts and guests.',
+	  description: 'Get over 30 days booked on a space',
 	  isCompleted: false,
 	  iconCompleted: require('../../../assets/badges/complete/respectedRoyalty.png'),
 	  iconIncomplete: require('../../../assets/badges/incomplete/respectedRoyalty.png'),
@@ -113,6 +113,7 @@ const has100DayMVP = (createdAt: Date | null) => {
 };
 
 const Badges: React.FC<BadgesProps> = ({ isVerified, createdAt }) => {
+	const [userBadges, setUserBadges] = useState<{ [key: string]: boolean }>({});
 
   // Ensure user doc has badges
   useEffect(() => {
@@ -145,12 +146,45 @@ const Badges: React.FC<BadgesProps> = ({ isVerified, createdAt }) => {
     ensureBadges();
   }, []);
 
-  // Update badge completion based on props
+  useEffect(() => {
+    const fetchUserBadges = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const userRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(userRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        // Initialize badges if missing
+        if (!data.badges) {
+          const initialBadges = getInitialBadges();
+          await updateDoc(userRef, { badges: initialBadges });
+          setUserBadges(initialBadges);
+        } else {
+          setUserBadges(data.badges);
+        }
+      }
+    };
+
+    fetchUserBadges();
+  }, []);
+
+  // Merge Firestore badges with props-based badges
   const updatedBadgeList = badgeList.map(badge => {
-    if (badge.id === 'verifiedHero') return { ...badge, isCompleted: isVerified };
-    if (badge.id === '100DayMVP') return { ...badge, isCompleted: has100DayMVP(createdAt) };
-    return badge;
+    let isCompleted = badge.isCompleted;
+
+    // Apply Firestore badge if available
+    if (userBadges[badge.id] !== undefined) isCompleted = userBadges[badge.id];
+
+    // Override verifiedHero and 100DayMVP from props
+    if (badge.id === 'verifiedHero') isCompleted = isVerified;
+    if (badge.id === '100DayMVP') isCompleted = has100DayMVP(createdAt);
+
+    return { ...badge, isCompleted };
   });
+
+
 
   return (
     <View style={styles.container}>
@@ -160,7 +194,14 @@ const Badges: React.FC<BadgesProps> = ({ isVerified, createdAt }) => {
             source={badge.isCompleted ? badge.iconCompleted : badge.iconIncomplete}
             style={styles.badgeIcon}
           />
-          <Text style={styles.badgeTitle}>{badge.title}</Text>
+		<Text
+		style={[
+			styles.badgeTitle,
+			badge.isCompleted && { fontWeight: 'bold' }, // <-- make bold if completed
+		]}
+		>
+		{badge.title}
+		</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -182,13 +223,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   badgeIcon: {
-    width: 56,
-    height: 56,
+    width: 100,
+    height: 100,
     marginBottom: 6,
     resizeMode: 'contain',
   },
   badgeTitle: {
-    fontSize: 11,
+    fontSize: 15,
     textAlign: 'center',
     color: '#333',
   },

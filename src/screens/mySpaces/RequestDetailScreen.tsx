@@ -28,6 +28,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { handleCancelReservation } from 'src/firebase/firestore/cancelReservation';
 import SecurityCheck from './helpers/securityCheck';
 import PaymentCalendar from 'src/components/PaymentCalendar';
+import { COLORS } from '../Styles/theme';
 // import { calculateCancellationPreview } from './calculateCancellationPreview';
 
 type Props = NativeStackScreenProps<MySpacesStackParamList, 'RequestDetailScreen'>;
@@ -311,10 +312,18 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     }
   };
   
-
+  const TERMINAL_STATUSES = new Set([
+    'cancelled_by_host',
+    'cancelled_by_renter',
+    'completed',
+    'confirmed'
+  ]);
+  
   const canEdit =
-  userId === reservation?.requesterId &&
-  reservation?.status !== 'confirmed';
+    userId === reservation?.requesterId &&
+    !TERMINAL_STATUSES.has(reservation?.status);
+  
+
   const handleSaveEdit = async () => {
     if (!editedStart) {
       Alert.alert('Invalid dates', 'Please select a valid date range.');
@@ -373,26 +382,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     
   };
 
-  // const handleSubmitEndDateChange = async () => {
-  //   if (!editedEndDate || editedEndDate <= new Date()) {
-  //     Alert.alert('Invalid date', 'End date must be in the future.');
-  //     return;
-  //   }
-  
-  //   try {
-  //     const reservationRef = doc(db, 'reservations', reservationId);
-  //     await updateDoc(reservationRef, {
-  //       endDate: Timestamp.fromDate(editedEndDate),
-  //       updatedAt: Timestamp.now(),
-  //       endDateChangeRequested: true,
-  //     });
-  //     setIsCalendarOpen(!isCalendarOpen)
-  //     Alert.alert('End date updated', 'The end date has been successfully changed.');
-  //   } catch (err) {
-  //     console.error(err);
-  //     Alert.alert('Error', 'Could not update end date.');
-  //   }
-  // };
 
   const handleSubmitEndDateChange = async () => {
     if (!editedEndDate || editedEndDate <= new Date()) {
@@ -450,7 +439,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     showsVerticalScrollIndicator={false}
     >
 
-      <Text style={styles.title}>Reservation Request</Text>
+      <Text style={styles.title}>Reservation Request For</Text>
+      <Text style={styles.spaceTitle}>{reservation.spaceTitle}</Text>
 
       <View style={styles.profileRow}>
         <View style={styles.profileBox}>
@@ -470,6 +460,9 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         </View>
       </View>
 
+      <ReservationStatusStepper status={reservation.status} userRole={role} />
+
+
 	  {reservation.space && (
 			<View style={styles.postInfo}>
 				<Image
@@ -486,49 +479,63 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         
         {!isEditing ? (
           <>
-            <View style={styles.horizontalDates}>
-              {/* START DATE */}
-              <View style={styles.dateBlock}>
-                <Text style={styles.dateDay}>
-                  {toJSDate(reservation.startDate).getDate()}
-                </Text>
-                <Text style={styles.dateMonth}>
-                  {toJSDate(reservation.startDate).toLocaleString('default', { month: 'short' })}
-                </Text>
-              </View>
 
-              {/* Separator */}
-              <Text style={styles.dateSeparator}>→</Text>
-
-              {/* END DATE */}
-              <View style={styles.dateBlock}>
-                {reservation?.endDate ? (
-                  <>
-                    <Text style={styles.dateDay}>
-                      {toJSDate(reservation?.endDate).getDate()}
-                    </Text>
-                    <Text style={styles.dateMonth}>
-                      {toJSDate(reservation?.endDate).toLocaleString('default', { month: 'short' })}
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.dateDay}>TBD</Text>
-                    <Text style={styles.dateMonth}>—</Text>
-                  </>
-                )}
-              </View>
-
-
+          <View style={styles.horizontalDates}>
+            {/* START DATE */}
+            <View style={styles.dateBlock}>
+              <Text style={styles.dateMonth}>
+                {toJSDate(reservation.startDate).toLocaleString('default', { month: 'short' })}
+              </Text>
+              <Text style={styles.dateDay}>
+                {toJSDate(reservation.startDate).getDate()}
+              </Text>
+              <Text style={styles.dateYear}>
+                {toJSDate(reservation.startDate).getFullYear()}
+              </Text>
             </View>
+
+            {/* Separator */}
+            <Text style={styles.dateSeparator}>   →   </Text>
+
+            {/* END DATE */}
+            <View style={styles.dateBlock}>
+              {reservation?.endDate ? (
+                <>
+                  <Text style={styles.dateMonth}>
+                    {toJSDate(reservation.endDate).toLocaleString('default', { month: 'short' })}
+                  </Text>
+                  <Text style={styles.dateDay}>
+                    {toJSDate(reservation.endDate).getDate()}
+                  </Text>
+                  <Text style={styles.dateYear}>
+                    {toJSDate(reservation.endDate).getFullYear()}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.dateMonth}>—</Text>
+                  <Text style={styles.dateDay}>TBD</Text>
+                  <Text style={styles.dateYear}>—</Text>
+                </>
+              )}
+            </View>
+          </View>
+
 
             <Text style={styles.detailText}>
             <Text style={styles.nameText}>{requesterInfo?.firstName}'s request:  "{reservation.description}"</Text>
             </Text>
 
             {canEdit && (
-              <Button title="Edit Request" onPress={() => setIsEditing(true)} />
+              <TouchableOpacity
+                onPress={() => setIsEditing(true)}
+                style={styles.editButton} // subtle styling
+              >
+                <Text style={styles.editButtonText}>Edit Request</Text>
+              </TouchableOpacity>
             )}
+
+
           </>
         ) : (
           <>
@@ -556,59 +563,67 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
 
-      <ReservationStatusStepper status={reservation.status} userRole={role} />
-
+      {/* <ReservationStatusStepper status={reservation.status} userRole={role} /> */}
 
 
       {space && (
         <View style={styles.pricingBox}>
-          <Text style={styles.detailText}>
-            <Text style={styles.bold}>{space.priceFrequency} price:</Text>{' '}
-            ${Number(space.price).toFixed(2)} CAD
-          </Text>
+          {/* Weekly Price */}
+          <View style={styles.pricingRow}>
+            <Text style={styles.pricingLabel}>{space.priceFrequency} price:</Text>
+            <Text style={styles.pricingValue}>${Number(space.price).toFixed(2)}</Text>
+          </View>
 
-          {reservation?.status === 'confirmed' && reservation.nextPaymentDate && (
-            <>
-              <Text style={styles.detailText}>
-                <Text style={styles.bold}>Next Payment Date:</Text>{' '}
+          {/* Next Payment Date */}
+          {reservation.nextPaymentDate && (
+            <View style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Next Payment Date:</Text>
+              <Text style={styles.pricingValue}>
                 {reservation.nextPaymentDate.toDate().toLocaleDateString()}
               </Text>
-
-              {role === 'host' && (() => {
-                const base = Number(space.price);
-                const platformFee = base * 0.095;
-                const payout = base - platformFee;
-                return (
-                  <>
-                    <Text style={styles.detailText}>
-                      <Text style={styles.bold}>Platform Fee (9.5%):</Text> -${platformFee.toFixed(2)}
-                    </Text>
-                    <Text style={styles.detailText}>
-                      <Text style={styles.bold}>Total Payout:</Text> ${payout.toFixed(2)}
-                    </Text>
-                  </>
-                );
-              })()}
-
-              {role === 'renter' && (() => {
-                const base = Number(space.price);
-                const platformFee = base * 0.095;
-                const totalCost = base + platformFee;
-                return (
-                  <>
-                    <Text style={styles.detailText}>
-                      <Text style={styles.bold}>Platform Fee (9.5%):</Text> +${platformFee.toFixed(2)}
-                    </Text>
-                    <Text style={styles.detailText}>
-                      <Text style={styles.bold}>Total Cost:</Text> ${totalCost.toFixed(2)}
-                    </Text>
-                  </>
-                );
-              })()}
-            </>
+            </View>
           )}
+
+          {/* Host calculations */}
+          {role === 'host' && (() => {
+            const base = Number(space.price);
+            const platformFee = base * 0.095;
+            const payout = base - platformFee;
+            return (
+              <>
+                <View style={styles.pricingRow}>
+                  <Text style={styles.pricingLabel}>Platform Fee</Text>
+                  <Text style={styles.pricingValue}>-${platformFee.toFixed(2)}</Text>
+                </View>
+                <View style={styles.pricingRow}>
+                  <Text style={styles.pricingLabel}>Total Payout</Text>
+                  <Text style={styles.pricingValue}>${payout.toFixed(2)}</Text>
+                </View>
+              </>
+            );
+          })()}
+
+          {/* Renter calculations */}
+          {role === 'renter' && (() => {
+            const base = Number(space.price);
+            const platformFee = base * 0.095;
+            const totalCost = base + platformFee;
+            return (
+              <>
+                <View style={styles.pricingRow}>
+                  <Text style={styles.pricingLabel}>Platform Fee</Text>
+                  <Text style={styles.pricingValue}>${platformFee.toFixed(2)}</Text>
+                </View>
+                <View style={styles.pricingRow}>
+                  <Text style={styles.pricingLabel}>Total {space.priceFrequency} Cost</Text>
+                  <Text style={styles.pricingValue}>${totalCost.toFixed(2)} CAD</Text>
+                </View>
+              </>
+            );
+          })()}
         </View>
       )}
+
 
 
 
@@ -722,27 +737,23 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
     {reservation.status === 'confirmed' && reservation.security && (
-
         <>
-        
-        <SecurityCheck
-          reservation={reservation}
-          reservationId={reservationId}
-          userId={userId}
-          type="dropOff"
-          role={role} 
-        />
-          
-        <SecurityCheck
-          reservation={reservation}
-          reservationId={reservationId}
-          userId={userId}
-          type="pickUp"
-          role={role} 
-        />
+          <SecurityCheck
+            reservation={reservation}
+            reservationId={reservationId}
+            userId={userId}
+            type="dropOff"
+            role={role} 
+          />
             
+          <SecurityCheck
+            reservation={reservation}
+            reservationId={reservationId}
+            userId={userId}
+            type="pickUp"
+            role={role} 
+          />
         </>
-
     )}
 
 
@@ -760,16 +771,15 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
       {userId === reservation.requesterId &&
-      (reservation.status === 'requested' ||
-        reservation.status === 'awaiting_acceptance') && (
-          <View style={{ marginTop: 12 }}>
-            <Button
-              title="Cancel Request"
-              color="red"
-              onPress={handleCancelRequest}
-            />
+        (reservation.status === 'requested' ||
+          reservation.status === 'awaiting_acceptance') && (
+          <View style={styles.cancelRequest}>
+            <TouchableOpacity onPress={handleCancelRequest}>
+              <Text style={styles.cancelRequestText}>Cancel Request</Text>
+            </TouchableOpacity>
           </View>
       )}
+
 
 
       {canConfirm && (
@@ -936,13 +946,20 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     paddingBottom: 40, // 👈 important so buttons aren't cut off
-    backgroundColor: '#FFFCF1',
+    backgroundColor: COLORS.lighterGrey,
   },  
   title: {
-    fontWeight: 'bold',
     fontSize: 22,
-    marginBottom: 20,
+    marginBottom: 0,
     textAlign: 'center',
+  },
+  spaceTitle: {
+    fontWeight: 'bold',
+    fontSize: 32,
+    textAlign: 'center',
+    color: COLORS.primary,
+    marginBottom: 20,
+
   },
   profileRow: {
     flexDirection: 'row',
@@ -956,6 +973,64 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
+  editButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    // no background color,
+    width: '100%',
+    marginBottom: 20
+  },
+  
+  editButtonText: {
+    color: '#0F6B5B', // subtle green/neutral color
+    fontSize: 14,
+    fontFamily: 'Poppins-Medium',
+    textAlign: 'center'
+  },
+  
+  cancelRequest: {
+    // Example container styling
+    marginVertical: 0,
+    alignSelf: 'stretch',
+    marginTop: 0,
+    paddingTop: 0,
+    // padding, backgroundColor, borderRadius, etc. can go here
+  },
+  
+  cancelRequestText: {
+    color: 'red', // text color
+    fontSize: 16,
+    textAlign: 'center',
+    // fontWeight, padding, etc. can go here
+  },
+  pricingBox: {
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#F9F9F9',
+    marginVertical: 10,
+  },
+  
+  pricingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 2, // spacing between rows
+  },
+  
+  pricingLabel: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    color: '#333',
+  },
+  
+  pricingValue: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 14,
+    color: '#0F6B5B',
+  },
+  
+  
   toggleButtonText: {
     color: 'white',
     fontWeight: '600',
@@ -964,9 +1039,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 128,
+    height: 128,
+    borderRadius: 64,
     backgroundColor: '#ccc',
   },
   nameText: {
@@ -981,7 +1056,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   detailText: {
-    marginBottom: 6,
+    marginVertical: 0,
     fontSize: 16,
   },
   bold: {
@@ -1020,13 +1095,7 @@ const styles = StyleSheet.create({
 	fontWeight: '600',
 	textAlign: 'center',
   },
-  pricingBox: {
-    marginBottom: 10,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#c7d2fe',
-  },
+
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -1163,12 +1232,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderRadius: 12,           // rounded edges
     alignItems: "center",
-    marginVertical: 8,          // optional spacing
+    marginVertical: 0,          // optional spacing
     shadowColor: "#000",        // soft shadow for depth
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 2,               // Android shadow
+    marginBottom: 0,
   },
   
   messageButtonText: {
@@ -1182,18 +1252,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 16,
+    marginVertical: 0,
   },
   
   dateBlock: {
     alignItems: 'center',
     marginHorizontal: 0,
-    backgroundColor: '#fff', // white background
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,           // thin border
-    borderColor: 'rgba(0,0,0,0.1)', // very subtle black
+    // backgroundColor: '#fff', // white background
+    // paddingVertical: 8,
+    // paddingHorizontal: 16,
+    // borderRadius: 12,
+    // borderWidth: 1,           // thin border
+    // borderColor: 'rgba(0,0,0,0.1)', // very subtle black
   },
   
   
@@ -1207,7 +1277,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#000', // black month
-    marginTop: -4, // pull it up slightly for overlap effect
+    marginBottom: -14, // pull it up slightly for overlap effect
+  },
+  dateYear: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000', // black month
+    marginTop: -8, // pull it up slightly for overlap effect
   },
   
   dateSeparator: {

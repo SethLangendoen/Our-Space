@@ -1,7 +1,4 @@
 
-
-
-
 import { RouteProp, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
@@ -14,6 +11,9 @@ import {
   Image, // Import Image for custom markers
   ActivityIndicator, // Added for loading state
 } from 'react-native';
+import { COLORS, FONT_SIZES, SPACING, COMMON_STYLES } from '../Styles/theme';
+import { doc, setDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,10 +23,15 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import SpaceCard from '../../components/SpaceCard'; // ✅ Reusable component
 import { FilterData, useFilterContext } from '../../context/FilterContext';
+import { getAuth } from 'firebase/auth';
 
 const { width } = Dimensions.get('window');
 
-
+// Save / unsave icons
+const saveIcons = {
+  saved: require('assets/filter/bookmark.png'),
+  unsaved: require('assets/filter/bookmark-outline.png'),
+};
 
 type RootStackParamList = {
   SpacesMain: {
@@ -133,34 +138,70 @@ export default function SpacesScreen() {
   const navigation = useNavigation<SpacesScreenNavigationProp>();
   const route = useRoute<SpacesScreenRouteProp>(); // Correctly type the useRoute hook
   const [searchInfo, setSearchInfo] = useState<{ address: string; radius: number; location: { lat: number; lng: number } } | null>(null); // **Updated searchInfo type**
-
-
+  const [savedSpaces, setSavedSpaces] = useState<{ [spaceId: string]: boolean }>({});
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const auth = getAuth();
+  const userId = auth.currentUser?.uid;
+  
   
   const toggleView = useCallback(() => setIsMapView(prev => !prev), []);
 
   // --- Image Handling for Map Markers ---
-  const getUsageIcon = useCallback((usageType?: string) => {
-    switch (usageType?.toLowerCase()) {
-      case 'cars/trucks':
-        return require('../../../assets/pins/car.png');
-      case 'rv':
-        return require('../../../assets/pins/rv.png');
-      case 'boats':
-        return require('../../../assets/pins/boat.png');
-      case 'personal':
-        return require('../../../assets/pins/personal.png');
-      case 'business':
-        return require('../../../assets/pins/business.png');
-      default:
-        return null;
-    }
-  }, []);
+
 
   const getPinBackground = useCallback((postType?: 'Offering' | 'Requesting') => {
     return postType === 'Requesting'
       ? require('../../../assets/pins/yellowPin.png')
       : require('../../../assets/pins/greenPin.png');
   }, []);
+
+  const displayedSpaces = showSavedOnly
+  ? spaces.filter(space => savedSpaces[space.id])
+  : spaces;
+
+
+  useEffect(() => {
+    if (!userId) return;
+    const loadSaved = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, `users/${userId}/SavedReservations`));
+        const saved: { [spaceId: string]: boolean } = {};
+        snapshot.forEach(doc => {
+          saved[doc.id] = true; // presence = saved
+        });
+        setSavedSpaces(saved);
+      } catch (error) {
+        console.error('Error loading saved spaces:', error);
+      }
+    };
+  
+    loadSaved();
+  }, [userId]);
+
+  const toggleSave = async (spaceId: string) => {
+    if (!userId) return;
+  
+    const docRef = doc(db, `users/${userId}/SavedReservations`, spaceId);
+    const isCurrentlySaved = savedSpaces[spaceId];
+  
+    try {
+      if (isCurrentlySaved) {
+        // Unsave
+        await deleteDoc(docRef);
+        setSavedSpaces(prev => ({ ...prev, [spaceId]: false }));
+      } else {
+        // Save
+        await setDoc(docRef, {
+          reservationId: spaceId,
+          savedAt: Timestamp.now(),
+        });
+        setSavedSpaces(prev => ({ ...prev, [spaceId]: true }));
+      }
+    } catch (error) {
+      console.error('Error toggling saved space:', error);
+    }
+  };
+  
 
 
   const datesOverlap = (
@@ -365,12 +406,25 @@ if (filters.accessibility?.length && space.accessibility?.length) {
           </View>
         )}
 
-
-
-        <TouchableOpacity onPress={() => navigation.navigate('Filters', { currentFilters: route.params?.filters })}>
-          <Ionicons name="filter" size={24} color="#333" />
-        </TouchableOpacity>
-
+        <View style={styles.savedAndFilter}>
+          <TouchableOpacity
+            onPress={() => setShowSavedOnly(prev => !prev)}
+            style={{
+              marginRight: 10,
+              backgroundColor: showSavedOnly ? '#E0FFE0' : 'transparent',
+              padding: 4,
+              borderRadius: 6,
+            }}
+          >
+            <Image
+              source={showSavedOnly ? saveIcons.saved : saveIcons.unsaved}
+              style={{ width: 24, height: 24 }}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Filters', { currentFilters: route.params?.filters })}>
+            <Ionicons name="filter" size={30} color="#333" />
+          </TouchableOpacity>
+        </View>
 
 
 
@@ -439,7 +493,7 @@ if (filters.accessibility?.length && space.accessibility?.length) {
               </>
             )}
 
-            {spaces
+            {displayedSpaces
               .filter((space): space is Space & { location: { lat: number; lng: number } } =>
                 !!space.location?.lat && !!space.location?.lng
               )
@@ -487,11 +541,13 @@ if (filters.accessibility?.length && space.accessibility?.length) {
 
               <SpaceCard
                 item={selectedSpace}
-                matchScore={selectedSpace?.matchScore}  // ✅ use selectedSpace
+                matchScore={selectedSpace?.matchScore}
                 totalFilters={selectedSpace?.totalFilters}
-
+                isSaved={!!savedSpaces[selectedSpace.id]}
+                onToggleSave={() => toggleSave(selectedSpace.id)}
                 onPress={() => navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id })}
               />
+
 
 
             </TouchableOpacity>
@@ -500,16 +556,19 @@ if (filters.accessibility?.length && space.accessibility?.length) {
       ) : (
         // List View
         <FlatList
-          data={spaces}
+          data={displayedSpaces}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
 
             <SpaceCard
-            item={item}
-            matchScore={item.matchScore}         // <-- use item, not selectedSpace
-            totalFilters={item.totalFilters}     // <-- same here
-            onPress={() => navigation.navigate('SpaceDetail', { spaceId: item.id })}
-          />
+              item={item}
+              matchScore={item.matchScore}
+              totalFilters={item.totalFilters}
+              isSaved={!!savedSpaces[item.id]}
+              onToggleSave={() => toggleSave(item.id)}
+              onPress={() => navigation.navigate('SpaceDetail', { spaceId: item.id })}
+            />
+
 
           )}
           ListEmptyComponent={() => (
@@ -530,7 +589,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 15,
     paddingHorizontal: 16,
-    backgroundColor: '#FFFCF1', // Wheat/Cream background
+    backgroundColor: COLORS.lighterGrey,
   },
 
   header: {
@@ -555,7 +614,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     color: '#0F6B5B', // Emerald green
   },
-
+  savedAndFilter: {
+    display: 'flex',
+    flexDirection: 'row'
+  },
   mapView: {
     flex: 1,
     justifyContent: 'center',

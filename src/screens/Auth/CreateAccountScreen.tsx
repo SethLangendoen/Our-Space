@@ -19,6 +19,7 @@ import { signInWithGoogleCredential } from '../../firebase/firebaseAuth';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { COLORS } from '../Styles/theme';
 
 type AuthStackParamList = {
   CreateAccount: undefined;
@@ -251,11 +252,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
   },
   container: {
     flex: 1,
-    backgroundColor: '#FFFCF1',
+    backgroundColor: COLORS.lighterGrey,
+    padding: 24,
+
   },
   backIcon: {
     position: 'absolute',

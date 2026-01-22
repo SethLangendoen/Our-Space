@@ -6,6 +6,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config'; // adjust path if needed
 
 interface Review {
+  securityType: string;
   id: string;
   reviewerName?: string;
   rating: number;
@@ -55,6 +56,24 @@ export default function Reviews({ activeTab, viewingUserId }: ReviewsProps) {
     fetchReviews();
   }, [activeTab, viewingUserId]);
 
+  const getOrdinal = (n: number) => {
+    if (n > 3 && n < 21) return 'th'; // 4-20 always 'th'
+    switch (n % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+  const formatReviewDate = (date: Date) => {
+    const month = date.toLocaleString('default', { month: 'long' }); // "January"
+    const day = date.getDate(); // 26
+    const year = date.getFullYear(); // 2026
+    return `${month} ${day}${getOrdinal(day)}, ${year}`;
+  };
+    
+
+
   const StarRating = ({ rating }: { rating: number }) => (
     <View style={{ flexDirection: 'row', marginVertical: 4 }}>
       {Array.from({ length: 5 }).map((_, i) => (
@@ -72,6 +91,13 @@ export default function Reviews({ activeTab, viewingUserId }: ReviewsProps) {
     </View>
   );
 
+  const formatSecurityType = (review: { securityType: string }) => {
+    if (review.securityType === 'pickUp') return 'Pick-Up';
+    if (review.securityType === 'dropOff') return 'Drop-Off';
+    return review.securityType; // fallback
+  };
+  
+
   return (
     <View style={styles.container}>
       {loadingReviews ? (
@@ -87,20 +113,23 @@ export default function Reviews({ activeTab, viewingUserId }: ReviewsProps) {
               <View style={styles.reviewHeader}>
                 <Text style={styles.reviewerName}>
                   {review.reviewerName || 'User'}{' '}
-                  <Text style={styles.saysText}>says</Text>
+                  <Text style={styles.saysText}>{formatSecurityType(review)}</Text>
                 </Text>
                 <StarRating rating={review.rating} />
               </View>
 
+              {review.description && (
               <Text style={styles.reviewText}>
-                {review.description || 'No comment provided.'}
+                {review.description}
               </Text>
+              )}
 
               {createdAtDate && (
                 <Text style={styles.reviewDate}>
-                  {createdAtDate.toLocaleDateString()}
+                  {formatReviewDate(createdAtDate)}
                 </Text>
               )}
+
             </View>
           );
         })
@@ -113,9 +142,11 @@ export default function Reviews({ activeTab, viewingUserId }: ReviewsProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 10,
     paddingTop: 10,
+    paddingHorizontal: 0, // remove horizontal padding
   },
+  
+
   reviewCard: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -126,7 +157,9 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+    width: '100%', 
   },
+  
   reviewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

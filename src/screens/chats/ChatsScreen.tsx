@@ -1,7 +1,7 @@
 
 
 
-
+import { COLORS, FONT_SIZES, SPACING, COMMON_STYLES } from '../Styles/theme';
 import React, { useEffect, useState } from 'react';
 import { Dimensions } from 'react-native';
 const { width, height } = Dimensions.get('window');
@@ -185,7 +185,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#FFFCF1',
+    backgroundColor: COLORS.lighterGrey,
+    
   },
   chatItem: {
     paddingVertical: 12,

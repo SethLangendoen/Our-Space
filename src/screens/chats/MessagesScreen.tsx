@@ -28,6 +28,7 @@ import {
 import { auth, db } from '../../firebase/config';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { COLORS } from '../Styles/theme';
 
 type RootStackParamList = {
   MessagesScreen: { chatId: string; otherUser: string };
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 12,
-    backgroundColor: '#FFFCF1', // wheat/cream background
+    backgroundColor: COLORS.lighterGrey,
   },
 
   // Sent message
@@ -391,7 +392,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0', // subtle divider
     paddingTop: 8,
-    backgroundColor: '#FFFCF1',
+    backgroundColor: COLORS.lighterGrey,
   },
   input: {
     flex: 1,
