@@ -4,13 +4,18 @@ import { Calendar } from 'react-native-calendars';
 
 type BlockedTime = { start: string; end: string };
 
-
-
-
+type ReservedTime = {
+  end: any;
+  start: any;
+  startDate: any; // Firestore Timestamp
+  endDate: any;
+  renterId: string;
+  reservationId: string;
+};
   
 interface BlockedCalendarProps {
 	blockedTimes: BlockedTime[];
-  reservedTimes?: BlockedTime[]; // ✅ new optional prop
+  reservedTimes?: ReservedTime[]; 
 	onAddBlockedTime?: (time: BlockedTime) => void;
 	onRemoveBlockedTime?: (index: number) => void;
 	onSelectRange?: (range: { start: Date | null; end: Date | null }) => void;
@@ -46,10 +51,25 @@ interface BlockedCalendarProps {
       }
       return dates;
     };
+
+    // Normalize reservedTimes to BlockedTime shape
+    const normalizedReservedTimes: BlockedTime[] = reservedTimes.map(rt => ({
+      start:
+        typeof rt.start === 'string'
+          ? rt.start
+          : rt.startDate.toDate().toISOString().split('T')[0],
+      end:
+        typeof rt.end === 'string'
+          ? rt.end
+          : rt.endDate.toDate().toISOString().split('T')[0],
+    }));
+
   
     // Merge blocked + reserved
-    const allBlockedTimes: BlockedTime[] = [...blockedTimes, ...reservedTimes];
-  
+    const allBlockedTimes: BlockedTime[] = [
+      ...blockedTimes,
+      ...normalizedReservedTimes,
+    ];  
     // Build marked dates
     const markedDates = allBlockedTimes.reduce((acc, bt) => {
       const range = getRangeDates(bt.start, bt.end);
@@ -71,7 +91,7 @@ interface BlockedCalendarProps {
         markedDates[date] = {
           startingDay: idx === 0,
           endingDay: idx === tempRange.length - 1,
-          color: '#6B83FF', // blue = currently selecting
+          color: '#FFBA00', // blue = currently selecting
           textColor: 'white',
         };
       });
@@ -88,75 +108,108 @@ interface BlockedCalendarProps {
         markingType="period"
         markedDates={markedDates}
         minDate={today}   
+        renderArrow={(direction) => (
+          <Text
+            style={{
+              fontSize: 30,          // 👈 bigger arrows
+              color: '#FFBA00',      // 👈 same yellow
+              fontWeight: '900',
+              paddingHorizontal: 10,
+            }}
+          >
+            {direction === 'left' ? '‹' : '›'}
+          </Text>
+        )}
 
+        // onDayPress={(day) => {
+        //   const selectedDate = day.dateString;
+        
+        //   // ✅ SINGLE-DAY MODE (Change End Date)
+        //   if (singleSelect) {
+        //     const isBlocked = allBlockedTimes.some(bt => {
+        //       const dates = getRangeDates(bt.start, bt.end);
+        //       return dates.includes(selectedDate);
+        //     });
+        
+        //     if (isBlocked) {
+        //       Alert.alert('Blocked Date', 'This date is unavailable.');
+        //       return;
+        //     }
+        
+        //     setRangeStart(selectedDate);
+        //     setRangeEnd(selectedDate);
+        //     onSelectRange?.({
+        //       start: null,
+        //       end: new Date(selectedDate),
+        //     });
+        //     return;
+        //   }
+        
+        //   // ⬇️ EXISTING RANGE LOGIC (unchanged)
+        //   if (rangeStart && rangeEnd) {
+        //     setRangeStart(day.dateString);
+        //     setRangeEnd(null);
+        //     setIsOpenEnded(true);
+        //     onSelectRange?.({ start: new Date(day.dateString), end: null });
+        //     return;
+        //   }
+        
+        //   if (!rangeStart) {
+        //     setRangeStart(day.dateString);
+        //     setRangeEnd(null);
+        //     setIsOpenEnded(true);
+        //     onSelectRange?.({ start: new Date(day.dateString), end: null });
+        //     return;
+        //   }
+        
+        //   if (!rangeEnd) {
+        //     let start = rangeStart;
+        //     let end = day.dateString;
+        
+        //     if (end < start) [start, end] = [end, start];
+        
+        //     const tempRange = getRangeDates(start, end);
+        //     const overlapsBlocked = tempRange.some(
+        //       date => markedDates[date]?.color === '#FF6B6B'
+        //     );
+        
+        //     if (overlapsBlocked) {
+        //       Alert.alert('Blocked Date', 'Your selected range overlaps a blocked date.');
+        //       setRangeStart(null);
+        //       setRangeEnd(null);
+        //       setIsOpenEnded(false);
+        //       onSelectRange?.({ start: null, end: null });
+        //       return;
+        //     }
+        
+        //     setRangeStart(start);
+        //     setRangeEnd(end);
+        //     setIsOpenEnded(false);
+        //     onSelectRange?.({ start: new Date(start), end: new Date(end) });
+        //   }
+        // }}
+        
         onDayPress={(day) => {
           const selectedDate = day.dateString;
-        
-          // ✅ SINGLE-DAY MODE (Change End Date)
-          if (singleSelect) {
-            const isBlocked = allBlockedTimes.some(bt => {
-              const dates = getRangeDates(bt.start, bt.end);
-              return dates.includes(selectedDate);
-            });
-        
-            if (isBlocked) {
-              Alert.alert('Blocked Date', 'This date is unavailable.');
-              return;
-            }
-        
-            setRangeStart(selectedDate);
-            setRangeEnd(selectedDate);
-            onSelectRange?.({
-              start: null,
-              end: new Date(selectedDate),
-            });
+
+          const isBlocked = allBlockedTimes.some(bt => {
+            const dates = getRangeDates(bt.start, bt.end);
+            return dates.includes(selectedDate);
+          });
+
+          if (isBlocked) {
+            Alert.alert('Blocked Date', 'This date is unavailable.');
             return;
           }
-        
-          // ⬇️ EXISTING RANGE LOGIC (unchanged)
-          if (rangeStart && rangeEnd) {
-            setRangeStart(day.dateString);
-            setRangeEnd(null);
-            setIsOpenEnded(true);
-            onSelectRange?.({ start: new Date(day.dateString), end: null });
-            return;
-          }
-        
-          if (!rangeStart) {
-            setRangeStart(day.dateString);
-            setRangeEnd(null);
-            setIsOpenEnded(true);
-            onSelectRange?.({ start: new Date(day.dateString), end: null });
-            return;
-          }
-        
-          if (!rangeEnd) {
-            let start = rangeStart;
-            let end = day.dateString;
-        
-            if (end < start) [start, end] = [end, start];
-        
-            const tempRange = getRangeDates(start, end);
-            const overlapsBlocked = tempRange.some(
-              date => markedDates[date]?.color === '#FF6B6B'
-            );
-        
-            if (overlapsBlocked) {
-              Alert.alert('Blocked Date', 'Your selected range overlaps a blocked date.');
-              setRangeStart(null);
-              setRangeEnd(null);
-              setIsOpenEnded(false);
-              onSelectRange?.({ start: null, end: null });
-              return;
-            }
-        
-            setRangeStart(start);
-            setRangeEnd(end);
-            setIsOpenEnded(false);
-            onSelectRange?.({ start: new Date(start), end: new Date(end) });
-          }
+
+          setRangeStart(selectedDate);
+          setRangeEnd(null);
+
+          onSelectRange?.({
+            start: new Date(selectedDate),
+            end: null, // always null
+          });
         }}
-        
 
 
 

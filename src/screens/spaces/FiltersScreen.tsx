@@ -6,12 +6,7 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  Image,
   TouchableOpacity,
-  Switch,
-  ScrollView,
-  TextInput,
   Alert, // Added for location permission feedback
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -32,9 +27,7 @@ type FiltersObjectType = {
   startDate?: string;
   endDate?: string;
   radius?: number;
-  // pickupDropoff?: boolean;
-  storageType?: 'Indoor' | 'Outdoor' | 'Climate-Controlled';
-
+  storageType?: String[];
   location?: { lat: number; lng: number };
   address?: string;
   usageType?: string[];                // e.g. "Short-term" | "Long-term"
@@ -55,20 +48,6 @@ type RootStackParamList = {
 // Define the navigation prop for THIS screen
 type FiltersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Filters'>;
 
-const categories = [
-  { id: '1', label: 'Personal', image: require('../../../assets/filter/personal.jpeg') },
-  { id: '2', label: 'Business', image: require('../../../assets/filter/business.jpeg') },
-  { id: '3', label: 'Boat', image: require('../../../assets/filter/boat.jpeg') },
-  { id: '4', label: 'RV', image: require('../../../assets/filter/rv.jpeg') },
-];
-
-
-
-
-
-
-
-
 
 
 
@@ -82,26 +61,31 @@ export default function FiltersScreen() {
   const [endDate, setEndDate] = useState('');
   const [radius, setRadius] = useState(10);
   const [maxPrice, setMaxPrice] = useState('');
-  // const [pickupDropoff, setPickupDropoff] = useState(false);
-  const [storageType, setStorageType] = useState<'Indoor' | 'Outdoor' | 'Climate-Controlled' | undefined>(undefined);
-
-  const storageTypeOptions: ('Indoor' | 'Outdoor' | 'Climate-Controlled')[] = [
-    'Indoor',
-    'Outdoor',
-    'Climate-Controlled',
-  ];
-
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationAddress, setLocationAddress] = useState<string>(''); // Added state for address input
-
-
   const [usageType, setUsageType] = useState<string[]>([]);
   const [securityFeatures, setSecurityFeatures] = useState<string[]>([]);
   const [accessibility, setAccessibility] = useState<string[]>([]);
-
   const [locationMode, setLocationMode] = useState<'current' | 'manual'>('manual');
-
   const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.GOOGLE_MAPS_API_KEY;
+  const [storageType, setStorageType] = useState<String[]>([]);
+  
+const storageTypeOptions = [
+  'Indoor',
+  'Outdoor',
+  'Climate-Controlled',
+  'Drive-Up Access',
+  'Ramp Access',
+  'Electricity',
+  'Well-Lit Area',
+  'Short Term',
+  'Long Term',
+  'Private Space',
+  'Weather Protected',
+] as const;
+
+type StorageType = typeof storageTypeOptions[number];
+
 
     
   const toggleUsageType = (type: string) => {
@@ -124,10 +108,10 @@ export default function FiltersScreen() {
   const usageTypeOptions = ['Cars/Trucks', 'RV', 'Boats', 'Personal', 'Business'];
 
   // Security options
-  const securityOptions = ['Video Surveillance', 'Pinpad/Keys', 'Gated Area', 'Smoke Detectors'];
+  const securityOptions = ['Video Surveillance', 'Pinpad/Keys', 'Gated Area', 'Smoke Detectors', 'Alarm System', 'On-Site Presence'];
 
   // Accessibility options
-  const accessibilityOptions = ['1 day notice', '2+ days notice', '24/7'];
+  const accessibilityOptions = ['By Appointment', '24/7'];
 
 
 
@@ -141,18 +125,16 @@ export default function FiltersScreen() {
       setStartDate(filters.startDate || '');
       setEndDate(filters.endDate || '');
       setRadius(filters.radius ?? 10);
-      // setPickupDropoff(filters.pickupDropoff ?? false);
       setSelectedLocation(filters.location ?? null);
       setLocationAddress(filters.address || '');
       setUsageType(filters.usageType || []);
       setSecurityFeatures(filters.securityFeatures || []);
       setAccessibility(filters.accessibility || []);
-      setStorageType(filters.storageType || undefined);
-
+      setStorageType(filters.storageType || []);
     }
   }, []);
   
-
+  // HERE
   const currentFilters: FiltersObjectType = {
     categories: selectedCategories.length > 0 ? selectedCategories : undefined,
     maxPrice: maxPrice || undefined,
@@ -165,7 +147,7 @@ export default function FiltersScreen() {
     usageType: usageType || undefined,
     securityFeatures: securityFeatures.length > 0 ? securityFeatures : undefined,
     accessibility: accessibility.length > 0 ? accessibility : undefined,
-    storageType: storageType || undefined,
+    storageType: storageType.length > 0 ? storageType : undefined,
 
   };
   
@@ -208,7 +190,7 @@ export default function FiltersScreen() {
     setUsageType([]); // Reset Usage Type
     setSecurityFeatures([]); // Reset Security Features
     setAccessibility([]); // Reset Accessibility
-    setStorageType(undefined);
+    setStorageType([]);
 
   };
   
@@ -234,6 +216,7 @@ export default function FiltersScreen() {
       }
     }
   
+    // HERE
     const newFilters = {
       categories: selectedCategories.length > 0 ? selectedCategories : undefined,
       maxPrice: maxPrice || undefined,
@@ -246,8 +229,7 @@ export default function FiltersScreen() {
       usageType: usageType.length > 0 ? usageType : undefined,
       securityFeatures: securityFeatures.length > 0 ? securityFeatures : undefined,
       accessibility: accessibility.length > 0 ? accessibility : undefined,
-      storageType: storageType || undefined,
-
+      storageType: storageType.length > 0 ? storageType : undefined,
     };
   
     setFilters(newFilters);
@@ -260,14 +242,6 @@ export default function FiltersScreen() {
   return (
 
 <View style={{ flex: 1 }}>
-
-
-{/* <ScrollView
-  contentContainerStyle={styles.scrollContainer}
-  showsVerticalScrollIndicator={false}
-  keyboardShouldPersistTaps="handled"
-  nestedScrollEnabled={true} // <-- this allows inner scrolling
-> */}
 
 <KeyboardAwareScrollView
   contentContainerStyle={styles.scrollContainer}
@@ -401,64 +375,6 @@ export default function FiltersScreen() {
 
 </View>
 
- {/* Calendar
- <Text style={styles.sectionTitle}>Select Storage Dates</Text>
-  <View style={styles.card}>
-    <Calendar
-      onDayPress={(day) => {
-        if (!startDate || (startDate && endDate)) {
-          setStartDate(day.dateString);
-          setEndDate('');
-        } else {
-          if (day.dateString >= startDate) {
-            setEndDate(day.dateString);
-          } else {
-            setStartDate(day.dateString);
-            setEndDate('');
-            Alert.alert('Invalid Date', 'End date cannot be before start date.');
-          }
-        }
-      }}
-      markedDates={{
-        ...(startDate
-          ? {
-              [startDate]: {
-                selected: true,
-                startingDay: true,
-                color: '#0F6B5B',
-                textColor: 'white',
-              },
-            }
-          : {}),
-        ...(endDate
-          ? {
-              [endDate]: {
-                selected: true,
-                endingDay: true,
-                color: '#0F6B5B',
-                textColor: 'white',
-              },
-            }
-          : {}),
-        ...(startDate && endDate
-          ? (() => {
-              const dates: { [key: string]: any } = {};
-              let currentDate = new Date(startDate);
-              let lastDate = new Date(endDate);
-              while (currentDate <= lastDate) {
-                const dateString = currentDate.toISOString().split('T')[0];
-                if (dateString !== startDate && dateString !== endDate) {
-                  dates[dateString] = { color: '#629447', textColor: 'white' };
-                }
-                currentDate.setDate(currentDate.getDate() + 1);
-              }
-              return dates;
-            })()
-          : {}),
-      }}
-      markingType={'period'}
-    />
-  </View> */}
 
 
   {/* Usage Type */}
@@ -525,28 +441,39 @@ export default function FiltersScreen() {
   </View>
 
   {/* Storage Type */}
+  {/* HERE */}
   <Text style={styles.sectionTitle}>Storage Type</Text>
-  <View style={styles.cardRow}>
-    {storageTypeOptions.map((type) => (
-      <TouchableOpacity
-        key={type}
-        onPress={() => setStorageType(type)}
-        style={[
-          styles.optionButton,
-          storageType === type && styles.optionButtonSelected,
-        ]}
-      >
-        <Text
-          style={[
-            styles.optionText,
-            storageType === type && styles.optionTextSelected,
-          ]}
-        >
-          {type}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </View>
+    <View style={styles.cardRowWrap}>
+      {storageTypeOptions.map(type => {
+        const selected = storageType.includes(type);
+
+        return (
+          <TouchableOpacity
+            key={type}
+            onPress={() =>
+              setStorageType(prev =>
+                selected
+                  ? prev.filter(t => t !== type)
+                  : [...prev, type]
+              )
+            }
+            style={[
+              styles.optionButton,
+              selected && styles.optionButtonSelected,
+            ]}
+          >
+            <Text
+              style={[
+                styles.optionText,
+                selected && styles.optionTextSelected,
+              ]}
+            >
+              {type}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+      </View>
 
 </KeyboardAwareScrollView>
 

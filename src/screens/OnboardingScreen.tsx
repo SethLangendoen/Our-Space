@@ -1,5 +1,6 @@
 
 
+import { CommonActions } from '@react-navigation/native';
 
 
 import React, { useRef, useState, useEffect } from 'react';
@@ -128,86 +129,6 @@ const OnboardingScreen = () => {
   };
 
 
-
-  // const renderItem = ({ item, index }: { item: Slide; index: number }) => (
-  //   <View style={styles.slide}>
-  //     <View style={styles.topContent}>
-  //       <Animated.Text
-  //         style={[
-  //           styles.title,
-  //           {
-  //             opacity: titleAnimations[index],
-  //             transform: [
-  //               {
-  //                 translateY: titleAnimations[index].interpolate({
-  //                   inputRange: [0, 1],
-  //                   outputRange: [40, 0],
-  //                 }),
-  //               },
-  //             ],
-  //           },
-  //         ]}
-  //       >
-  //         {item.title}
-  //       </Animated.Text>
-
-  //       <Animated.Text
-  //         style={[
-  //           styles.description,
-  //           {
-  //             opacity: descAnimations[index],
-  //             transform: [
-  //               {
-  //                 translateY: descAnimations[index].interpolate({
-  //                   inputRange: [0, 1],
-  //                   outputRange: [40, 0],
-  //                 }),
-  //               },
-  //             ],
-  //           },
-  //         ]}
-  //       >
-  //         {item.description}
-  //       </Animated.Text>
-
-  //       <Image source={item.image} style={styles.image} />
-  //     </View>
-
-  //     <Animated.View
-  //       style={[
-  //         styles.buttonContainer,
-  //         { opacity: buttonAnimations[index] },
-  //       ]}
-  //     >
-  //       {item.isFinal ? (
-  //         <>
-  //           <TouchableOpacity
-  //             style={styles.button}
-  //             onPress={() => navigation.navigate('Auth')}
-  //           >
-  //             <Text style={styles.buttonText}>Sign Up</Text>
-  //           </TouchableOpacity>
-  //           <TouchableOpacity
-  //             style={[styles.button, styles.secondaryButton]}
-  //             onPress={() => navigation.navigate('MainTabs')}
-  //           >
-  //             <Text style={styles.secondaryButtonText}>Explore First</Text>
-  //           </TouchableOpacity>
-  //         </>
-  //       ) : index === 0 ? (
-  //         <TouchableOpacity style={styles.button} onPress={handleNext}>
-  //           <Text style={styles.buttonText}>Get Started</Text>
-  //         </TouchableOpacity>
-  //       ) : (
-  //         <TouchableOpacity style={styles.button} onPress={handleNext}>
-  //           <Text style={styles.buttonText}>Next</Text>
-  //         </TouchableOpacity>
-  //       )}
-  //     </Animated.View>
-  //   </View>
-  // );
-
-
   const renderItem = ({ item, index }: { item: Slide; index: number }) => (
     <View style={styles.slide}>
       {/* Text at top */}
@@ -277,7 +198,13 @@ const OnboardingScreen = () => {
             >
               <Text style={styles.secondaryButtonText}>Explore First</Text>
             </TouchableOpacity>
+
+
+
+
+
           </>
+
         ) : index === 0 ? (
           <TouchableOpacity style={styles.button} onPress={handleNext}>
             <Text style={styles.buttonText}>Get Started</Text>

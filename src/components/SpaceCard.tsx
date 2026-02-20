@@ -30,6 +30,18 @@ interface SpaceCardProps {
   showPublicPrivateBadge?: boolean;
 }
 
+interface PriceData {
+  amount: string;
+  isPublic: boolean;
+}
+
+
+
+
+
+
+
+
 const SpaceCard = ({
   item,
   onPress,
@@ -39,12 +51,24 @@ const SpaceCard = ({
   totalFilters,
   showPublicPrivateBadge,
 }: SpaceCardProps) => {
+
+
+const publicPriceEntry = item.prices
+  ? (Object.entries(item.prices) as [string, PriceData][]).find(
+      ([_, data]) => data.isPublic
+    )
+  : null;
+
+const publicPrice = publicPriceEntry
+  ? { period: publicPriceEntry[0], amount: publicPriceEntry[1].amount }
+  : null;
+
+
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
 
       
-      {/* ---------- Title + Badge ---------- */}
-{/* ---------- Title + Badge / Filter Match ---------- */}
 <View style={styles.titleRow}>
   <View style={{ flex: 1 }}>
     <Text style={styles.title}>{item.title || 'No Title'}</Text>
@@ -58,17 +82,10 @@ const SpaceCard = ({
     )}
   </View>
 
-  {/* Public/Private badge or Match Filters */}
+  {/* Right side: Public/Private badge OR Match Filters */}
   {showPublicPrivateBadge ? (
-    <View
-      style={[
-        styles.matchBadge,
-        { backgroundColor: item.isPublic ? '#6BCB77' : '#FF6B6B' },
-      ]}
-    >
-      <Text style={styles.matchBadgeText}>
-        {item.isPublic ? 'Public' : 'Private'}
-      </Text>
+    <View style={[styles.matchBadge, { backgroundColor: item.isPublic ? '#6BCB77' : '#FF6B6B' }]}>
+      <Text style={styles.matchBadgeText}>{item.isPublic ? 'Public' : 'Private'}</Text>
     </View>
   ) : matchScore !== undefined && totalFilters !== undefined ? (
     <View style={[styles.matchBadge, { backgroundColor: '#DFF5D1' }]}>
@@ -77,7 +94,22 @@ const SpaceCard = ({
       </Text>
     </View>
   ) : null}
+
+
+  {onToggleSave && (
+    <TouchableOpacity
+      style={styles.topRightSaveButton}
+      onPress={onToggleSave}
+      hitSlop={10}
+    >
+      <Image
+        source={isSaved ? saveIcons.saved : saveIcons.unsaved}
+        style={styles.saveIcon}
+      />
+    </TouchableOpacity>
+  )}
 </View>
+
 
 
 
@@ -86,18 +118,6 @@ const SpaceCard = ({
       {/* ---------- Image + Save Icon ---------- */}
       {item.mainImage && (
         <View style={styles.imageWrapper}>
-          {onToggleSave && (
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={onToggleSave}
-              hitSlop={10}
-            >
-              <Image
-                source={isSaved ? saveIcons.saved : saveIcons.unsaved}
-                style={styles.saveIcon}
-              />
-            </TouchableOpacity>
-          )}
 
           <Image
             source={{ uri: item.mainImage }}
@@ -109,13 +129,13 @@ const SpaceCard = ({
 
       {/* ---------- Price + Usage Icons ---------- */}
       <View style={styles.priceRow}>
-        {item.price && (
+        {publicPrice && publicPrice.amount && (
           <Text style={styles.price}>
-            ${parseFloat(item.price).toFixed(0)}{' '}
-            {(item.priceFrequency ?? 'daily').charAt(0).toUpperCase() +
-              (item.priceFrequency ?? 'daily').slice(1)}
+            ${parseFloat(publicPrice.amount).toFixed(0)}{' '}
+            {publicPrice.period.charAt(0).toUpperCase() + publicPrice.period.slice(1)}
           </Text>
         )}
+
 
         <View style={styles.iconRow}>
           {item.usageType?.map((type: string) =>
@@ -194,17 +214,17 @@ const styles = StyleSheet.create({
 
   saveButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 4,
+    right: 4,
     zIndex: 10,
     backgroundColor: 'transparent',
     borderRadius: 16,
-    padding: 6,
+    padding: 0,
   },
 
   saveIcon: {
-    width: 30,
-    height: 30,
+    width: 20,
+    height: 20,
   },
 
   priceRow: {
@@ -230,6 +250,15 @@ const styles = StyleSheet.create({
     height: 32,
     marginLeft: 4,
   },
+  topRightSaveButton: {
+    position: 'relative',
+    top: -4,
+    right: -4,
+    zIndex: 10,
+    padding: 6,
+    backgroundColor: 'transparent',
+  },
+  
 });
 
 

@@ -7,7 +7,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../../firebase/config';
 import { collection, query, where, getDocs, or, and } from 'firebase/firestore';
-import ReservationCard from './ReservationCard';  // adjust path if needed
+import ReservationCard from './ReservationCard';  
 import { doc, getDoc } from 'firebase/firestore';
 import { Dimensions } from 'react-native';
 import SpaceCard from 'src/components/SpaceCard';
@@ -39,20 +39,23 @@ export default function MySpacesScreen() {
   const [userReservations, setUserReservations] = useState<any[]>([]);
   const [bookingFilter, setBookingFilter] = useState<'Requests' | 'Ongoing' | 'Previous'>('Requests');
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setIsLoggedIn(true);
-        setUserId(user.uid);
-      } else {
-        setIsLoggedIn(false);
-        setUserId(null);
-        setUserPosts([]);
-      }
-    });
-    return unsubscribe;
-  }, []);
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      setIsLoggedIn(true);
+      setUserId(user.uid);
+    } else {
+      setIsLoggedIn(false);
+      setUserId(null);
+      setUserPosts([]);
+      setUserReservations([]); // ✅ THIS is missing
+      setSelectedTab('Bookings'); // optional but nice
+      setBookingFilter('Requests'); // optional reset
+    }
+  });
 
+  return unsubscribe;
+}, []);
 
 
 

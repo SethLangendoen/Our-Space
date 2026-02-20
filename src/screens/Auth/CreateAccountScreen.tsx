@@ -67,43 +67,50 @@ export default function CreateAccountScreen() {
     return minLength && hasNumberOrSymbol;
   };
 
+
+
   const handleCreateAccount = async () => {
-    setErrorMessage('');
+  setErrorMessage('');
 
-    if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
-      return;
+  if (password !== confirmPassword) {
+    setErrorMessage('Passwords do not match.');
+    return;
+  }
+
+  if (!validatePassword(password)) {
+    setErrorMessage(
+      'Password must be at least 8 characters and include a number or symbol.'
+    );
+    return;
+  }
+
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    if (user) {
+      // ✅ Send verification email
+      await sendEmailVerification(user);
+      
+      // ✅ Immediately sign out to prevent access before verification
+      await signOut(auth);
+
+      // ✅ Inform the user
+      setErrorMessage('A verification email has been sent. Please check your inbox.');
     }
-
-    if (!validatePassword(password)) {
-      setErrorMessage(
-        'Password must be at least 8 characters and include a number or symbol.'
-      );
-      return;
+  } catch (error: any) {
+    if (error.code === 'auth/email-already-in-use') {
+      setErrorMessage('An account already exists with this email.');
+    } else if (error.code === 'auth/invalid-email') {
+      setErrorMessage('The email address is not valid.');
+    } else if (error.code === 'auth/weak-password') {
+      setErrorMessage('Password should be at least 6 characters.');
+    } else {
+      setErrorMessage('An unexpected error occurred. Please try again.');
     }
+  }
+};
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      console.log('Account created:', user);
-
-      if (user) {
-        await sendEmailVerification(user);
-        setErrorMessage('A verification email has been sent. Please check your inbox.');
-        await signOut(auth);
-      }
-    } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use') {
-        setErrorMessage('An account already exists with this email.');
-      } else if (error.code === 'auth/invalid-email') {
-        setErrorMessage('The email address is not valid.');
-      } else if (error.code === 'auth/weak-password') {
-        setErrorMessage('Password should be at least 6 characters.');
-      } else {
-        setErrorMessage('An unexpected error occurred. Please try again.');
-      }
-    }
-  };
 
   return (
     <KeyboardAvoidingView
@@ -257,7 +264,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.lighterGrey,
     padding: 24,
-
   },
   backIcon: {
     position: 'absolute',

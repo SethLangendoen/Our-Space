@@ -1,6 +1,6 @@
 
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, Button, ScrollView, Alert, TextInput, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -32,6 +32,16 @@ import { COLORS } from '../Styles/theme';
 // import { calculateCancellationPreview } from './calculateCancellationPreview';
 
 type Props = NativeStackScreenProps<MySpacesStackParamList, 'RequestDetailScreen'>;
+const rangesOverlap = (
+  startA: Date,
+  endA: Date,
+  startB: Date,
+  endB: Date
+) => {
+  return startA <= endB && startB <= endA;
+};
+
+
 
 export default function RequestDetailScreen({ navigation, route }: Props) {
   const { reservationId } = route.params as { reservationId: string };
@@ -51,14 +61,62 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   const role = userId === reservation?.ownerId ? 'host' : 'renter';
   const [editedEndDate, setEditedEndDate] = useState<Date | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [hasOverlap, setHasOverlap] = useState(false);
+  const [reservedTimes, setReservedTimes] = useState([])
 
+  
+  const toJSDate = (date: any): Date => {
+    if (!date) return new Date(); // fallback if null/undefined
+    if (typeof date.toDate === 'function') return date.toDate(); // Firestore Timestamp
+    if (date instanceof Date) return date; // already JS Date
+    return new Date(date); // string or number
+  };
+  
+  
+  
+  const normalizeTimes = (times: any[] = []) =>
+  times.map(t => ({
+    start: toJSDate(t.startDate ?? t.start)?.toISOString().split('T')[0],
+    end: toJSDate(t.endDate ?? t.end)?.toISOString().split('T')[0],
+  })).filter(t => t.start && t.end);
 
+  const blockedTimesNormalized = useMemo(() => {
+    if (!space?.blockedTimes) return [];
+    return normalizeTimes(space.blockedTimes);
+  }, [space]);
+  
+  const reservedTimesNormalized = useMemo(() => {
+    if (!space?.reservedTimes) return [];
+    return normalizeTimes(space.reservedTimes);
+  }, [space]);
+  
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) setUserId(user.uid);
     });
     return unsub;
   }, []);
+
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     const fetchReservation = async () => {
+  //       setLoading(true);
+  //       try {
+  //         const docSnap = await getDoc(doc(db, 'reservations', reservationId));
+  //         if (docSnap.exists()) {
+  //           setReservation(docSnap.data());
+
+  //         }
+  //       } catch (e) {
+  //         console.error(e);
+  //       } finally {
+  //         setLoading(false);
+  //       }
+  //     };
+  
+  //     fetchReservation();
+  //   }, [reservationId])
+  // );
 
   useFocusEffect(
     React.useCallback(() => {
@@ -67,8 +125,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         try {
           const docSnap = await getDoc(doc(db, 'reservations', reservationId));
           if (docSnap.exists()) {
-            setReservation(docSnap.data());
-
+            // ✅ Include the doc ID here
+            setReservation({ id: docSnap.id, ...docSnap.data() });
           }
         } catch (e) {
           console.error(e);
@@ -82,6 +140,56 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   );
   
 
+  const toJSDate2 = (value: any): Date | null => {
+    if (!value) return null;
+  
+    // Firestore Timestamp
+    if (typeof value.toDate === 'function') {
+      return value.toDate();
+    }
+  
+    // JS Date
+    if (value instanceof Date) {
+      return value;
+    }
+  
+    // ISO string
+    if (typeof value === 'string') {
+      return new Date(value);
+    }
+  
+    return null;
+  };
+  
+
+  useEffect(() => {
+    if (!space || !reservation) return;
+  
+    const reservationStart = toJSDate(reservation.startDate);
+    const reservationEnd = toJSDate(reservation.endDate);
+  
+    if (!reservationStart || !reservationEnd) return;
+  
+    const reservedTimes = (space.reservedTimes || []).filter(
+      (rt: any) => rt.reservationId !== reservation.id // 🔹 exclude current reservation
+    );
+  
+    setReservedTimes(reservedTimes);
+  
+    const overlap = reservedTimes.some((rt: any) =>
+      rangesOverlap(
+        reservationStart,
+        reservationEnd,
+        toJSDate(rt.startDate)!,
+        toJSDate(rt.endDate)!
+      )
+    );
+  
+    setHasOverlap(overlap);
+  }, [space, reservation]);
+  
+  
+
   useEffect(() => {
 
       const fetchReservation = async () => {
@@ -91,7 +199,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           if (!docSnap.exists()) return;
     
           const resData = docSnap.data();
-          setReservation(resData); // no type checks, just store whatever
+          setReservation({ id: docSnap.id, ...resData });
 
           // setting the 
           setEditedStart(resData.startDate.toDate());
@@ -279,39 +387,73 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
 
-  
+
   const handleCancel = async () => {
     if (!reservation || !userId) return;
   
-    // Determine role
     const isHost = userId === reservation.ownerId;
     const isRenter = userId === reservation.requesterId;
   
-    if (isHost) {
-      // Just mark as cancelled by host
-      try {
-        await updateDoc(doc(db, "reservations", reservationId), {
+    try {
+      if (isHost) {
+        // Mark as cancelled by host
+        await updateDoc(doc(db, "reservations", reservation.id), {
           status: "cancelled_by_host",
         });
-  
         setReservation({ ...reservation, status: "cancelled_by_host" });
+        Alert.alert("Reservation Cancelled", "You have successfully cancelled this reservation.");
+      } else if (isRenter) {
+        // Call your existing cancellation function (handles fees)
+        await handleCancelReservation(reservation);
   
-        Alert.alert(
-          "Reservation Cancelled",
-          "You have successfully cancelled this reservation."
-        );
-      } catch (err) {
-        console.error("Failed to cancel as host", err);
-        Alert.alert("Error", "Failed to cancel reservation.");
+        // Also mark the reservation as cancelled locally/Firestore if needed
+        await updateDoc(doc(db, "reservations", reservation.id), {
+          status: "cancelled_by_renter",
+        });
+        setReservation({ ...reservation, status: "cancelled_by_renter" });
+  
+        Alert.alert("Reservation Cancelled", "You have successfully cancelled this reservation.");
       }
-    } else if (isRenter) {
-      // Call the existing cancellation function that handles fees
-      handleCancelReservation(reservationId);
-    } else {
-      Alert.alert("Error", "You are not authorized to cancel this reservation.");
+  
+      console.log(reservation.spaceId)
+      console.log(reservation.requesterId)
+      console.log(reservation.startDate)
+      console.log(reservation.endDate)
+
+      // ✅ Remove the reserved time from the space
+      if (reservation.spaceId && reservation.requesterId && reservation.startDate && reservation.endDate) {
+        const spaceRef = doc(db, "spaces", reservation.spaceId);
+        const spaceSnap = await getDoc(spaceRef);
+  
+        if (spaceSnap.exists()) {
+          const spaceData = spaceSnap.data();
+          const updatedReservedTimes = (spaceData.reservedTimes || []).filter(
+            (rt: any) => {
+              const rtStart = rt.startDate.toDate?.() || new Date(rt.startDate);
+              const rtEnd = rt.endDate.toDate?.() || new Date(rt.endDate);
+          
+              return !(
+                rt.renterId === reservation.requesterId &&
+                rtStart.getTime() === reservation.startDate.toDate().getTime() &&
+                rtEnd.getTime() === reservation.endDate.toDate().getTime()
+              );
+            }
+          );
+          await updateDoc(spaceRef, { reservedTimes: updatedReservedTimes });
+          console.log("Reserved time removed from space:", updatedReservedTimes);
+        }
+      }
+    } catch (err) {
+      console.error("Cancellation error:", err);
+      Alert.alert("Error", "Failed to cancel reservation.");
     }
   };
   
+  
+
+
+
+
   const TERMINAL_STATUSES = new Set([
     'cancelled_by_host',
     'cancelled_by_renter',
@@ -358,13 +500,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     }
   };
   
-  
-  const toJSDate = (date: any): Date => {
-    if (!date) return new Date();
-    return typeof date.toDate === 'function' ? date.toDate() : date;
-  };
-  
-  
+
   
   const goToChat = () => {
     if (!reservation || !userId) return;
@@ -383,6 +519,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   };
 
 
+  
   const handleSubmitEndDateChange = async () => {
     if (!editedEndDate || editedEndDate <= new Date()) {
       Alert.alert('Invalid date', 'End date must be in the future.');
@@ -391,12 +528,25 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   
     try {
       const reservationRef = doc(db, 'reservations', reservationId);
+  
       await updateDoc(reservationRef, {
-        endDateChangeRequest: editedEndDate, // save as request
+        endDateChangeRequest: editedEndDate,
         updatedAt: Timestamp.now(),
       });
   
-      setIsCalendarOpen(false);
+      // 🔥 OPTIMISTIC LOCAL UPDATE
+      setReservation((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              endDateChangeRequest: editedEndDate,
+            }
+          : prev
+      );
+  
+      // setIsCalendarOpen(false);
+      setEditedEndDate(null);
+  
       Alert.alert(
         'End Date Change Requested',
         'Your request has been sent to the host for approval.'
@@ -431,6 +581,9 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
   if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
   if (!reservation) return <Text>Reservation not found</Text>;
+
+
+  
 
   return (
 
@@ -525,6 +678,9 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             <Text style={styles.detailText}>
             <Text style={styles.nameText}>{requesterInfo?.firstName}'s request:  "{reservation.description}"</Text>
             </Text>
+            <Text style={styles.detailText}>
+            <Text style={styles.nameText}>Approximate Duration: "{reservation.storageDuration}"</Text>
+            </Text>
 
             {canEdit && (
               <TouchableOpacity
@@ -541,7 +697,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           <>
             <BlockedCalendar
               blockedTimes={[]}          
-              reservedTimes={[]}       
+              reservedTimes={reservedTimes}       
               onSelectRange={({ start, end }) => {
                 setEditedStart(start);
                 setEditedEnd(end);
@@ -570,8 +726,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         <View style={styles.pricingBox}>
           {/* Weekly Price */}
           <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>{space.priceFrequency} price:</Text>
-            <Text style={styles.pricingValue}>${Number(space.price).toFixed(2)}</Text>
+            <Text style={styles.pricingLabel}>{reservation.pricePeriod} price:</Text>
+            <Text style={styles.pricingValue}>${Number(reservation.price).toFixed(2)}</Text>
           </View>
 
           {/* Next Payment Date */}
@@ -586,7 +742,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
           {/* Host calculations */}
           {role === 'host' && (() => {
-            const base = Number(space.price);
+            const base = Number(reservation.price);
             const platformFee = base * 0.095;
             const payout = base - platformFee;
             return (
@@ -596,7 +752,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
                   <Text style={styles.pricingValue}>-${platformFee.toFixed(2)}</Text>
                 </View>
                 <View style={styles.pricingRow}>
-                  <Text style={styles.pricingLabel}>Total Payout</Text>
+                  <Text style={styles.pricingLabel}>Total {reservation.pricePeriod} Payout</Text>
                   <Text style={styles.pricingValue}>${payout.toFixed(2)}</Text>
                 </View>
               </>
@@ -605,7 +761,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
           {/* Renter calculations */}
           {role === 'renter' && (() => {
-            const base = Number(space.price);
+            const base = Number(reservation.price);
             const platformFee = base * 0.095;
             const totalCost = base + platformFee;
             return (
@@ -615,7 +771,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
                   <Text style={styles.pricingValue}>${platformFee.toFixed(2)}</Text>
                 </View>
                 <View style={styles.pricingRow}>
-                  <Text style={styles.pricingLabel}>Total {space.priceFrequency} Cost</Text>
+                  <Text style={styles.pricingLabel}>Total {reservation.pricePeriod} Cost</Text>
                   <Text style={styles.pricingValue}>${totalCost.toFixed(2)} CAD</Text>
                 </View>
               </>
@@ -637,7 +793,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
       {reservation?.status === 'confirmed' &&
         // reservation?.endDate &&
         role === 'renter' && (
-          <View style={{ marginTop: 20 }}>
+          <View style={styles.endDateChange}>
             {/* Toggle button */}
             <TouchableOpacity
               style={styles.toggleButton}
@@ -650,19 +806,41 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
             {isCalendarOpen && (
               <View style={{ marginTop: 15 }}>
+
+
                 <PaymentCalendar
-                  startDate={reservation.startDate.toDate()}
-                  endDate={reservation.endDate ? reservation.endDate.toDate() : undefined} // ✅ handle null
+                  startDate={toJSDate(reservation.startDate)!}
+                  endDate={reservation.endDate ? toJSDate(reservation.endDate)! : undefined}
+                  blockedTimes={blockedTimesNormalized}
+                  reservedTimes={reservedTimesNormalized}
                   selectableEndDate
                   onSelectEndDate={setEditedEndDate}
                 />
 
-                {/* Pending request display (inside calendar panel, above submit) */}
-                {reservation.endDateChangeRequest && (
-                  <Text style={{ marginVertical: 10, color: '#8A6D3B', fontWeight: '500' }}>
-                    Pending End Date Request: {reservation.endDateChangeRequest.toDate().toDateString()}
-                  </Text>
-                )}
+
+                  {/* Pending request display (inside calendar panel, above submit) */}
+                  {(() => {
+                    const pendingDate = toJSDate(reservation.endDateChangeRequest);
+                    const editedDate = toJSDate(editedEndDate);
+
+                    if (pendingDate) {
+                      return (
+                        <Text style={{ marginVertical: 10, color: '#8A6D3B', fontWeight: '500' }}>
+                          Pending End Date Request: {pendingDate.toDateString()}
+                        </Text>
+                      );
+                    }
+
+                    if (editedDate) {
+                      return (
+                        <Text style={{ marginVertical: 10, color: '#8A6D3B', fontWeight: '500' }}>
+                          Pending End Date Request: {editedDate.toDateString()}
+                        </Text>
+                      );
+                    }
+
+                    return null;
+                  })()}
 
                 <TouchableOpacity
                   style={styles.confirmButton}
@@ -759,7 +937,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
 
-      {userId === reservation.ownerId && reservation.status === 'requested' && (
+      {/* {userId === reservation.ownerId && reservation.status === 'requested' && (
           <View style={{ marginTop: 12 }}>
             <Button
               title="Deny Request"
@@ -767,10 +945,10 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               onPress={handleDenyRequest}
             />
           </View>
-      )}
+      )} */}
 
 
-      {userId === reservation.requesterId &&
+      {/* {userId === reservation.requesterId &&
         (reservation.status === 'requested' ||
           reservation.status === 'awaiting_acceptance') && (
           <View style={styles.cancelRequest}>
@@ -778,11 +956,12 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               <Text style={styles.cancelRequestText}>Cancel Request</Text>
             </TouchableOpacity>
           </View>
-      )}
+      )} */}
 
 
 
-      {canConfirm && (
+
+      {/* {canConfirm && (
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() =>
@@ -808,7 +987,76 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         >
           <Text style={styles.actionButtonText}>Confirm Booking</Text>
         </TouchableOpacity>
+      )} */}
+
+      {canConfirm && (
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            hasOverlap && styles.disabledButton,
+          ]}
+          disabled={hasOverlap}
+          onPress={() =>
+            navigation.navigate('RulesScreen', {
+              reservationId,
+              role: 'owner',
+            })
+          }
+        >
+          <Text style={styles.actionButtonText}>Confirm Request</Text>
+        </TouchableOpacity>
       )}
+
+      {canAccept && (
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            hasOverlap && styles.disabledButton,
+          ]}
+          disabled={hasOverlap}
+          onPress={() =>
+            navigation.navigate('RulesScreen', {
+              reservationId,
+              role: 'requester',
+            })
+          }
+        >
+          <Text style={styles.actionButtonText}>Confirm Booking</Text>
+        </TouchableOpacity>
+      )}
+
+      {hasOverlap && reservation.status !== 'cancelled_by_host' && reservation.status !== 'cancelled_by_renter' && (
+        <View style={{ marginVertical: 12 }}>
+          <Text style={{ color: '#FF6B6B', textAlign: 'center' }}>
+            This booking request overlaps with another booking that has been confirmed. The request must be canceled or changed. 
+          </Text>
+        </View>
+      )}
+
+
+
+
+
+
+
+      {userId === reservation.requesterId &&
+        (reservation.status === 'requested' ||
+          reservation.status === 'awaiting_acceptance') && (
+          <View style={styles.cancelRequest}>
+            <TouchableOpacity onPress={handleCancelRequest}>
+              <Text style={styles.cancelRequestText}>Cancel Request</Text>
+            </TouchableOpacity>
+          </View>
+      )}
+
+      {userId === reservation.ownerId && reservation.status === 'requested' && (
+        <View style={styles.cancelRequest}>
+          <TouchableOpacity onPress={handleDenyRequest}>
+            <Text style={styles.cancelRequestText}>Deny Request</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
 
         {reservation &&
         space &&
@@ -826,7 +1074,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             const now = new Date();
             const hoursBeforeStart = (startDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-            const baseAmount = Math.round(Number(space.price) * 100);
+            const baseAmount = Math.round(Number(reservation.price) * 100);
 
             let percent = 0;
             if (hoursBeforeStart >= 168) percent = 0;
@@ -953,6 +1201,14 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     textAlign: 'center',
   },
+  endDateChange: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    width: '100%'
+  },
   spaceTitle: {
     fontWeight: 'bold',
     fontSize: 32,
@@ -972,6 +1228,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     alignSelf: 'flex-start',
+    width: '100%'
   },
   editButton: {
     paddingVertical: 4,
@@ -1034,6 +1291,7 @@ const styles = StyleSheet.create({
   toggleButtonText: {
     color: 'white',
     fontWeight: '600',
+    textAlign: 'center'
   },
   profileBox: {
     alignItems: 'center',
@@ -1312,7 +1570,13 @@ confirmText: {
   fontWeight: "600",
   textAlign: "center",
 },
-
+disabledButton: {
+  backgroundColor: COLORS.darkerGrey,
+  opacity: 0.6,
+},
+disabledButtonText: {
+  color: '#999',
+},
   
   
 });

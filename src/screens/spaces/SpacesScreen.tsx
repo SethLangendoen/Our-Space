@@ -9,7 +9,8 @@ import {
   FlatList,
   Dimensions,
   Image, // Import Image for custom markers
-  ActivityIndicator, // Added for loading state
+  ActivityIndicator,
+  Platform, // Added for loading state
 } from 'react-native';
 import { COLORS, FONT_SIZES, SPACING, COMMON_STYLES } from '../Styles/theme';
 import { doc, setDoc, deleteDoc, Timestamp } from 'firebase/firestore';
@@ -104,7 +105,7 @@ type Space = {
   postType?: 'Offering' | 'Requesting';
   price?: string;
   security?: string[];
-  storageType?: string;
+  storageType?: string[];
   title?: string;
   usageType?: string[];
   userId?: string;
@@ -236,20 +237,23 @@ export default function SpacesScreen() {
       const matches = space.security.filter(s => filters.securityFeatures!.includes(s));
       score += matches.length;   // add # of matches
     }
-  
-// ---- ACCESSIBILITY (single) ----
-if (filters.accessibility?.length && space.accessibility?.length) {
-  const hasMatch = filters.accessibility.some(a => space.accessibility!.includes(a));
-  if (hasMatch) score += 1;
+      
+    // ---- ACCESSIBILITY (single) ----
+    if (filters.accessibility?.length && space.accessibility?.length) {
+      const hasMatch = filters.accessibility.some(a => space.accessibility!.includes(a));
+      if (hasMatch) score += 1;
+    }
+
+      
+// ---- STORAGE TYPE (multi) ----
+if (filters.storageType?.length && space.storageType?.length) {
+  const matches = space.storageType.filter(t =>
+    filters.storageType!.includes(t)
+  );
+
+  score += matches.length; // or Math.min(matches.length, 1)
 }
 
-  
-    // ---- STORAGE TYPE (single) ----
-    if (filters.storageType && space.storageType) {
-      if (filters.storageType === space.storageType) {
-        score += 1;
-      }
-    }
   
     console.log('SCORE:', score);
     return score;
@@ -334,7 +338,7 @@ if (filters.accessibility?.length && space.accessibility?.length) {
             (filters.usageType?.length ?? 0) +
             (filters.securityFeatures?.length ?? 0) +
             (filters.accessibility?.length ?? 0) +
-            (filters.storageType ? 1 : 0);
+            (filters.storageType?.length ?? 0);
 
           return { ...space, matchScore, totalFilters };
         });
@@ -433,126 +437,133 @@ if (filters.accessibility?.length && space.accessibility?.length) {
 
 
 
+
+
+
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" /> 
           <Text>Loading spaces...</Text>
         </View>
-      ) : isMapView ? (
+      ) 
+      
+      
+      : isMapView ? (
         // Map View
+
         <>
-          <MapView
-            style={styles.mapView}
-            provider={PROVIDER_GOOGLE}
-            initialRegion={
-              searchInfo?.location
-                ? {
-                    latitude: searchInfo.location.lat,
-                    longitude: searchInfo.location.lng,
-                    latitudeDelta: searchInfo.radius * 0.02, 
-                    longitudeDelta: searchInfo.radius * 0.02,
-                  }
-                : spaces.length > 0 && spaces[0].location
-                ? {
-                    latitude: spaces[0].location.lat,
-                    longitude: spaces[0].location.lng,
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
-                  }
-                : { 
-                    latitude: 34.0522, 
-                    longitude: -118.2437,
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
-                  }
-            }
-          >
-            {searchInfo?.location && (
-              <>
-                  <Marker
-                    coordinate={{
-                      latitude: searchInfo.location.lat,
-                      longitude: searchInfo.location.lng,
-                    }}
-                    title="Search Origin"
-                    description={searchInfo.address}
-                    pinColor="blue"
-                  />
+  <MapView
+    style={styles.mapView}
+    provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined} // iOS defaults to Apple Maps
+    showsUserLocation={true}
+    showsMyLocationButton={true}
+    initialRegion={
+      searchInfo?.location
+        ? {
+            latitude: searchInfo.location.lat,
+            longitude: searchInfo.location.lng,
+            latitudeDelta: searchInfo.radius * 0.02 || 0.05,
+            longitudeDelta: searchInfo.radius * 0.02 || 0.05,
+          }
+        : spaces.length > 0 && spaces[0].location
+        ? {
+            latitude: spaces[0].location.lat,
+            longitude: spaces[0].location.lng,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }
+        : {
+            latitude: 37.7749, // Fallback: San Francisco
+            longitude: -122.4194,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }
+    }
+  >
+    {/* Search Origin */}
+    {searchInfo?.location && (
+      <>
+        <Marker
+          coordinate={{
+            latitude: searchInfo.location.lat,
+            longitude: searchInfo.location.lng,
+          }}
+          title="Search Origin"
+          description={searchInfo.address}
+          pinColor="blue"
+        />
+        <Circle
+          center={{
+            latitude: searchInfo.location.lat,
+            longitude: searchInfo.location.lng,
+          }}
+          radius={searchInfo.radius * 1000}
+          strokeWidth={2}
+          strokeColor="rgba(0,112,255,0.5)"
+          fillColor="rgba(0,112,255,0.1)"
+        />
+      </>
+    )}
 
-                  <Circle
-                    center={{
-                      latitude: searchInfo.location.lat,
-                      longitude: searchInfo.location.lng,
-                    }}
-                    radius={searchInfo.radius * 1000}
-                    strokeWidth={2}
-                    strokeColor="rgba(0, 112, 255, 0.5)"
-                    fillColor="rgba(0, 112, 255, 0.1)"
-                  />
+    {/* Space Markers */}
+    {displayedSpaces
+      .filter((space): space is Space & { location: { lat: number; lng: number } } =>
+        !!space.location?.lat && !!space.location?.lng
+      )
+      .map(space => (
+        <Marker
+          key={space.id}
+          coordinate={{
+            latitude: space.location.lat,
+            longitude: space.location.lng,
+          }}
+          title={space.title}
+          onPress={() => setSelectedSpace(space)}
+        >
+          <Image
+            source={getPinBackground(space.postType)}
+            style={styles.pinBackground}
+          />
+        </Marker>
+      ))}
 
-              </>
-            )}
+    {/* Fallback marker if no spaces */}
+    {!displayedSpaces.length && !searchInfo && (
+      <Marker
+        coordinate={{ latitude: 37.7749, longitude: -122.4194 }}
+        title="No spaces nearby"
+      />
+    )}
+  </MapView>
 
-            {displayedSpaces
-              .filter((space): space is Space & { location: { lat: number; lng: number } } =>
-                !!space.location?.lat && !!space.location?.lng
-              )
-              .map(space => {
-                const pinBackground = getPinBackground(space.postType);
+  {/* Bottom Panel when Marker selected */}
+  {selectedSpace && (
+    <TouchableOpacity
+      style={styles.bottomPanel}
+      activeOpacity={0.9}
+      onPress={() => {
+        navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id });
+        setSelectedSpace(null);
+      }}
+    >
+      <TouchableOpacity
+        onPress={() => setSelectedSpace(null)}
+        style={styles.closeButton}
+      >
+        <Ionicons name="close" size={24} color="#333" />
+      </TouchableOpacity>
 
-                return (
-                <Marker
-                  key={space.id}
-                  coordinate={{
-                    latitude: space.location.lat,
-                    longitude: space.location.lng,
-                  }}
-                  title={space.title}
-                  onPress={() => setSelectedSpace(space)}
-                >
-                  <Image source={getPinBackground(space.postType)} style={styles.pinBackground} />
-                </Marker>
-
-                );
-              })}
-          </MapView>
-
-
-
-
-          {/* Bottom Panel Card when Marker is selected */}
-          {selectedSpace && (
-            <TouchableOpacity
-              style={styles.bottomPanel}
-              activeOpacity={0.9}
-              onPress={() => {
-                navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id });
-                setSelectedSpace(null); // Clear selected space after navigation
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => setSelectedSpace(null)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-
-
-
-              <SpaceCard
-                item={selectedSpace}
-                matchScore={selectedSpace?.matchScore}
-                totalFilters={selectedSpace?.totalFilters}
-                isSaved={!!savedSpaces[selectedSpace.id]}
-                onToggleSave={() => toggleSave(selectedSpace.id)}
-                onPress={() => navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id })}
-              />
-
-
-
-            </TouchableOpacity>
-          )}
-        </>
+      <SpaceCard
+        item={selectedSpace}
+        matchScore={selectedSpace?.matchScore}
+        totalFilters={selectedSpace?.totalFilters}
+        isSaved={!!savedSpaces[selectedSpace.id]}
+        onToggleSave={() => toggleSave(selectedSpace.id)}
+        onPress={() => navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id })}
+      />
+    </TouchableOpacity>
+  )}
+</>
       ) : (
         // List View
         <FlatList
@@ -580,6 +591,8 @@ if (filters.accessibility?.length && space.accessibility?.length) {
         />
       )}
     </View>
+
+
   );
 }
 
@@ -629,8 +642,8 @@ const styles = StyleSheet.create({
   },
 
   pinBackground: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     resizeMode: 'contain',
   },
 
@@ -646,13 +659,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: width,
-    backgroundColor: '#FFFFFF',
-    padding: 20,
+    backgroundColor: COLORS.lighterGrey,
+    padding: 10,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 4,
   },
@@ -662,6 +675,7 @@ const styles = StyleSheet.create({
     right: 12,
     top: 12,
     zIndex: 10,
+
   },
 
   loadingContainer: {

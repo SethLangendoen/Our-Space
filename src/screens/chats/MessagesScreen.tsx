@@ -189,47 +189,6 @@ export default function MessagesScreen({ route }: Props) {
       </View>
 
 
-
-        // <TouchableOpacity
-        //   onPress={() => {
-        //     if (isReservation) {
-        //       navigation.navigate('MySpaces', {
-        //         screen: 'RequestDetailScreen',
-        //         params: { reservationId: item.referenceData?.reservationId },
-        //       });
-        //     } else if (item.referenceData?.spaceId) {
-        //       navigation.navigate('Spaces', {
-        //         screen: 'SpaceDetail',
-        //         params: { spaceId: item.referenceData?.spaceId },
-        //       });
-        //     }
-        //   }}
-        //   style={[
-        //     styles.referenceContainer,
-        //     isReservation && styles.reservationContainer,
-        //   ]}
-        // >
-        //   {item.referenceData.image && (
-        //     <Image
-        //       source={{ uri: item.referenceData.image }}
-        //       style={styles.referenceImage}
-        //     />
-        //   )}
-        //   <Text
-        //     style={[
-        //       styles.referenceTitle,
-        //       isReservation && styles.reservationTitle,
-        //     ]}
-        //   >
-        //     {isReservation
-        //       ? `Requested: ${item.referenceData.title}`
-        //       : `Responding to: ${item.referenceData.title}`}
-        //   </Text>
-        // </TouchableOpacity>
-
-
-
-
       );
     }
 
@@ -384,7 +343,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // Input
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',

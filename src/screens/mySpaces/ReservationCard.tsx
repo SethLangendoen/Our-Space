@@ -9,6 +9,26 @@ type ReservationCardProps = {
   onPress: () => void;
 };
 
+// Add this above your component
+const STATUS_DISPLAY_TEXT: Record<string, string> = {
+  requested: 'REQUESTED',
+  awaiting_acceptance: 'AWAITING',
+  confirmed: 'CONFIRMED',
+  completed: 'COMPLETED',
+  cancelled_by_host: 'CANCELLED',
+  cancelled_by_renter: 'CANCELLED',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  requested: '#f39c12', // orange
+  awaiting_acceptance: '#f1c40f', // yellow
+  confirmed: '#3498db', // blue
+  completed: '#27ae60', // green
+  cancelled_by_host: '#e74c3c', // red
+  cancelled_by_renter: '#e74c3c', // red
+};
+
+
 const getStorageStatusText = (reservation: any) => {
   if (reservation.status !== 'confirmed') return null;
 
@@ -91,14 +111,17 @@ export default function ReservationCard({ reservation, isOwner, onPress }: Reser
         <View
           style={[
             styles.statusBadge,
-            reservation.status === 'requested'
-              ? styles.requestedBadge
-              : styles.confirmedBadge,
+            { backgroundColor: STATUS_COLORS[reservation.status] || '#aaa' }, // fallback gray
           ]}
         >
-          <Text style={styles.statusText}>{reservation.status.toUpperCase()}</Text>
+          <Text style={styles.statusText}>
+            {STATUS_DISPLAY_TEXT[reservation.status] || reservation.status.toUpperCase()}
+          </Text>
         </View>
+
       </View>
+
+
     </TouchableOpacity>
   );
 }

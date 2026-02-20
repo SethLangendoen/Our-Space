@@ -72,6 +72,83 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 
 
+// const maybeMarkReservationCompleted = async (updatedSecurity) => {
+//   const pickUp = updatedSecurity?.pickUp;
+
+//   const isPickUpComplete =
+//     pickUp?.codeVerified &&
+//     pickUp?.photoUploaded &&
+//     pickUp?.reviews?.host &&
+//     pickUp?.reviews?.renter;
+
+//   if (!isPickUpComplete) return;
+
+//   const reservationRef = doc(db, 'reservations', reservationId);
+//   const spaceRef = doc(db, 'spaces', reservation.spaceId);
+
+//   try {
+
+
+//     await runTransaction(db, async (transaction) => {
+//       // ---- READS FIRST ----
+//       const reservationSnap = await transaction.get(reservationRef);
+//       if (!reservationSnap.exists()) return;
+
+//       const reservationData = reservationSnap.data();
+
+//       // 🔒 Guard against double completion
+//       if (reservationData.status === 'completed') return;
+
+//       const spaceSnap = await transaction.get(spaceRef);
+//       if (!spaceSnap.exists()) return;
+
+//       const spaceData = spaceSnap.data();
+
+//       const hostRef = doc(db, 'users', reservationData.ownerId);
+//       const hostSnap = await transaction.get(hostRef);
+//       if (!hostSnap.exists()) return;
+
+//       const hostData = hostSnap.data();
+
+//       // ---- COMPUTE ----
+//       const completedAt = new Date();
+
+//       const bookingDurationMs = getBookingDurationMs(
+//         reservationData.startDate,
+//         completedAt
+//       );
+
+//       const currentTotal = spaceData.totalTimeBooked || 0;
+//       const timeCheck = (currentTotal - THIRTY_DAYS_MS)
+
+//       const qualifiesForRoyalty =
+//       timeCheck >= 0 &&
+//       !(hostData?.badges?.respectedRoyalty);
+
+//       // ---- WRITES LAST ----
+//       transaction.update(reservationRef, {
+//         status: 'completed',
+//         completedAt,
+//       });
+
+//       transaction.update(spaceRef, {
+//         totalTimeBooked: currentTotal + bookingDurationMs,
+//       });
+
+//       if (qualifiesForRoyalty) {
+//         transaction.update(hostRef, {
+//           'badges.respectedRoyalty': true,
+//         });
+//       }
+//     });
+    
+
+//   } catch (err) {
+//     console.error('Failed to complete reservation:', err);
+//   }
+// };
+
+
 const maybeMarkReservationCompleted = async (updatedSecurity) => {
   const pickUp = updatedSecurity?.pickUp;
 
@@ -87,8 +164,6 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
   const spaceRef = doc(db, 'spaces', reservation.spaceId);
 
   try {
-
-
     await runTransaction(db, async (transaction) => {
       // ---- READS FIRST ----
       const reservationSnap = await transaction.get(reservationRef);
@@ -119,11 +194,23 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
       );
 
       const currentTotal = spaceData.totalTimeBooked || 0;
-      const timeCheck = (currentTotal - THIRTY_DAYS_MS)
+      const timeCheck = currentTotal - THIRTY_DAYS_MS;
 
       const qualifiesForRoyalty =
-      timeCheck >= 0 &&
-      !(hostData?.badges?.respectedRoyalty);
+        timeCheck >= 0 &&
+        !(hostData?.badges?.respectedRoyalty);
+
+      // ---- REMOVE RESERVED TIME ----
+      const updatedReservedTimes = (spaceData.reservedTimes || []).filter((rt) => {
+        const rtStart = rt.startDate.toDate?.() || new Date(rt.startDate);
+        const rtEnd = rt.endDate.toDate?.() || new Date(rt.endDate);
+
+        return !(
+          rt.renterId === reservationData.requesterId &&
+          rtStart.getTime() === reservationData.startDate.toDate().getTime() &&
+          rtEnd.getTime() === reservationData.endDate.toDate().getTime()
+        );
+      });
 
       // ---- WRITES LAST ----
       transaction.update(reservationRef, {
@@ -133,6 +220,7 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
 
       transaction.update(spaceRef, {
         totalTimeBooked: currentTotal + bookingDurationMs,
+        reservedTimes: updatedReservedTimes, // ✅ remove reserved time
       });
 
       if (qualifiesForRoyalty) {
@@ -141,12 +229,13 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
         });
       }
     });
-    
 
+    console.log('Reservation marked completed and reserved time removed.');
   } catch (err) {
     console.error('Failed to complete reservation:', err);
   }
 };
+
     
 
     const handleVerifyCode = async () => {
@@ -308,7 +397,6 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
   );
 }
 
-// ...styles stay the same
 
 
 const styles = StyleSheet.create({

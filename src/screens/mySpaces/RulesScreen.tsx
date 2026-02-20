@@ -6,6 +6,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MySpacesStackParamList } from 'src/types/types';
 import { doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from 'src/firebase/config';
+import { arrayUnion } from 'firebase/firestore';
 
 type Rule = {
   id: string;
@@ -48,89 +49,6 @@ export default function RulesScreen({ navigation, route }: Props) {
 
 
 
-
-
-  // const handleConfirm = async () => {
-  //   if (checkedRules.length !== rules.length) {
-  //     Alert.alert('Please check all rules before proceeding.');
-  //     return;
-  //   }
-  
-  //   setLoading(true);
-  
-  //   try {
-  //     const reservationRef = doc(db, 'reservations', reservationId);
-  
-  //     if (role === 'owner') {
-  //       // Owner confirms: update status to awaiting_acceptance
-  //       await updateDoc(reservationRef, {
-  //         status: 'awaiting_acceptance',
-  //         updatedAt: serverTimestamp(),
-  //       });
-  
-  //       Alert.alert('Success', 'Reservation confirmed! Waiting for requester to accept.');
-  
-  //     } else {
-  //       // Requester confirms: finalize booking
-  //       const snap = await getDoc(reservationRef);
-  //       if (!snap.exists()) throw new Error('Reservation not found');
-  
-  //       const reservation = snap.data();
-  
-  //       const updateData: any = {
-  //         status: 'confirmed',
-  //         lastPaymentDate: null,
-  //         nextPaymentDate: reservation.startDate,
-  //         isProcessing: false,
-  //         updatedAt: serverTimestamp(),
-  //       };
-  
-  //       // Only create security if it doesn't exist
-  //       if (!reservation.security) {
-  //         const generateSecurityCode = () =>
-  //           Math.floor(1000 + Math.random() * 9000).toString();
-  
-  //         updateData.security = {
-  //           dropOff: {
-  //             code: generateSecurityCode(),
-  //             codeVerified: false,
-  //             photoUrl: null,
-  //             photoUploaded: false,
-  //             completed: false,
-  //             reviews: { host: false, renter: false },
-  //           },
-  //           pickUp: {
-  //             code: generateSecurityCode(),
-  //             codeVerified: false,
-  //             photoUrl: null,
-  //             photoUploaded: false,
-  //             completed: false,
-  //             reviews: { host: false, renter: false },
-  //           },
-  //         };
-  //       }
-
-  //       // Here I want to add logic for updating a each users profile badges. We update the owneres
-  //       // first host badge to true if it is not already and we update the renters firstStash badge to true
-  //       // if it is not already. 
-  
-  //       await updateDoc(reservationRef, updateData);
-  
-  //       Alert.alert('Success', 'Booking finalized and confirmed!');
-  //     }
-  
-  //     navigation.navigate('RequestDetailScreen', { reservationId });
-  
-  //   } catch (err) {
-  //     console.error('Failed to update reservation status', err);
-  //     Alert.alert('Error', 'Failed to update reservation status.');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-
 const handleConfirm = async () => {
   if (checkedRules.length !== rules.length) {
     Alert.alert('Please check all rules before proceeding.');
@@ -165,6 +83,20 @@ const handleConfirm = async () => {
         isProcessing: false,
         updatedAt: serverTimestamp(),
       };
+
+      // add in the reservedTime into the space. 
+      const spaceRef = doc(db, 'spaces', reservation.spaceId);
+      const reservedTime = {
+        startDate: reservation.startDate,
+        endDate: reservation.endDate,
+        renterId: reservation.requesterId,
+        reservationId,
+      };
+      await updateDoc(spaceRef, {
+        reservedTimes: arrayUnion(reservedTime),
+        updatedAt: serverTimestamp(),
+      });
+
 
       // Only create security if it doesn't exist
       if (!reservation.security) {

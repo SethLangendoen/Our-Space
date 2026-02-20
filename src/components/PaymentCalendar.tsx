@@ -100,26 +100,52 @@ const PaymentCalendar: React.FC<PaymentCalendarProps> = ({
     return marks;
   }, [startDate, endDate, blockedTimes, reservedTimes, selectedEnd]);
 
+ 
+
   return (
     <View style={styles.container}>
       <Calendar
         markingType="custom"
         markedDates={markedDates}
         theme={{ calendarBackground: 'transparent' }}
+        // onDayPress={(day) => {
+        //   if (!selectableEndDate) return;
+        //   const selected = fromDateStringLocal(day.dateString);
+        //   if (selected < normalizeDate(new Date())) {
+        //     Alert.alert('Invalid date', 'You cannot select a past date.');
+        //     return;
+        //   }
+        //   if (markedDates[day.dateString]?.disabled) {
+        //     Alert.alert('Unavailable', 'This date is reserved.');
+        //     return;
+        //   }
+        //   setSelectedEnd(day.dateString);
+        //   onSelectEndDate?.(selected);
+        // }}
+
         onDayPress={(day) => {
           if (!selectableEndDate) return;
+        
           const selected = fromDateStringLocal(day.dateString);
-          if (selected < normalizeDate(new Date())) {
-            Alert.alert('Invalid date', 'You cannot select a past date.');
+        
+          // 🚫 Cannot select before the reservation start
+          if (selected < normalizeDate(startDate)) {
+            Alert.alert('Invalid date', 'You cannot select a date before the reservation start.');
             return;
           }
+        
+          // 🚫 Reserved / blocked
           if (markedDates[day.dateString]?.disabled) {
             Alert.alert('Unavailable', 'This date is reserved.');
             return;
           }
+        
+          // ✅ Valid selection
           setSelectedEnd(day.dateString);
           onSelectEndDate?.(selected);
         }}
+        
+
       />
     </View>
   );

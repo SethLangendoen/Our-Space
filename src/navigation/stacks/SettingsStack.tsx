@@ -73,7 +73,6 @@ export default function SettingsStack() {
       <Stack.Screen name="BillingAccount" component={BillingAccount} options={{ title: 'Billing Account' }} />
       <Stack.Screen name="ChangePassword" component={ChangePassword} options={{ title: 'Change Password' }} />
       <Stack.Screen name="VerifyID" component={VerifyID} options={{ title: 'Verify ID' }} />
-      <Stack.Screen name="RequestForViews" component={RequestForViews} options={{ title: 'Request for Views' }} />
       <Stack.Screen name="TermsAndConditions" component={TermsAndConditions} options={{ title: 'Terms & Conditions' }} />
       <Stack.Screen name="Version" component={Version} options={{ title: 'Version' }} />
       <Stack.Screen name="Language" component={Language} options={{ title: 'Language' }} />

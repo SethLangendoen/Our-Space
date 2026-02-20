@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+// import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, TextInput, Platform, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, TextInput, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
@@ -12,9 +13,8 @@ import BlockedCalendar from 'src/components/BlockedCalendar';
 
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
-
-
+import { COLORS } from '../Styles/theme';
+import FeatureRow from 'src/components/FeatureRow';
 
 
 type RootStackParamList = {
@@ -22,8 +22,8 @@ type RootStackParamList = {
   Filters: undefined;
   SpaceDetail: { spaceId: string };
   UserProfile: { userId: string };
-
 };
+
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
 
@@ -41,6 +41,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
   const [showStart, setShowStart] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
   const [reservationDescription, setReservationDescription] = useState('');
+  const mapProvider = Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined;
+  const [storageDuration, setStorageDuration] = useState('');
+const [selectedPricePeriod, setSelectedPricePeriod] = useState<'daily' | 'weekly' | 'monthly' | null>(null);
 
   const [selectedRange, setSelectedRange] = useState<{ start: Date | null; end: Date | null }>({
     start: null,
@@ -213,15 +216,21 @@ useEffect(() => {
           setBooking(false);
           return;
         }
+        const priceValue =
+          selectedPricePeriod && space.prices[selectedPricePeriod]?.amount
+            ? parseFloat(space.prices[selectedPricePeriod].amount)
+            : null;
     
         const contractData = {
           userId: currentUser,
           requestedAt: Timestamp.now(),
           startDate: Timestamp.fromDate(selectedRange.start),
-          endDate: selectedRange.end
-          ? Timestamp.fromDate(selectedRange.end)
-          : null,          state: 'requested',
+          endDate: null, // TBD until contract phase
+          state: 'requested',
           description: reservationDescription,
+          storageDuration, 
+          pricePeriod: selectedPricePeriod,
+          price: priceValue,
         };
     
         await setDoc(
@@ -242,6 +251,9 @@ useEffect(() => {
           : null,          description: reservationDescription,
           createdAt: serverTimestamp(),
           status: 'requested',
+          storageDuration, 
+          pricePeriod: selectedPricePeriod,
+          price: priceValue,
         });
     
         Alert.alert('Reservation Requested', 'The space owner will review your request.');
@@ -296,11 +308,26 @@ useEffect(() => {
     // Create a local constant that is only set if start exists
 const startDate = selectedRange.start;
 
-// Only run the .some() check if startDate is not null
-  const futureBlocked = startDate
-  ? [...(space.blockedTimes || []), ...(space.reservedTimes || [])]
-      .some(bt => new Date(bt.start) > startDate)
+// Helper to normalize Firestore Timestamps / Dates / strings to JS Dates
+const toJSDate = (d: any): Date => {
+  if (!d) return new Date();
+  if (typeof d.toDate === 'function') return d.toDate();
+  if (d instanceof Date) return d;
+  return new Date(d);
+};
+
+// Then compute futureBlocked
+const futureBlocked = startDate
+  ? [
+      ...(space.blockedTimes || []),
+      ...(space.reservedTimes || []).map((rt: { startDate: any; endDate: any; }) => ({
+        start: toJSDate(rt.startDate),
+        end: toJSDate(rt.endDate),
+      })),
+    ].some(bt => bt.start > startDate)
   : false;
+
+  
   const isOpenEnded = !!selectedRange.start && !selectedRange.end;
   const invalidOpenEndedBooking = isOpenEnded && futureBlocked;
 
@@ -354,7 +381,7 @@ const startDate = selectedRange.start;
 {space.location.lat && space.location.lng && (
   <View style={styles.mapContainer}>
     <MapView
-      provider={PROVIDER_GOOGLE}
+      provider={mapProvider}      
       style={styles.map}
       initialRegion={{
         latitude: space.location.lat,
@@ -418,10 +445,27 @@ const startDate = selectedRange.start;
 
 
       {space.description && <Text style={styles.description}>{space.description}</Text>}
+      
 
-      {space.price && (
-        <Text style={styles.price}>${parseFloat(space.price).toFixed(2)} CAD {space.priceFrequency} </Text>
+      {space.prices && (
+        <View >
+          {(['daily', 'weekly', 'monthly'])
+            .filter((period) => space.prices[period]?.enabled) // Only show enabled
+            .map((period) => {
+              const data = space.prices[period];
+              if (!data) return null;
+
+              return (
+                <Text key={period} style={styles.price}>
+                  ${parseFloat(data.amount || '0').toFixed(2)} CAD{' '}
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                  {data.isPublic && ' (Prioritized)'}
+                </Text>
+              );
+            })}
+        </View>
       )}
+
 
       {totalTimeLabel && (
         <View >
@@ -436,52 +480,68 @@ const startDate = selectedRange.start;
       <Text style={styles.label}>
         Location:{' '}
         <Text style={styles.value}>
-          {space.address ? space.address.slice(-7) : 'N/A'}
+          {space.location.district + ', ' || ''} {space.location.city}
+        </Text>
+
+      </Text>
+
+
+
+      <Text style={styles.label}>
+        Space Size:
+        <Text style={styles.value}>
+          {' '}
+          {space.dimensions?.width || '?'}ft (W) × {space.dimensions?.length || '?'}ft (L) × {space.dimensions?.height || '?'}ft (H)
+        </Text>
+      </Text>
+
+      <Text style={styles.label}>
+        Accessibility:
+        <Text style={styles.value}>
+          {' '}
+          {space.accessibility.includes('By Appointment') && (
+            <Text>
+              Appointments are required for space visits. 
+            </Text>
+          )}
+          {space.accessibility.includes('24/7') && (
+            <Text>
+              Visits can be made at any time. 
+            </Text>
+          )}
         </Text>
       </Text>
 
 
-      <Text style={styles.label}>
-        Storage Type: <Text style={styles.value}>{space.storageType || 'N/A'}</Text>
+
+      <Text style={styles.featureTitle}>
+        Ideal Space For
       </Text>
 
-      <Text style={styles.label}>
-  Usage Type: <Text style={styles.value}>
-    {Array.isArray(space.usageType) && space.usageType.length > 0
-      ? space.usageType.join(', ')
-      : 'N/A'}
-  </Text>
-</Text>
+      <View style={styles.featuresGrid}>
+        {space.usageType?.map((type: string) => (
+          <FeatureRow key={type} label={type} />
+        ))}
+      </View>
+
+      <Text style={styles.featureTitle}>
+        Space Features
+      </Text>
+        
+      <View style={styles.featuresGrid}>
+        {space.storageType.map((item: string) => (
+          <FeatureRow key={item} label={item} />
+        ))}        
+        
+        <FeatureRow label={space.accessibility} />
+
+        {space.security.map((item: string) => (
+          <FeatureRow key={item} label={item} />
+        ))}
+      </View>
 
 
 
-
-<Text style={styles.label}>
-  Accessibility: <Text style={styles.value}>{space.accessibility || 'N/A'}</Text>
-</Text>
-
-
-{space.security?.length > 0 && (
-  <Text style={styles.label}>
-    Security: <Text style={styles.value}>{space.security.join(', ')}</Text>
-  </Text>
-)}
-
-<Text style={styles.label}>
-  Availability:
-  <Text style={styles.value}>
-    {' '}
-    {space.availability?.startDate || 'N/A'} - {space.availability?.endDate || 'N/A'}
-  </Text>
-</Text>
-
-<Text style={styles.label}>
-  Dimensions:
-  <Text style={styles.value}>
-    {' '}
-    {space.dimensions?.width || '?'}ft (W) × {space.dimensions?.length || '?'}ft (L) × {space.dimensions?.height || '?'}ft (H)
-  </Text>
-</Text>
 
 
 
@@ -501,30 +561,118 @@ const startDate = selectedRange.start;
   <>
 
     {/* Reservation Section */}
-    <View style={styles.bookingContainer}>
+  <View style={styles.bookingContainer}>
   <Text style={styles.bookingTitle}>Book Reservation</Text>
+
+
 
   <BlockedCalendar
     blockedTimes={space.blockedTimes || []}
     reservedTimes={space.reservedTimes || []} 
     onSelectRange={(range) => setSelectedRange(range)}
     editable={false}
+    singleSelect={true}
+
   />
 
-  <View style={styles.dateSummary}>
-    <Text style={styles.dateText}>
-      Start: {selectedRange.start ? selectedRange.start.toDateString() : 'Not selected'}
+<View style={styles.dateSummary}>
+  {/* START */}
+  <View style={styles.dateRow}>
+    <Text style={styles.dateLabel}>Start</Text>
+    <Text style={styles.dateValue}>
+      {selectedRange.start
+        ? selectedRange.start.toDateString()
+        : 'Not selected'}
     </Text>
+  </View>
 
-    <Text style={styles.dateText}>
-      End: {selectedRange.end
+  {/* END */}
+  {/* <View style={styles.dateRow}>
+    <Text style={styles.dateLabel}>End</Text>
+    <Text style={styles.dateValue}>
+      {selectedRange.end
         ? selectedRange.end.toDateString()
         : futureBlocked
           ? 'Selection required'
           : 'TBD'}
     </Text>
+  </View> */}
 
+</View>
+
+  {/* {space.prices && (
+    <View style={{ marginVertical: 10 }}>
+      <Text style={styles.label}>Select Pricing Period</Text>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        {(['daily', 'weekly', 'monthly'] as const)
+          .filter(period => space.prices[period]?.enabled)
+          .map(period => {
+            const data = space.prices[period];
+            if (!data) return null;
+
+            const isSelected = selectedPricePeriod === period;
+
+            return (
+              <TouchableOpacity
+                key={period}
+                style={{
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  backgroundColor: isSelected ? '#FFBA00' : '#eee',
+                  borderRadius: 6,
+                }}
+                onPress={() => setSelectedPricePeriod(period)}
+              >
+                <Text style={{ color: isSelected ? 'white' : 'black' }}>
+                  {period.charAt(0).toUpperCase() + period.slice(1)} (${parseFloat(data.amount || '0').toFixed(2)})
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+      </View>
+    </View>
+  )} */}
+
+  {space.prices && (
+  <View style={{ marginVertical: 20, paddingBottom: 10 }}>
+    <Text style={styles.label}>Select Pricing Period</Text>
+
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',     // ⬅️ allow buttons to wrap
+        gap: 10,              // spacing between buttons
+        marginTop: 8,
+      }}
+    >
+      {(['daily', 'weekly', 'monthly'] as const)
+        .filter(period => space.prices[period]?.enabled)
+        .map(period => {
+          const data = space.prices[period];
+          if (!data) return null;
+
+          const isSelected = selectedPricePeriod === period;
+
+          return (
+            <TouchableOpacity
+              key={period}
+              style={{
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                backgroundColor: isSelected ? '#FFBA00' : '#eee',
+                borderRadius: 6,
+              }}
+              onPress={() => setSelectedPricePeriod(period)}
+            >
+              <Text style={{ color: isSelected ? 'white' : 'black' }}>
+                {period.charAt(0).toUpperCase() + period.slice(1)} (${parseFloat(data.amount || '0').toFixed(2)})
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+    </View>
   </View>
+)}
 
   <TextInput
     style={styles.descriptionInput}
@@ -533,19 +681,35 @@ const startDate = selectedRange.start;
     onChangeText={setReservationDescription}
     multiline
   />
+  <TextInput
+    style={styles.descriptionInput}
+    placeholder="Approximate storage duration (e.g., 2 weeks, 3 months)"
+    value={storageDuration}
+    onChangeText={setStorageDuration}
+    multiline={false}
+  />
 
 
 <TouchableOpacity
   style={[
     styles.confirmButton,
     (
-      !selectedRange.start ||
-      !reservationDescription.trim() ||
+      !selectedRange.start ||                   // start date
+      !reservationDescription.trim() ||        // description of items
+      !storageDuration.trim() ||               // ⬅️ approximate storage duration
+      !selectedPricePeriod ||                  // ⬅️ selected pricing period
       booking ||
       invalidOpenEndedBooking
     ) && styles.disabledButton,
   ]}
-  disabled={!selectedRange.start || !reservationDescription.trim() || booking || invalidOpenEndedBooking}
+  disabled={
+    !selectedRange.start ||
+    !reservationDescription.trim() ||
+    !storageDuration.trim() ||                 // ⬅️ disable if empty
+    !selectedPricePeriod ||                    // ⬅️ disable if not selected
+    booking ||
+    invalidOpenEndedBooking
+  }
   onPress={handleReservation}
 >
   <Text style={styles.confirmText}>
@@ -611,7 +775,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#FFFCF1', // Soft wheat background
+    backgroundColor: COLORS.lighterGrey, // Soft wheat background
   },
 
   center: {
@@ -619,11 +783,53 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  featureTitle: {
+    fontSize: 22,
+    marginTop: 20,
+    fontWeight: '600'
+  },
 
   imageCarousel: {
     maxHeight: 200,
     marginBottom: 16,
   },
+  dateSummary: {
+    marginTop: 12,
+  },
+  smallGreyText: {
+    fontSize: 14,
+    textAlign: 'left'
+  },
+  
+  dateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 6,
+  },
+
+  featuresGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+  },
+  
+  
+  dateLabel: {
+    fontSize: 16,
+    color: 'black',
+    fontWeight: '600',
+  },
+  
+  
+  dateValue: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: 'darkGrey',
+    textAlign: 'right',
+    flexShrink: 1,
+  },
+  
 
   image: {
     width: 320,
@@ -637,6 +843,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
     color: '#0F6B5B',
     marginBottom: 8,
+    fontWeight: '800'
   },
 
   tag: {
@@ -676,11 +883,13 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 16,
+    fontSize: 20,
     fontFamily: 'Poppins-SemiBold',
-    marginTop: 10,
+    marginVertical: 0,
     color: '#0F6B5B',
+    textAlign: 'left'
   },
+
 
   value: {
     fontFamily: 'Poppins-Regular',
@@ -802,17 +1011,18 @@ const styles = StyleSheet.create({
   bookingContainer: {
     marginTop: 20,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#DDD',
+    borderWidth: 2,
+    borderColor: '#0F6B5B',
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
   },
 
   bookingTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontFamily: 'Poppins-Bold',
     color: '#0F6B5B',
     marginBottom: 10,
+    textAlign: 'center',
   },
 
   dateInput: {
@@ -851,11 +1061,7 @@ const styles = StyleSheet.create({
     color: '#555',
     textAlign: 'center',
   },
-  dateSummary: {
-    marginTop: 15,
-    paddingVertical: 5,  // top & bottom padding
-    paddingHorizontal: 0, // optional, you can add a little if needed
-  },
+
   dateText: {
     fontSize: 16,
     color: '#333',

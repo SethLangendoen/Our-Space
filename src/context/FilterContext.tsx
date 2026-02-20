@@ -15,7 +15,7 @@ export type FilterData = {
   usageType?: string[];                // e.g. "Short-term", "Long-term"
   securityFeatures?: string[];       // multiple checkboxes
   accessibility?: string[];          // multiple options
-  storageType?: 'Indoor' | 'Outdoor' | 'Climate-Controlled'; 
+  storageType?: String[]; 
 
 };
 

@@ -1,5 +1,6 @@
 import { setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
+import { Share, Platform } from 'react-native';
 import {
   View,
   Text,
@@ -171,6 +172,24 @@ export default function ProfileScreen() {
   }, [isFocused]);
 
 
+  const handleShareProfile = async () => {
+    try {
+      const iosAppLink = 'https://apps.apple.com/app/id6759211514'; // your Apple App ID
+      const androidAppLink = 'https://play.google.com/store/apps/details?id=com.slangend.OurSpaceExpo';
+  
+      const link = Platform.OS === 'ios' ? iosAppLink : androidAppLink;
+  
+      await Share.share({
+        message: `Check out OurSpace! Download the app here: ${link}`,
+        title: 'OurSpace App',
+      });
+      
+    } catch (error) {
+      console.log('Error sharing app:', error);
+    }
+  };
+  
+
   
   const fetchVerificationStatus = async () => {
     if (!viewingUserId) return;
@@ -315,7 +334,7 @@ export default function ProfileScreen() {
               }) : 'Unknown'}
             </Text>
           )}
-          {isOwnProfile && (
+          {/* {isOwnProfile && (
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={styles.button}
@@ -327,7 +346,24 @@ export default function ProfileScreen() {
                 <Text style={styles.buttonText}>Share Profile</Text>
               </TouchableOpacity>
             </View>
+          )} */}
+
+          {isOwnProfile && (
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate('EditProfile')}
+              >
+                <Text style={styles.buttonText}>Edit Profile</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.button} onPress={handleShareProfile}>
+                <Text style={styles.buttonText}>Share Profile</Text>
+              </TouchableOpacity>
+            </View>
           )}
+
+
 
           <View style={styles.tabContainer}>
             {['Listings', 'Reviews', 'Badges'].map((tab) => (
@@ -398,7 +434,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white', 
     justifyContent: 'center',
     position: 'relative',
-    
   },
 
   statsRow: {

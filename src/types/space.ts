@@ -17,14 +17,13 @@ requestedAt?: Date;   // optional
 startDate?: Date;     // optional
 state?: string;       // e.g., "requested"
 userId: string;
-
 createdAt?: Date;
 mainImage?: string;
 postType?: string;    // e.g., "Offering"
 price: string;        // Firestore stores as string
 reservedTimes?: ReservedTime[];
 security?: string[];
-storageType?: string; // e.g., "Indoor"
+storageType?: string[];
 title?: string;
 usageType?: string[];
 }

@@ -30,6 +30,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
+import { COLORS } from '../Styles/theme';
 
 const MAX_IMAGES = 5;
 
@@ -40,18 +41,24 @@ interface SpaceFormProps {
 	onSubmit: (formData: any) => Promise<void>; // callback when form is submitted
   }
   
+  type PricePeriod = 'daily' | 'weekly' | 'monthly';
+
+interface PriceData {
+  amount: string; // string to bind to TextInput
+  isPublic: boolean;
+  enabled: boolean; // NEW
+
+}
+
 
 export default function SpaceForm({ mode, initialData, onSubmit }: SpaceFormProps) {
-
-const [showStartPicker, setShowStartPicker] = useState(false);
-const [showEndPicker, setShowEndPicker] = useState(false);
 
 const [title, setTitle] = useState(initialData?.title || '');
 const [description, setDescription] = useState(initialData?.description || '');
 const [width, setWidth] = useState(initialData?.dimensions?.width || '');
 const [length, setLength] = useState(initialData?.dimensions?.length || '');
 const [height, setHeight] = useState(initialData?.dimensions?.height || '');
-const [storageType, setStorageType] = useState(initialData?.storageType || null);
+const [storageType, setStorageType] = useState<string[]>(initialData?.storageType || []);
 const [usageType, setUsageType] = useState<string[]>(initialData?.usageType || []);
 const [postType, setPostType] = useState(initialData?.postType || null);
 const [price, setPrice] = useState(initialData?.price || '');
@@ -61,20 +68,40 @@ const [accessibility, setAccessibility] = useState(initialData?.accessibility ||
 const [security, setSecurity] = useState(initialData?.security || []);
 const [submitting, setSubmitting] = useState(false);
 const [isPublic, setIsPublic] = useState<boolean>(initialData?.isPublic ?? true);
-
-// const [deliveryMethod, setDeliveryMethod] = useState(initialData?.deliveryMethod || []);
 const [images, setImages] = useState<string[]>(initialData?.images || []);
 const [mainImage, setMainImage] = useState<string | null>(initialData?.mainImage || null);
-const [priceFrequency, setPriceFrequency] = useState<
-  'daily' | 'weekly' | 'monthly'
->(initialData?.priceFrequency || 'daily');
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+const [userId, setUserId] = useState<string | null>(null);
+const HERE_APP_ID = 'pFKaPvfjrv5rKal9FLUM';
+const HERE_API_KEY = 'tUaFheXRcT-OB0IJJnXIHemVIYMOHALHYXDYV32XG4E';
+  
+const periods: PricePeriod[] = ['daily', 'weekly', 'monthly'];
+
+const initialPrices: Record<PricePeriod, PriceData> = periods.reduce((acc, period) => {
+  const existing = initialData?.prices?.[period];
+  acc[period] = {
+    amount: existing?.amount || '',
+    isPublic: existing?.isPublic ?? false,
+    enabled: existing?.enabled ?? !!existing?.amount, // use saved flag if exists
+  };
+  return acc;
+}, {} as Record<PricePeriod, PriceData>);
+
+  // Ensure at least one public
+  const hasPublic = periods.some(p => initialPrices[p].isPublic);
+  if (!hasPublic && periods.length) {
+    initialPrices[periods[0]].isPublic = true;
+    initialPrices[periods[0]].enabled = true; // enable public if none
+  }
+
+const [prices, setPrices] = useState<Record<PricePeriod, PriceData>>(initialPrices);
+
 
 
 const [blockedTimes, setBlockedTimes] = useState<{ start: string; end: string }[]>(
   initialData?.blockedTimes || []
 );
-
-const [reservedTimes, setReservedTimes] = useState<{ start: string; end: string }[]>(
+const [reservedTimes, setReservedTimes] = useState<[]>(
   initialData?.reservedTimes || [] // default to empty array if creating a new space
 );
 
@@ -82,12 +109,6 @@ const [reservedTimes, setReservedTimes] = useState<{ start: string; end: string 
 
 const navigation = useNavigation();
 
-
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const HERE_APP_ID = 'pFKaPvfjrv5rKal9FLUM';
-  const HERE_API_KEY = 'tUaFheXRcT-OB0IJJnXIHemVIYMOHALHYXDYV32XG4E';
-  
 
   async function geocodeAddress(fullAddress: string) {
     const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(
@@ -148,6 +169,52 @@ const generateUUID = async () => {
 const getFileExtension = (uri: string) => {
   const match = uri.match(/\.(\w+)(\?.*)?$/);
   return match ? match[1] : 'jpg'; // default fallback
+};
+
+const toggleEnabled = (period: PricePeriod) => {
+  setPrices((prev) => {
+    const updated = { ...prev };
+
+    // Flip enabled
+    updated[period].enabled = !updated[period].enabled;
+
+    // ---- Case 1: Disabled a prioritized period ----
+    if (!updated[period].enabled && updated[period].isPublic) {
+      // Find first enabled period
+      const firstEnabled = (Object.entries(updated) as [PricePeriod, PriceData][])
+        .find(([_, data]) => data.enabled);
+
+      // Reset all priorities
+      (Object.keys(updated) as PricePeriod[]).forEach(
+        (p) => (updated[p].isPublic = false)
+      );
+
+      if (firstEnabled) {
+        const [newPublicPeriod] = firstEnabled;
+        updated[newPublicPeriod].isPublic = true;
+      }
+    }
+
+    // ---- Case 2: Enabling a period when nothing else is enabled ----
+    if (updated[period].enabled) {
+      const anyEnabled = (Object.values(updated) as PriceData[]).some(
+        (d) => d.enabled
+      );
+      const anyPublic = (Object.values(updated) as PriceData[]).some(
+        (d) => d.isPublic
+      );
+
+      if (!anyPublic) {
+        // If nothing prioritized yet, make this one prioritized
+        (Object.keys(updated) as PricePeriod[]).forEach(
+          (p) => (updated[p].isPublic = false)
+        );
+        updated[period].isPublic = true;
+      }
+    }
+
+    return updated;
+  });
 };
 
 
@@ -245,9 +312,8 @@ const handleSubmit = async () => {
       images: uploadedImageURLs,
       userId,
       postType,
-      price,
       isPublic, 
-      priceFrequency,
+      prices: prices,
       address: fullAddress,
       accessibility,
       security,
@@ -363,24 +429,6 @@ const handleSubmit = async () => {
 </View>
 
 
-<Text style={styles.sectionTitle}>Visibility</Text>
-<View style={styles.optionRow}>
-  {['Public', 'Private'].map(option => {
-    const selected = (option === 'Public') === isPublic;
-    return (
-      <TouchableOpacity
-        key={option}
-        style={[styles.optionButton, selected && styles.optionSelected]}
-        onPress={() => setIsPublic(option === 'Public')}
-      >
-        <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
-          {option}
-        </Text>
-      </TouchableOpacity>
-    );
-  })}
-</View>
-
 
 
 <TextInput
@@ -437,50 +485,129 @@ const handleSubmit = async () => {
   />
 </View>
 
-<View style={styles.priceRow}>
-  <TextInput
-    style={[styles.sizeInput, { flex: 1 }]}
-    placeholder="Price"
-    value={price}
-    onChangeText={setPrice}
-    keyboardType="numeric"
-  />
 
-  <View style={styles.frequencyGroup}>
-    {(['daily', 'weekly', 'monthly'] as const).map(freq => {
-      const selected = priceFrequency === freq;
-      return (
+
+
+
+<Text style={styles.sectionTitle}>Price</Text>
+
+<View style={styles.priceSection}>
+  {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
+    const data = prices[period];
+    const isEnabled = data.enabled; // <-- new flag
+
+    return (
+      <View
+        key={period}
+        style={[
+          styles.priceRow,
+          !isEnabled && { opacity: 0.5 }, // grey out if disabled
+        ]}
+      >
+        {/* Toggle Button */}
+
+        <Text style={styles.priceLabel}>
+          {period.charAt(0).toUpperCase() + period.slice(1)}
+        </Text>
+
+        {/* Price Input */}
+        <TextInput
+          style={[styles.sizeInput, { flex: 1 }]}
+          placeholder="Price"
+          value={data.amount}
+          onChangeText={(val) =>
+            setPrices((prev) => ({
+              ...prev,
+              [period]: { ...prev[period], amount: val },
+            }))
+          }
+          keyboardType="numeric"
+          editable={isEnabled} // only editable if enabled
+        />
+
+        {/* Prioritized button */}
         <TouchableOpacity
-          key={freq}
           style={[
             styles.frequencyButton,
-            selected && styles.frequencyButtonSelected,
+            data.isPublic && styles.frequencyButtonSelected,
           ]}
-          onPress={() => setPriceFrequency(freq)}
+          onPress={() =>
+            setPrices((prev) => {
+              const updated = { ...prev };
+              (Object.keys(updated) as PricePeriod[]).forEach((p) => {
+                updated[p].isPublic = p === period;
+              });
+              return updated;
+            })
+          }
+          disabled={!isEnabled} // only allow prioritizing if enabled
         >
           <Text
             style={[
               styles.frequencyText,
-              selected && styles.frequencyTextSelected,
+              data.isPublic && styles.frequencyTextSelected,
             ]}
           >
-            {freq.charAt(0).toUpperCase() + freq.slice(1)}
+            Prioritized
           </Text>
         </TouchableOpacity>
-      );
-    })}
-  </View>
+
+        <TouchableOpacity
+          style={[
+            styles.frequencyButton,
+            isEnabled && styles.frequencyButtonSelected,
+          ]}
+          // onPress={() =>
+          //   setPrices((prev) => ({
+          //     ...prev,
+          //     [period]: { ...prev[period], enabled: !prev[period].enabled },
+          //   }))
+          // }
+            onPress={() => toggleEnabled(period)}
+
+        >
+          <Text
+            style={[
+              styles.frequencyText,
+              isEnabled && styles.frequencyTextSelected,
+            ]}
+          >
+            {isEnabled ? 'Enabled' : 'Disabled'}
+          </Text>
+        </TouchableOpacity>
+
+
+      </View>
+    );
+  })}
 </View>
 
-<Text style={styles.priceHint}>
-  Billed {priceFrequency}. Cancellation notice will match this frequency.
-</Text>
+
+
+
+<Text style={styles.sectionTitle}>Visibility</Text>
+<View style={styles.optionRow}>
+  {['Public', 'Private'].map(option => {
+    const selected = (option === 'Public') === isPublic;
+    return (
+      <TouchableOpacity
+        key={option}
+        style={[styles.optionButton, selected && styles.optionSelected]}
+        onPress={() => setIsPublic(option === 'Public')}
+      >
+        <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
+          {option}
+        </Text>
+      </TouchableOpacity>
+    );
+  })}
+</View>
 
 
 {/* Accessibility (Radio Buttons) */}
 <Text style={styles.sectionTitle}>Accessibility:</Text>
 <View style={styles.optionRow}>
-  {['1 day notice', '2+ days notice', '24/7'].map(option => {
+  {['By Appointment', '24/7'].map(option => {
     const selected = accessibility === option;
     return (
       <TouchableOpacity
@@ -500,7 +627,7 @@ const handleSubmit = async () => {
 {/* Security (Checkboxes) */}
 <Text style={styles.sectionTitle}>Security:</Text>
 <View style={styles.optionRow}>
-{['Video Surveillance', 'Pinpad/Keys', 'Gated Area', 'Smoke Detectors'].map(option => {
+{['Video Surveillance', 'Pinpad/Keys', 'Gated Area', 'Smoke Detectors', 'Alarm System', 'On-Site Presence'].map(option => {
     const selected = security.includes(option);
     return (
       <TouchableOpacity
@@ -523,26 +650,50 @@ const handleSubmit = async () => {
 
 <Text style={styles.sectionTitle}>Storage Type</Text>
 <View style={styles.optionRow}>
-  {['Indoor', 'Outdoor', 'Climate-Controlled'].map((type) => (
-    <TouchableOpacity
-      key={type}
-      style={[
-        styles.optionButton,
-        storageType === type && styles.optionSelected,
-      ]}
-      onPress={() => setStorageType(type as typeof storageType)}
-    >
-      <Text
+  {[
+    'Indoor',
+    'Outdoor',
+    'Climate-Controlled',
+    'Drive-Up Access',
+    'Ramp Access',
+    'Electricity',
+    'Well-Lit Area',
+    'Short Term',
+    'Long Term',
+    'Private Space',
+    'Weather Protected',
+  ].map(type => {
+    const selected = storageType.includes(type);
+
+    return (
+      <TouchableOpacity
+        key={type}
+        onPress={() =>
+          setStorageType(prev =>
+            selected
+              ? prev.filter(t => t !== type)
+              : [...prev, type]
+          )
+        }
         style={[
-          styles.optionText,
-          storageType === type && styles.optionSelectedText,
+          styles.optionButton,
+          selected && styles.optionSelected,
         ]}
       >
-        {type}
-      </Text>
-    </TouchableOpacity>
-  ))}
+        <Text
+          style={[
+            styles.optionText,
+            selected && styles.optionSelectedText,
+          ]}
+        >
+          {type}
+        </Text>
+      </TouchableOpacity>
+    );
+  })}
 </View>
+
+
 
 <Text style={styles.sectionTitle}>Usage Type</Text>
 <View style={styles.optionRow}>
@@ -625,7 +776,7 @@ const handleSubmit = async () => {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    backgroundColor: '#FFFCF1', // Wheat/Cream background for softness
+    backgroundColor: COLORS.lighterGrey, // Wheat/Cream background for softness
   },
   addPhotoButton: {
     backgroundColor: '#0F6B5B', // Emerald Green primary action
@@ -639,6 +790,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Poppins-SemiBold',
   },
+    priceSection: {
+    marginVertical: 16,
+    paddingHorizontal: 8,
+  },
+
+  // Each row: period label + input + public toggle
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  // Label for each period (Daily, Weekly, Monthly)
+  priceLabel: {
+    width: 80, // fixed width so inputs align
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'black',
+  },
+
   imageGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -685,7 +856,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 26,
     marginBottom: 6,
     marginTop: 10,
     color: '#0F6B5B', // Emerald Green for section headings
@@ -780,13 +951,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 8,
   },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-    gap: 8,
-  },
-  
+
   frequencyGroup: {
     flexDirection: 'row',
   },
