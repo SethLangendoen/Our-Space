@@ -50,10 +50,10 @@ export default function SettingsScreen() {
     {
       groupTitle: "Payments & Payouts",
       screens: [
-        { title: "Get Started / Onboarding", screen: "StripeOnboarding" },
-        { title: "Add / Remove Payment Methods", screen: "PaymentMethods" },
-        { title: "Earnings", screen: "Earnings" },
-        { title: "Manage Payout Account", screen: "PayoutAccounts" },
+        { title: "Get Started as a Host", screen: "StripeOnboarding" },
+        { title: "Earnings (Host)", screen: "Earnings" },
+        { title: "Manage Payout Account (Host)", screen: "PayoutAccounts" },
+        { title: "Add / Remove Payment Methods (Renter)", screen: "PaymentMethods" },
         { title: "Transaction History", screen: "TransactionHistory" },
         { title: "Billing & Receipts", screen: "BillingReceipts" },
         { title: "Tax Forms (Hosts)", screen: "TaxForms", requiresOnboarding: true },
@@ -71,7 +71,7 @@ export default function SettingsScreen() {
     { title: 'Change Password', screen: 'ChangePassword' },
     { title: 'Verify ID', screen: 'VerifyID' },
     { title: 'Terms and Conditions', screen: 'TermsAndConditions' },
-    { title: 'Version', screen: 'Version' },
+    { title: 'Version (1.00)', screen: 'Version' },
     { title: 'Language', screen: 'Language' },
     { title: "What's New?", screen: 'WhatsNew' },
   ];

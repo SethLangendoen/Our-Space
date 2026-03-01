@@ -1,3 +1,80 @@
+
+
+// const { https } = require("firebase-functions/v2");
+// const admin = require("firebase-admin");
+// const Stripe = require("stripe");
+
+// let stripe;
+// function getStripe() {
+//   if (!stripe) {
+//     const secret = process.env.STRIPE_SECRET;
+//     if (!secret) throw new Error("Stripe secret not configured");
+//     stripe = new Stripe(secret);
+//   }
+//   return stripe;
+// }
+
+// const ACCOUNT_EVENTS = new Set([
+//   "v2.core.account.created",
+//   "v2.core.account.updated",
+// ]);
+
+// exports.handleStripeAccountUpdate = https.onRequest(
+//   {
+//     // Use the new secret only for this webhook
+//     secrets: ["STRIPE_SECRET", "STRIPE_ACCOUNT_WEBHOOK_SECRET"],
+//     cors: false,
+//     bodyParser: false,
+//   },
+//   async (req, res) => {
+//     try {
+//       const stripe = getStripe();
+//       const sig = req.headers["stripe-signature"];
+//       if (!sig) return res.status(400).send("Missing Stripe signature");
+
+//       const event = stripe.webhooks.constructEvent(
+//         req.rawBody,
+//         sig,
+//         process.env.STRIPE_ACCOUNT_WEBHOOK_SECRET // <-- updated here
+//       );
+
+//       if (!ACCOUNT_EVENTS.has(event.type)) {
+//         return res.status(200).json({ received: true });
+//       }
+      
+//       const account = event.data.object;
+
+//       const chargesEnabled = !!account.charges_enabled;
+//       const payoutsEnabled = !!account.payouts_enabled;
+
+//       // 🔑 onboardingComplete now only depends on charges + payouts
+//       const onboardingComplete = chargesEnabled && payoutsEnabled;
+
+//       const db = admin.firestore();
+//       const usersRef = db.collection("users");
+
+//       const snapshot = await usersRef
+//         .where("stripe.host.accountId", "==", account.id)
+//         .get();
+
+//       snapshot.forEach(doc => {
+//         doc.ref.update({
+//           "stripe.host.chargesEnabled": chargesEnabled,
+//           "stripe.host.payoutsEnabled": payoutsEnabled,
+//           "stripe.host.detailsSubmitted": account.details_submitted ?? false,
+//           "stripe.host.onboardingComplete": onboardingComplete,
+//           "stripe.host.lastUpdated": admin.firestore.FieldValue.serverTimestamp(),
+//         });
+//       });
+
+//       return res.status(200).json({ received: true });
+//     } catch (err) {
+//       console.error("Stripe webhook error:", err);
+//       return res.status(500).send({ error: err.message });
+//     }
+//   }
+// );
+
 const { https } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
@@ -12,54 +89,69 @@ function getStripe() {
   return stripe;
 }
 
-const ACCOUNT_V2_EVENTS = new Set([
+const ACCOUNT_EVENTS = new Set([
   "v2.core.account.created",
   "v2.core.account.updated",
-  "v2.core.account[requirements].updated",
-  "v2.core.account[configuration.merchant].capability_status_updated",
-  "v2.core.account[configuration.customer].capability_status_updated",
-  "v2.core.account[configuration.recipient].capability_status_updated",
 ]);
 
 exports.handleStripeAccountUpdate = https.onRequest(
   {
-    secrets: ["STRIPE_SECRET", "STRIPE_WEBHOOK_SECRET"],
+    secrets: ["STRIPE_SECRET", "STRIPE_ACCOUNT_WEBHOOK_SECRET"],
     cors: false,
     bodyParser: false,
   },
   async (req, res) => {
     try {
+      console.log("Received Stripe webhook request");  // 🔹 log incoming request
+
       const stripe = getStripe();
       const sig = req.headers["stripe-signature"];
-      if (!sig) return res.status(400).send("Missing Stripe signature");
+      if (!sig) {
+        console.warn("Missing Stripe signature header");  // 🔹 log missing sig
+        return res.status(400).send("Missing Stripe signature");
+      }
+      console.log("Incoming Stripe signature:", sig);
+      console.log("Raw body length:", req.rawBody.length);
+      console.log("Webhook secret env:", process.env.STRIPE_ACCOUNT_WEBHOOK_SECRET ? "set" : "NOT set");
 
-      const event = stripe.webhooks.constructEvent(
-        req.rawBody,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
+      let event;
+      try {
+        
+        event = stripe.webhooks.constructEvent(
+          req.rawBody,
+          sig,
+          process.env.STRIPE_ACCOUNT_WEBHOOK_SECRET
+        );
+      } catch (err) {
+        console.error("Webhook signature verification failed:", err.message); // 🔹 log sig failure
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+      }
 
-      if (!ACCOUNT_V2_EVENTS.has(event.type)) {
+      console.log("Stripe event received:", event.type);  // 🔹 log event type
+
+      if (!ACCOUNT_EVENTS.has(event.type)) {
+        console.log("Event type not in ACCOUNT_EVENTS, ignoring:", event.type); // 🔹 log ignored events
         return res.status(200).json({ received: true });
       }
 
       const account = event.data.object;
+      console.log("Account object received:", account.id);  // 🔹 log account ID
 
       const chargesEnabled = !!account.charges_enabled;
       const payoutsEnabled = !!account.payouts_enabled;
-
-      // 🔑 onboardingComplete now only depends on charges + payouts
       const onboardingComplete = chargesEnabled && payoutsEnabled;
 
       const db = admin.firestore();
       const usersRef = db.collection("users");
 
-      // ✅ Query the top-level stripe.host object
       const snapshot = await usersRef
         .where("stripe.host.accountId", "==", account.id)
         .get();
 
+      console.log("Matching users found:", snapshot.size); // 🔹 log how many users matched
+
       snapshot.forEach(doc => {
+        console.log("Updating user:", doc.id);  // 🔹 log each document update
         doc.ref.update({
           "stripe.host.chargesEnabled": chargesEnabled,
           "stripe.host.payoutsEnabled": payoutsEnabled,
@@ -69,6 +161,7 @@ exports.handleStripeAccountUpdate = https.onRequest(
         });
       });
 
+      console.log("Finished processing event:", event.type);  // 🔹 final log
       return res.status(200).json({ received: true });
     } catch (err) {
       console.error("Stripe webhook error:", err);

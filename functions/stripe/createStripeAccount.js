@@ -37,7 +37,7 @@ async function createStripeAccountLogic({ email, userId }) {
     },
     business_type: "individual",
     business_profile: {
-      url: "https://yourapp.com",
+      url: "https://ourspacetech.com",
       mcc: "7399",
       name: "OurSpace",
     },

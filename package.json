@@ -18,7 +18,7 @@
     "@react-navigation/native": "^7.1.8",
     "@react-navigation/native-stack": "^7.3.12",
     "@react-navigation/stack": "^7.3.1",
-    "@stripe/stripe-react-native": "0.50.3",
+    "@stripe/stripe-react-native": "^0.59.0",
     "dotenv": "^17.2.3",
     "expo": "~54.0.30",
     "expo-asset": "~12.0.12",

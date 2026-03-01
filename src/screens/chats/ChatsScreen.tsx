@@ -4,6 +4,7 @@
 import { COLORS, FONT_SIZES, SPACING, COMMON_STYLES } from '../Styles/theme';
 import React, { useEffect, useState } from 'react';
 import { Dimensions } from 'react-native';
+
 const { width, height } = Dimensions.get('window');
 import {
   View,
@@ -15,6 +16,8 @@ import {
   Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ChatsStackParamList } from 'src/navigation/stacks/ChatsStack';
 import {
   collection,
   query,
@@ -38,12 +41,20 @@ interface User {
   profileImage?: string;
 }
 
+type ChatsScreenNavigationProp = NativeStackNavigationProp<
+  ChatsStackParamList,
+  'ChatsMain'
+>;
+
+
+
 export default function ChatsScreen() {
-  const navigation = useNavigation();
+  // const navigation = useNavigation();
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [userDataMap, setUserDataMap] = useState<{ [key: string]: User }>({});
+  const navigation = useNavigation<ChatsScreenNavigationProp>();
 
   const fetchUserById = async (userId: string) => {
     if (userDataMap[userId]) return;
@@ -103,15 +114,15 @@ export default function ChatsScreen() {
     const user = userDataMap[otherUserId];
 
     return (
-      <TouchableOpacity
-        style={styles.chatItem}
-        onPress={() =>
-          navigation.navigate('MessagesScreen' as never, {
-            chatId: item.id,
-            otherUser: otherUserId,
-          } as never)
-        }
-      >
+        <TouchableOpacity
+          style={styles.chatItem}
+          onPress={() =>
+            navigation.navigate('MessagesScreen', {
+              chatId: item.id,
+              otherUser: otherUserId,
+            })
+          }
+        >
         <View style={styles.userRow}>
           <Image
             source={
@@ -229,8 +240,9 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   awaitingImage: {
-    width: width,
-    height: height * 0.5,
+    width: '100%', // Fit inside the container
+    maxHeight: height * 0.4, // Make it slightly smaller
+    aspectRatio: 1.5, // optional, keep the image proportioned
     opacity: 0.9,
-  },
+  }
 });

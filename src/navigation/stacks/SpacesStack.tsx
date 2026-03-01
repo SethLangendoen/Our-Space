@@ -18,9 +18,6 @@ export default function SpacesStack() {
       header: ({ navigation }: NativeStackHeaderProps) => <AppHeader navigation={navigation} />,
     }}
     >
-
-
-      
       <Stack.Screen name="SpacesMain" component={SpacesScreen} />
       <Stack.Screen name="Filters" component={FiltersScreen} />
       <Stack.Screen name="SpaceDetail" component={SpaceDetailScreen} />

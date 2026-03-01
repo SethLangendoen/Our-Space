@@ -389,10 +389,12 @@ const styles = StyleSheet.create({
     borderColor: '#629447', // earthy green outline
   },
   referenceImage: {
-    width: 200,
+    width: 250, // fixed width
+    maxWidth: '100%', // ensures it never exceeds the bubble
     height: 120,
     borderRadius: 12,
     marginBottom: 8,
+    resizeMode: 'cover',
   },
   referenceTitle: {
     fontWeight: '600',

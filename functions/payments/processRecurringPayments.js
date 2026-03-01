@@ -44,7 +44,6 @@ async function processRecurringPaymentsLogic() {
     .where("status", "==", "confirmed")
     .where("nextPaymentDate", "<=", now)
     .where("isProcessing", "==", false)
-    .limit(20)
     .get();
 
   if (reservationsSnap.empty) {
@@ -62,12 +61,16 @@ async function processRecurringPaymentsLogic() {
     try {
       await docSnap.ref.update({ isProcessing: true });
 
-      const postSnap = await db.collection("spaces").doc(reservation.spaceId).get();
-      if (!postSnap.exists) throw new Error("Post not found");
+      // const postSnap = await db.collection("spaces").doc(reservation.spaceId).get();
+      // if (!postSnap.exists) throw new Error("Post not found");
+      if (!reservation.price || !reservation.pricePeriod) {
+        throw new Error("Reservation missing price or pricePeriod");
+      }
 
-      const post = postSnap.data();
+      // const post = postSnap.data();
 
-      const baseAmount = Math.round(Number(post.price) * 100);
+      // const baseAmount = Math.round(Number(post.price) * 100);
+      const baseAmount = Math.round(Number(reservation.price) * 100);
 
       const renterFee = Math.round(baseAmount * PLATFORM_FEE_RATE);
       const hostFee = Math.round(baseAmount * PLATFORM_FEE_RATE);
@@ -75,8 +78,10 @@ async function processRecurringPaymentsLogic() {
       const amountChargedToRenter = baseAmount + renterFee;
       const applicationFee = hostFee + renterFee;
 
-      const frequency = post.priceFrequency;
-      const hostId = post.userId;
+      // const frequency = post.priceFrequency;
+      const frequency = reservation.pricePeriod;
+      const hostId = reservation.ownerId;
+
 
       const hostSnap = await db.collection("users").doc(hostId).get();
       const hostStripeId = hostSnap.data()?.stripe?.host?.accountId;
@@ -127,7 +132,10 @@ async function processRecurringPaymentsLogic() {
       
       
       
-      const nextPayment = calculateNextPaymentDate(new Date(), frequency);
+      // const nextPayment = calculateNextPaymentDate(new Date(), frequency);
+      const previousNextPayment = reservation.nextPaymentDate.toDate();
+      const nextPayment = calculateNextPaymentDate(previousNextPayment, frequency);
+
       await docSnap.ref.update({
         lastPaymentDate: now,
         nextPaymentDate: admin.firestore.Timestamp.fromDate(nextPayment),
@@ -147,7 +155,7 @@ async function processRecurringPaymentsLogic() {
 
 const processRecurringPayments = onSchedule(
   { 
-    schedule: "0 * * * *", // Once an hour for right now. 
+    schedule: "*/5 * * * *", // Once an hour for right now. 
     timeZone: "America/Edmonton",
     secrets: ["STRIPE_SECRET"], // IMPORTANT: This injects the secret into process.env
     timeoutSeconds: 300 // Giving it 5 minutes to process the loop

@@ -7,7 +7,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert, // Added for location permission feedback
+  Alert,
+  Platform, // Added for location permission feedback
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -48,8 +49,9 @@ type RootStackParamList = {
 // Define the navigation prop for THIS screen
 type FiltersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Filters'>;
 
-
-
+const GOOGLE_PLACES_KEY =
+  Constants.expoConfig?.extra?.GOOGLE_PLACES_KEY;
+console.log(GOOGLE_PLACES_KEY)
 
 export default function FiltersScreen() {
   // FIX 2: Correctly initialize useNavigation and type it
@@ -67,24 +69,31 @@ export default function FiltersScreen() {
   const [securityFeatures, setSecurityFeatures] = useState<string[]>([]);
   const [accessibility, setAccessibility] = useState<string[]>([]);
   const [locationMode, setLocationMode] = useState<'current' | 'manual'>('manual');
-  const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.GOOGLE_MAPS_API_KEY;
+  // const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.GOOGLE_MAPS_API_KEY;
   const [storageType, setStorageType] = useState<String[]>([]);
-  
-const storageTypeOptions = [
-  'Indoor',
-  'Outdoor',
-  'Climate-Controlled',
-  'Drive-Up Access',
-  'Ramp Access',
-  'Electricity',
-  'Well-Lit Area',
-  'Short Term',
-  'Long Term',
-  'Private Space',
-  'Weather Protected',
-] as const;
 
-type StorageType = typeof storageTypeOptions[number];
+  // const GOOGLE_MAPS_API_KEY =
+  // Platform.OS === 'ios'
+  //   ? Constants.expoConfig?.extra?.GOOGLE_MAPS_IOS_KEY
+  //   : Constants.expoConfig?.extra?.GOOGLE_MAPS_API_KEY;
+
+
+
+  const storageTypeOptions = [
+    'Indoor',
+    'Outdoor',
+    'Climate-Controlled',
+    'Drive-Up Access',
+    'Ramp Access',
+    'Electricity',
+    'Well-Lit Area',
+    'Short Term',
+    'Long Term',
+    'Private Space',
+    'Weather Protected',
+  ] as const;
+
+  type StorageType = typeof storageTypeOptions[number];
 
 
     
@@ -295,6 +304,8 @@ type StorageType = typeof storageTypeOptions[number];
 
 
 {locationMode === 'current' ? (
+
+
   <TouchableOpacity
     style={styles.locationButton}
     onPress={async () => {
@@ -316,13 +327,20 @@ type StorageType = typeof storageTypeOptions[number];
       {selectedLocation ? 'Current Location Set ✓' : 'Use Current Location'}
     </Text>
   </TouchableOpacity>
+
+
+
 ) : (
+
+
+
 <View style={{ maxHeight: 250, zIndex: 1000 }}>
 
 
-<GooglePlacesAutocomplete
+{/* <GooglePlacesAutocomplete
   placeholder="Start typing address or city..."
   fetchDetails={true}
+  disableScroll={true}
   onPress={(data, details = null) => {
     if (!details) return;
     setLocationAddress(data.description);
@@ -332,24 +350,71 @@ type StorageType = typeof storageTypeOptions[number];
     });
   }}
   query={{
-    key: GOOGLE_MAPS_API_KEY,
+    key: GOOGLE_PLACES_KEY,
     language: 'en',
     components: 'country:ca|country:us',
   }}
-  styles={{
-    container: { flex: 0 },
-    textInput: styles.textInput,
-    listView: [styles.autocompleteList, { scrollEnabled: false }], // Extra safety
-  }}
-  enablePoweredByContainer={false}
   textInputProps={{
     value: locationAddress,
-    onChangeText: setLocationAddress,
+    onChangeText: (text) => {
+      setLocationAddress(text);
+    },
   }}
-  disableScroll={true} // The main fix for the VirtualizedList error
+  enablePoweredByContainer={false}
+/> */}
+
+<GooglePlacesAutocomplete
+  styles={{
+    container: { flex: 0 },
+    textInputContainer: { width: '100%' },
+    textInput: { height: 40, fontSize: 16 },
+    listView: { zIndex: 1000 }, // <-- very important
+  }}
+  placeholder="Start typing address or city..."
+  fetchDetails={true}
+  disableScroll={true}
+
+  onPress={(data, details = null) => {
+    console.log("Selected prediction:", data);
+    console.log("Selected place details:", details);
+
+    if (!details) return;
+
+    setLocationAddress(data.description);
+    setSelectedLocation({
+      lat: details.geometry.location.lat,
+      lng: details.geometry.location.lng,
+    });
+  }}
+
+  onFail={(error) => {
+    console.error("Places API Error:", error);
+  }}
+
+  onNotFound={() => {
+    console.log("No results found for query");
+  }}
+
+  query={{
+    key: GOOGLE_PLACES_KEY,
+    language: 'en',
+    components: 'country:ca',
+  }}
+
+  textInputProps={{
+    value: locationAddress,
+    onChangeText: (text) => {
+      console.log("User typing:", text);
+      setLocationAddress(text);
+    },
+  }}
+
+  enablePoweredByContainer={false}
 />
 
   </View>
+
+  
 )}
 
 

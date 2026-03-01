@@ -567,10 +567,10 @@ const futureBlocked = startDate
 
 
   <BlockedCalendar
-    blockedTimes={space.blockedTimes || []}
-    reservedTimes={space.reservedTimes || []} 
+    // blockedTimes={space.blockedTimes || []}
+    // reservedTimes={space.reservedTimes || []} 
     onSelectRange={(range) => setSelectedRange(range)}
-    editable={false}
+    // editable={false}
     singleSelect={true}
 
   />
@@ -716,8 +716,6 @@ const futureBlocked = startDate
     {booking ? 'Booking...' : 'Request Space Reservation'}
   </Text>
 </TouchableOpacity>
-
-
 
 </View>
 

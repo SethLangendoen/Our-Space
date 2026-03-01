@@ -400,6 +400,14 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         await updateDoc(doc(db, "reservations", reservation.id), {
           status: "cancelled_by_host",
         });
+          // ✅ Unlock the space
+        if (reservation.spaceId) {
+          const spaceRef = doc(db, "spaces", reservation.spaceId);
+          await updateDoc(spaceRef, {
+            activeReservationId: null,
+            isPublic: true, // or isPrivate: false depending on your app logic
+          });
+        }
         setReservation({ ...reservation, status: "cancelled_by_host" });
         Alert.alert("Reservation Cancelled", "You have successfully cancelled this reservation.");
       } else if (isRenter) {
@@ -410,6 +418,16 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         await updateDoc(doc(db, "reservations", reservation.id), {
           status: "cancelled_by_renter",
         });
+
+          // ✅ Unlock the space
+        if (reservation.spaceId) {
+          const spaceRef = doc(db, "spaces", reservation.spaceId);
+          await updateDoc(spaceRef, {
+            activeReservationId: null,
+            isPublic: true,
+          });
+        }
+
         setReservation({ ...reservation, status: "cancelled_by_renter" });
   
         Alert.alert("Reservation Cancelled", "You have successfully cancelled this reservation.");
@@ -439,8 +457,13 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               );
             }
           );
-          await updateDoc(spaceRef, { reservedTimes: updatedReservedTimes });
-          console.log("Reserved time removed from space:", updatedReservedTimes);
+        // Unlock the space
+        await updateDoc(spaceRef, {
+          reservedTimes: updatedReservedTimes,
+          activeReservationId: null,  
+          isPublic: true,             
+        });
+        console.log("Reserved time removed from space:", updatedReservedTimes);
         }
       }
     } catch (err) {
@@ -681,6 +704,17 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             <Text style={styles.detailText}>
             <Text style={styles.nameText}>Approximate Duration: "{reservation.storageDuration}"</Text>
             </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.nameText}>
+                Location:{" "}
+                {reservation?.status === 'confirmed' && space?.address
+                  ? `"${space.address}"`
+                  : reservation?.status === 'requested'
+                  ? "Exact location displayed upon confirmation"
+                  : "Location unavailable"}
+              </Text>
+            </Text>
+
 
             {canEdit && (
               <TouchableOpacity
@@ -696,8 +730,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         ) : (
           <>
             <BlockedCalendar
-              blockedTimes={[]}          
-              reservedTimes={reservedTimes}       
+              // blockedTimes={[]}          
+              // reservedTimes={reservedTimes}       
               onSelectRange={({ start, end }) => {
                 setEditedStart(start);
                 setEditedEnd(end);
@@ -800,7 +834,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               onPress={() => setIsCalendarOpen(prev => !prev)}
             >
               <Text style={styles.toggleButtonText}>
-                {isCalendarOpen ? 'Close Calendar' : 'Request End Date Change'}
+                {isCalendarOpen ? 'Close Calendar' : 'Set End Date'}
               </Text>
             </TouchableOpacity>
 
@@ -1058,7 +1092,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
       )}
 
 
-        {reservation &&
+      {reservation &&
         space &&
         reservation.status === "confirmed" &&
         (typeof reservation.startDate.toDate === "function"

@@ -1,7 +1,7 @@
 
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -201,16 +201,23 @@ const renderContent = () => {
   switch (selectedTab) {
     case 'My Spaces':
       return awaitingPosts.length > 0 ? (
-        awaitingPosts.map((post) => (
-          <SpaceCard
-            key={post.id}
-            item={post}
-            onPress={() =>
-              navigation.navigate('EditSpaceScreen', { spaceId: post.id })
+      awaitingPosts.map((post) => (
+        <SpaceCard
+          key={post.id}
+          item={post}
+          onPress={() => {
+            if (post.activeReservationId) {
+              Alert.alert(
+                'Space Currently Rented',
+                'Spaces are not editable while being rented.'
+              );
+              return;
             }
-            showPublicPrivateBadge={true}
-          />
-        ))
+            navigation.navigate('EditSpaceScreen', { spaceId: post.id });
+          }}
+          showPublicPrivateBadge={true}
+        />
+      ))
       ) : (
         <View style={styles.placeholderImage}>
           <Text style={styles.message}>Spaces you create will show up here</Text>

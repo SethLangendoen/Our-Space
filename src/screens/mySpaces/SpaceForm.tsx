@@ -17,7 +17,9 @@ const SIDE_MARGIN = 16; // gap on left & right of carousel
 const IMAGE_GAP = 12; // gap between images
 const IMAGE_WIDTH = SCREEN_WIDTH - SIDE_MARGIN * 2; // image width leaves room on sides
 
-
+const GOOGLE_PLACES_KEY =
+  Constants.expoConfig?.extra?.GOOGLE_PLACES_KEY;
+  
 import {
   View,
   Text,
@@ -31,6 +33,9 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../Styles/theme';
+import { GooglePlacesAutocomplete } from 'node_modules/react-native-google-places-autocomplete/GooglePlacesAutocomplete';
+import Constants from 'node_modules/expo-constants/build/Constants';
+import { KeyboardAwareScrollView } from 'node_modules/react-native-keyboard-aware-scroll-view';
 
 const MAX_IMAGES = 5;
 
@@ -72,6 +77,8 @@ const [images, setImages] = useState<string[]>(initialData?.images || []);
 const [mainImage, setMainImage] = useState<string | null>(initialData?.mainImage || null);
 const [isLoggedIn, setIsLoggedIn] = useState(false);
 const [userId, setUserId] = useState<string | null>(null);
+const [locationAddress, setLocationAddress] = useState(address || '');
+const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 const HERE_APP_ID = 'pFKaPvfjrv5rKal9FLUM';
 const HERE_API_KEY = 'tUaFheXRcT-OB0IJJnXIHemVIYMOHALHYXDYV32XG4E';
   
@@ -276,6 +283,79 @@ const uploadImageAsync = async (uri: string, userId: string): Promise<string> =>
 
 
 
+// const handleSubmit = async () => {
+//   if (!userId) {
+//     alert('You must be logged in.');
+//     return;
+//   }
+
+//   try {
+//     setSubmitting(true); // <-- start submitting
+
+//     // const fullAddress = `${address}, ${postalCode}`;
+//     // const location = await geocodeAddress(fullAddress);
+//     const fullAddress = locationAddress; // from autocomplete
+//     const location = selectedLocation
+//       ? {
+//           lat: selectedLocation.lat,
+//           lng: selectedLocation.lng,
+//           address: locationAddress,
+//         }
+//       : await geocodeAddress(`${address}, ${postalCode}`);
+
+//     const uploadedImageURLs: string[] = [];
+
+//     for (const uri of images) {
+//       // If already a URL (edit mode), skip upload
+//       if (uri.startsWith('http')) {
+//         uploadedImageURLs.push(uri);
+//       } else {
+//         const url = await uploadImageAsync(uri, userId);
+//         uploadedImageURLs.push(url);
+//       }
+//     }
+
+//     const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
+
+//     const postData = {
+//       title,
+//       description,
+//       dimensions: { width, length, height },
+//       storageType,
+//       usageType,
+//       mainImage: mainImageURL,
+//       images: uploadedImageURLs,
+//       userId,
+//       postType,
+//       isPublic, 
+//       prices: prices,
+//       address: fullAddress,
+//       accessibility,
+//       security,
+//       blockedTimes: blockedTimes,
+//       reservedTimes,
+//       location: {
+//         address: location.address,
+//         city: location.city,
+//         province: location.province,
+//         country: location.country,
+//         district: location.district,
+//         lat: location.lat,
+//         lng: location.lng,
+//       },
+//     };
+
+//     await onSubmit(postData);
+//   } catch (error: any) {
+//     console.error('Form submission error:', error);
+//     alert(`Error: ${error.message}`);
+//   } finally {
+//     setSubmitting(false); // <-- stop submitting
+//   }
+// };
+  
+
+
 const handleSubmit = async () => {
   if (!userId) {
     alert('You must be logged in.');
@@ -283,15 +363,35 @@ const handleSubmit = async () => {
   }
 
   try {
-    setSubmitting(true); // <-- start submitting
+    setSubmitting(true); // start submitting
 
-    const fullAddress = `${address}, ${postalCode}`;
-    const location = await geocodeAddress(fullAddress);
+    let locationData;
+
+    if (selectedLocation && locationAddress) {
+      // If the user picked an autocomplete suggestion, try to use details
+      try {
+        locationData = await geocodeAddress(locationAddress); // ensures structured fields
+      } catch (err) {
+        console.warn('Failed to geocode autocomplete address, falling back to lat/lng only');
+        locationData = {
+          lat: selectedLocation.lat,
+          lng: selectedLocation.lng,
+          address: locationAddress,
+          city: null,
+          province: null,
+          country: null,
+          district: null,
+        };
+      }
+    } else {
+      // Fallback: manually entered address
+      const fullAddress = `${address}, ${postalCode}`;
+      locationData = await geocodeAddress(fullAddress);
+    }
 
     const uploadedImageURLs: string[] = [];
 
     for (const uri of images) {
-      // If already a URL (edit mode), skip upload
       if (uri.startsWith('http')) {
         uploadedImageURLs.push(uri);
       } else {
@@ -312,21 +412,21 @@ const handleSubmit = async () => {
       images: uploadedImageURLs,
       userId,
       postType,
-      isPublic, 
-      prices: prices,
-      address: fullAddress,
+      isPublic,
+      prices,
+      address: locationData.address,
       accessibility,
       security,
-      blockedTimes: blockedTimes,
+      blockedTimes,
       reservedTimes,
       location: {
-        address: location.address,
-        city: location.city,
-        province: location.province,
-        country: location.country,
-        district: location.district,
-        lat: location.lat,
-        lng: location.lng,
+        address: locationData.address,
+        city: locationData.city,
+        province: locationData.province,
+        country: locationData.country,
+        district: locationData.district,
+        lat: locationData.lat,
+        lng: locationData.lng,
       },
     };
 
@@ -335,10 +435,9 @@ const handleSubmit = async () => {
     console.error('Form submission error:', error);
     alert(`Error: ${error.message}`);
   } finally {
-    setSubmitting(false); // <-- stop submitting
+    setSubmitting(false);
   }
 };
-  
 
 
 
@@ -381,18 +480,17 @@ const handleSubmit = async () => {
   return (
 
     
-    <ScrollView contentContainerStyle={styles.container} >
+    // <ScrollView contentContainerStyle={styles.container} >
+
+<KeyboardAwareScrollView
+  contentContainerStyle={styles.container}
+  showsVerticalScrollIndicator={false}
+  keyboardShouldPersistTaps="handled"
+>
+
       <TouchableOpacity style={styles.addPhotoButton} onPress={pickImage}>
         <Text style={styles.addPhotoText}>Add Photo ({images.length}/{MAX_IMAGES})</Text>
       </TouchableOpacity>
-
-      {/* <View style={styles.imageGrid}>
-        {images.map((uri) => (
-          <TouchableOpacity key={uri} onPress={() => prioritizeImage(uri)} onLongPress={() => removeImage(uri)}>
-            <Image source={{ uri }} style={[styles.image, mainImage === uri && styles.mainImage]} />
-          </TouchableOpacity>
-        ))}
-      </View> */}
 
 <View style={styles.carouselContainer}>
 <ScrollView
@@ -445,20 +543,41 @@ const handleSubmit = async () => {
   onChangeText={setDescription}
 />
 
-<TextInput
-  style={styles.input}
-  placeholder="Address"
-  value={address}
-  onChangeText={setAddress}
-/>
 
-<TextInput
-  style={styles.input}
-  placeholder="Postal Code"
-  value={postalCode}
-  onChangeText={setPostalCode}
-/>
+<View style={{ zIndex: 1000, marginBottom: 16 }}>
+  <GooglePlacesAutocomplete
+    placeholder="Start typing address..."
+    fetchDetails={true}
+    disableScroll={true}
 
+    query={{
+      key: GOOGLE_PLACES_KEY,
+      language: 'en',
+      components: 'country:ca', // restrict to Canada
+      types: 'geocode',         // optional: only addresses
+    }}
+    onPress={(data, details = null) => {
+      console.log("Selected prediction:", data);
+      console.log("Selected place details:", details);
+
+      if (!details) return;
+
+      setLocationAddress(data.description);
+      setSelectedLocation({
+        lat: details.geometry.location.lat,
+        lng: details.geometry.location.lng,
+      });
+    }}
+    textInputProps={{
+      value: locationAddress,
+      onChangeText: (text) => {
+        setLocationAddress(text);
+        setAddress(text.split(',')[0]); // optional: sync address for form submission
+      },
+    }}
+    enablePoweredByContainer={false}
+  />
+</View>
 
 
 <View style={styles.sizeContainer}>
@@ -720,19 +839,6 @@ const handleSubmit = async () => {
 </View>
 
 
-<Text style={styles.sectionTitle}>Blocked Times</Text>
-
-<BlockedCalendar
-  blockedTimes={blockedTimes}
-  reservedTimes={reservedTimes}
-  onAddBlockedTime={(time) => setBlockedTimes([...blockedTimes, time])}
-  onRemoveBlockedTime={(index) =>
-    setBlockedTimes(blockedTimes.filter((_, i) => i !== index))
-  }
-  editable={true}
-/>
-
-
 <TouchableOpacity
   style={[styles.submitButton, submitting && { opacity: 0.6 }]}
   onPress={handleSubmit}
@@ -763,7 +869,8 @@ const handleSubmit = async () => {
 
 
 
-    </ScrollView>
+    {/* </ScrollView> */}
+    </KeyboardAwareScrollView>
   );
 }
 

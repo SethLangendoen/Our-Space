@@ -92,8 +92,13 @@ const handleConfirm = async () => {
         renterId: reservation.requesterId,
         reservationId,
       };
+      // await updateDoc(spaceRef, {
+      //   reservedTimes: arrayUnion(reservedTime),
+      //   updatedAt: serverTimestamp(),
+      // });
       await updateDoc(spaceRef, {
-        reservedTimes: arrayUnion(reservedTime),
+        activeReservationId: reservationId,
+        isPublic: false, // if you're hiding it while rented
         updatedAt: serverTimestamp(),
       });
 

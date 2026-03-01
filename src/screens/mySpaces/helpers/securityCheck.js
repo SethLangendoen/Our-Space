@@ -71,84 +71,6 @@ export default function SecurityCheck({ reservation, reservationId, userId, type
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 
-
-// const maybeMarkReservationCompleted = async (updatedSecurity) => {
-//   const pickUp = updatedSecurity?.pickUp;
-
-//   const isPickUpComplete =
-//     pickUp?.codeVerified &&
-//     pickUp?.photoUploaded &&
-//     pickUp?.reviews?.host &&
-//     pickUp?.reviews?.renter;
-
-//   if (!isPickUpComplete) return;
-
-//   const reservationRef = doc(db, 'reservations', reservationId);
-//   const spaceRef = doc(db, 'spaces', reservation.spaceId);
-
-//   try {
-
-
-//     await runTransaction(db, async (transaction) => {
-//       // ---- READS FIRST ----
-//       const reservationSnap = await transaction.get(reservationRef);
-//       if (!reservationSnap.exists()) return;
-
-//       const reservationData = reservationSnap.data();
-
-//       // 🔒 Guard against double completion
-//       if (reservationData.status === 'completed') return;
-
-//       const spaceSnap = await transaction.get(spaceRef);
-//       if (!spaceSnap.exists()) return;
-
-//       const spaceData = spaceSnap.data();
-
-//       const hostRef = doc(db, 'users', reservationData.ownerId);
-//       const hostSnap = await transaction.get(hostRef);
-//       if (!hostSnap.exists()) return;
-
-//       const hostData = hostSnap.data();
-
-//       // ---- COMPUTE ----
-//       const completedAt = new Date();
-
-//       const bookingDurationMs = getBookingDurationMs(
-//         reservationData.startDate,
-//         completedAt
-//       );
-
-//       const currentTotal = spaceData.totalTimeBooked || 0;
-//       const timeCheck = (currentTotal - THIRTY_DAYS_MS)
-
-//       const qualifiesForRoyalty =
-//       timeCheck >= 0 &&
-//       !(hostData?.badges?.respectedRoyalty);
-
-//       // ---- WRITES LAST ----
-//       transaction.update(reservationRef, {
-//         status: 'completed',
-//         completedAt,
-//       });
-
-//       transaction.update(spaceRef, {
-//         totalTimeBooked: currentTotal + bookingDurationMs,
-//       });
-
-//       if (qualifiesForRoyalty) {
-//         transaction.update(hostRef, {
-//           'badges.respectedRoyalty': true,
-//         });
-//       }
-//     });
-    
-
-//   } catch (err) {
-//     console.error('Failed to complete reservation:', err);
-//   }
-// };
-
-
 const maybeMarkReservationCompleted = async (updatedSecurity) => {
   const pickUp = updatedSecurity?.pickUp;
 
@@ -218,9 +140,18 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
         completedAt,
       });
 
+
+
+      // transaction.update(spaceRef, {
+      //   totalTimeBooked: currentTotal + bookingDurationMs,
+      //   reservedTimes: updatedReservedTimes, // ✅ remove reserved time
+      // });
+      
       transaction.update(spaceRef, {
         totalTimeBooked: currentTotal + bookingDurationMs,
-        reservedTimes: updatedReservedTimes, // ✅ remove reserved time
+        reservedTimes: updatedReservedTimes,
+        activeReservationId: null,  
+        isPublic: true,              
       });
 
       if (qualifiesForRoyalty) {
