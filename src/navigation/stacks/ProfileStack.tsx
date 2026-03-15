@@ -8,8 +8,18 @@ import PrivacyScreen from '../../screens/profile/PrivacyScreen';
 import SettingsStack from './SettingsStack';
 import SpaceDetailScreen from 'src/screens/spaces/SpaceDetailScreen';
 import AppHeader from 'src/components/AppHeader';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const Stack = createNativeStackNavigator();
+
+type ProfileStackParamList = {
+  ProfileMain: undefined;
+  EditProfile: undefined;
+  Notifications: undefined;
+  Privacy: undefined;
+  SpaceDetail: undefined;
+  SettingsStack: undefined; // or any params SettingsStack takes
+};
 
 export default function ProfileStack() {
   return (
@@ -39,11 +49,23 @@ export default function ProfileStack() {
   <Stack.Screen name="Notifications" component={NotificationsScreen} />
   <Stack.Screen name="Privacy" component={PrivacyScreen} />
   <Stack.Screen name="SpaceDetail" component={SpaceDetailScreen} />
-  <Stack.Screen
+  {/* <Stack.Screen
     name="SettingsStack"
     component={SettingsStack}
     options={{ headerShown: false }}
-  />
+  /> */}
+<Stack.Screen
+  name="SettingsStack"
+  component={SettingsStack}
+  options={({
+    navigation,
+  }: {
+    navigation: NativeStackNavigationProp<ProfileStackParamList, 'SettingsStack'>;
+  }) => ({
+    header: () => <AppHeader navigation={navigation} />,
+  })}
+
+/>
 </Stack.Navigator>
 
   );

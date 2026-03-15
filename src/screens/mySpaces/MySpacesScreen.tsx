@@ -190,7 +190,11 @@ useFocusEffect(
 
 
 
-
+const bookingFilterTextMap: Record<string, string> = {
+  Requests: 'requested',
+  Ongoing: 'ongoing',
+  Previous: 'previous',
+};
 
 const renderContent = () => {
   const awaitingPosts = userPosts.filter(post => {
@@ -264,13 +268,19 @@ const renderContent = () => {
           );
         })
       ) : (
-        <View style={styles.placeholderImage}>
-          <Text style={styles.message}>No {bookingFilter} Spaces found</Text>
-          <Image
-            source={require('../../../assets/mySpaces/requests.png')}
-            style={styles.awaitingImage}
-          />
-        </View>
+<View style={styles.placeholderImage}>
+  <Text style={styles.message}>
+    No {bookingFilterTextMap[bookingFilter] || bookingFilter} spaces found
+  </Text>          
+  <Image
+    source={
+      bookingFilter === 'Previous'
+        ? require('../../../assets/mySpaces/previous.png')
+        : require('../../../assets/mySpaces/requests.png')
+    }
+    style={styles.awaitingImage}
+  />
+</View>
       );
 
     default:
@@ -320,51 +330,59 @@ const renderContent = () => {
 
  
       {selectedTab === 'My Spaces' && (
-       <View style={{padding: 8 }}>
-        <TouchableOpacity
-          style={[
-            styles.createButton,
-            !isLoggedIn && { backgroundColor: '#aaa' },
-          ]}
-          onPress={() => {
-            if (isLoggedIn) {
-              navigation.navigate('CreateSpaceScreen');
-            } else {
-              alert('Please log in to create a post.');
-            }
-          }}
-          disabled={!isLoggedIn}
-        >
-          <Text style={styles.activeTabText}>Create Post</Text>
-        </TouchableOpacity>
-        </View>
-      )}
-
-
-{selectedTab === 'Bookings' && (
-  <View style={{ flexDirection: 'row', padding: 8}}>
-    {['Requests', 'Ongoing', 'Previous'].map(filter => (
-      <TouchableOpacity
-        key={filter}
+  <View style={{ padding: 12 }}>
+    <TouchableOpacity
+      style={[
+        styles.createButton,                   // normal active style
+        !isLoggedIn && styles.createButton,  // apply disabled style if not logged in
+      ]}
+      onPress={() => {
+        if (isLoggedIn) {
+          navigation.navigate('CreateSpaceScreen');
+        } else {
+          alert('Please log in to create a post.');
+        }
+      }}
+      disabled={!isLoggedIn} // disables press
+    >
+      <Text
         style={[
-          styles.tabButton, 
-          bookingFilter === filter && styles.activeTabButton, // <-- apply active style
+          styles.createButtonText,
+          !isLoggedIn && styles.inactiveButtonText, // disabled text style
         ]}
-        onPress={() => setBookingFilter(filter as typeof bookingFilter)}
       >
-        <Text
-          style={[
-            styles.tabText, 
-            bookingFilter === filter && styles.activeTabText, // <-- apply active text style
-          ]}
-        >
-          {filter}
-        </Text>
-      </TouchableOpacity>
-    ))}
+        Create Post
+      </Text>
+    </TouchableOpacity>
   </View>
 )}
 
+{selectedTab === 'Bookings' && (
+  <View style={{ flexDirection: 'row', padding: 8 }}>
+    {['Requests', 'Ongoing', 'Previous'].map(filter => {
+      const isActive = bookingFilter === filter;
+
+      return (
+        <TouchableOpacity
+          key={filter}
+          style={[
+            styles.tabButton, 
+            isActive ? styles.createButton : styles.inactiveButton, // active vs inactive background
+          ]}
+          onPress={() => setBookingFilter(filter as typeof bookingFilter)}
+        >
+          <Text
+            style={[
+              isActive ? styles.createButtonText : styles.inactiveButtonText, // active vs inactive text
+            ]}
+          >
+            {filter}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+)}
 
 
 
@@ -511,32 +529,51 @@ const styles = StyleSheet.create({
 
   message: {
     textAlign: 'center',
-    marginTop: 80,
-    marginBottom: 10,
+    marginTop: 60,
+    marginBottom: 20,
     fontSize: 20,
     color: '#999999',
     fontFamily: 'Poppins-Regular',
   },
 
   createButton: {
-    backgroundColor: '#0F6B5B',
+    backgroundColor: '#FFFFFF',      // white background
+    borderWidth: 2,
+    borderColor: '#0F6B5B',         // same green as your original button
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
 
   createButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: '#0F6B5B',                // text matches border
+    fontWeight: '800',
     fontFamily: 'Poppins-Bold',
     fontSize: 16,
+  },
+  inactiveButton: {
+    backgroundColor: '#F0F0F0', // light gray for inactive
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    flex: 1,                   // optional: makes tabs equal width
+    marginHorizontal: 4,       // optional spacing between tabs
+  },
+  
+  inactiveButtonText: {
+    color: '#555555',           // darker gray text
+    fontWeight: '500',
+    fontFamily: 'Poppins-Bold',
+    fontSize: 16,
+    textAlign: 'center',
   },
 
   awaitingImage: {
     width: width ,
-    height: height * .5,
+    height: height * .45,
     opacity: 0.9,
     resizeMode: 'contain', // optional depending on your layout
+    margin: 0,
   },
 
   placeholderImage: {

@@ -216,9 +216,10 @@ export default function AppHeader({ navigation, showSettings }: AppHeaderProps) 
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: 90,
-        paddingTop: 40,
+        height: 100,
+        paddingTop: 60,
         paddingHorizontal: 15,
+        paddingBottom: 0,
         backgroundColor: 'white',
       }}
     >

@@ -68,12 +68,12 @@ export default function SettingsScreen() {
   // -------------------------------
 
   const miscSettings = [
-    { title: 'Change Password', screen: 'ChangePassword' },
     { title: 'Verify ID', screen: 'VerifyID' },
     { title: 'Terms and Conditions', screen: 'TermsAndConditions' },
     { title: 'Version (1.00)', screen: 'Version' },
-    { title: 'Language', screen: 'Language' },
     { title: "What's New?", screen: 'WhatsNew' },
+    { title: 'Change Password', screen: 'ChangePassword' },
+
   ];
 
 

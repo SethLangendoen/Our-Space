@@ -161,7 +161,7 @@ export default function MainTabs() {
         >
           <Image
             source={require('../../assets/settings.png')}
-            style={{ width: 24, height: 24 }}
+            style={{ width: 36, height: 36 }}
           />
         </TouchableOpacity>
       ) : null,

@@ -15,6 +15,7 @@ import { KeyboardAvoidingView, Platform } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { COLORS } from '../Styles/theme';
 import FeatureRow from 'src/components/FeatureRow';
+import ImageCarousel from './ImageCarousel';
 
 
 type RootStackParamList = {
@@ -363,24 +364,25 @@ const futureBlocked = startDate
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       {/* Images Carousel / Stack */}
       {images.length > 0 && (
-        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageCarousel}>
-          {images.map((uri: string, index: number) => (
-            <Image
-              key={index}
-              source={{ uri }}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          ))}
-        </ScrollView>
+        // <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageCarousel}>
+        //   {images.map((uri: string, index: number) => (
+        //     <Image
+        //       key={index}
+        //       source={{ uri }}
+        //       style={styles.image}
+        //       resizeMode="cover"
+        //     />
+        //   ))}
+        // </ScrollView>
+        <ImageCarousel images={images} />
       )}
 
       
 
 
 {space.location.lat && space.location.lng && (
-  <View style={styles.mapContainer}>
-    <MapView
+  <View style={styles.mapContainer} pointerEvents="none">
+  <MapView
       provider={mapProvider}      
       style={styles.map}
       initialRegion={{
@@ -446,7 +448,7 @@ const futureBlocked = startDate
 
       {space.description && <Text style={styles.description}>{space.description}</Text>}
       
-
+{/* 
       {space.prices && (
         <View >
           {(['daily', 'weekly', 'monthly'])
@@ -464,10 +466,78 @@ const futureBlocked = startDate
               );
             })}
         </View>
-      )}
+      )} */}
 
+{space.prices && (
+  <View style={styles.priceContainer}>
+    {(['daily', 'weekly', 'monthly'])
+      .filter((period) => space.prices[period]?.enabled)
+      .map((period) => {
+        const data = space.prices[period];
+        if (!data) return null;
 
-      {totalTimeLabel && (
+        const amount = parseFloat(data.amount || '0');
+        const formattedAmount = amount.toLocaleString('en-CA', {
+          style: 'currency',
+          currency: 'CAD',
+          minimumFractionDigits: 2,
+        });
+
+        return (
+          <View key={period} style={styles.priceRow}>
+            <Text style={styles.priceText}>{formattedAmount}</Text>
+            <Text style={styles.periodText}>
+              {' '}{period.charAt(0).toUpperCase() + period.slice(1)}
+            </Text>
+            {data.isPublic && (
+              <View style={styles.prioritizedBadge}>
+                <Text style={styles.prioritizedText}>Prioritized</Text>
+              </View>
+            )}
+          </View>
+        );
+      })}
+  </View>
+)}
+
+{totalTimeLabel && (
+  <View style={styles.infoRow}>
+    <Text style={styles.label}>Total Time Booked:</Text>
+    <Text style={styles.value}>{totalTimeLabel}</Text>
+  </View>
+)}
+
+<View style={styles.infoRow}>
+  <Text style={styles.label}>Location:</Text>
+  <Text style={styles.value}>
+    {space.location?.district ? `${space.location.district}, ` : ''}
+    {space.location?.city || 'Unknown'}
+  </Text>
+</View>
+
+<View style={styles.infoRow}>
+  <Text style={styles.label}>Space Size:</Text>
+  <Text style={styles.value}>
+    {space.dimensions?.width || '?'}ft (W) × {space.dimensions?.length || '?'}ft (L) × {space.dimensions?.height || '?'}ft (H)
+  </Text>
+</View>
+
+<View style={styles.infoRow}>
+  <Text style={styles.label}>Accessibility:</Text>
+  <View style={{ flexDirection: 'column' }}>
+    {space.accessibility?.includes('By Appointment') && (
+      <Text style={styles.value}>• Appointments are required for space visits</Text>
+    )}
+    {space.accessibility?.includes('24/7') && (
+      <Text style={styles.value}>• Visits can be made at any time</Text>
+    )}
+    {!space.accessibility?.length && (
+      <Text style={styles.value}>• Not specified</Text>
+    )}
+  </View>
+</View>
+
+      {/* {totalTimeLabel && (
         <View >
           <Text style={styles.label}>
           Total Time Booked: 
@@ -510,7 +580,7 @@ const futureBlocked = startDate
             </Text>
           )}
         </Text>
-      </Text>
+      </Text> */}
 
 
 
@@ -548,12 +618,12 @@ const futureBlocked = startDate
 {!currentUser ? (
   <View style={styles.noticeBox}>
     <Text style={styles.noticeText}>
-      Log in to book space reservations or message the owner.
+      Log in to book space reservations or message the owner
     </Text>
   </View>
 ) : currentUser === space.userId ? (
   <View style={styles.noticeBox}>
-    <Text style={styles.noticeText}>You are viewing your own post.</Text>
+    <Text style={styles.noticeText}>You Posted This Space</Text>
   </View>
 ) : (
 
@@ -713,7 +783,7 @@ const futureBlocked = startDate
   onPress={handleReservation}
 >
   <Text style={styles.confirmText}>
-    {booking ? 'Booking...' : 'Request Space Reservation'}
+    {booking ? 'Sending Request...' : 'Request Space Reservation'}
   </Text>
 </TouchableOpacity>
 
@@ -880,24 +950,30 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  label: {
-    fontSize: 20,
-    fontFamily: 'Poppins-SemiBold',
-    marginVertical: 0,
-    color: '#0F6B5B',
-    textAlign: 'left'
+  infoRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginVertical: 6,
+    alignItems: 'flex-start',
   },
-
-
+  
+  label: {
+    fontSize: 18,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#005337', // primary brand green
+    marginRight: 6,
+  },
+  
   value: {
+    fontSize: 16,
     fontFamily: 'Poppins-Regular',
     color: '#333',
+    flexShrink: 1, // ensures text wraps nicely
   },
-
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginVertical: 10,
     width: '100%',
   },
 
@@ -914,7 +990,42 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     marginRight: 10,
   },
-
+  priceContainer: {
+    marginVertical: 8,
+  },
+  
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+    flexWrap: 'wrap',
+  },
+  
+  priceText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 16,
+    color: '#005337', // Emerald Green for pricing
+  },
+  
+  periodText: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 14,
+    color: '#333',
+  },
+  
+  prioritizedBadge: {
+    backgroundColor: '#ffba00', // Mustard Yellow
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  
+  prioritizedText: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 12,
+    color: '#fff',
+  },
   descriptionInput: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -994,7 +1105,7 @@ const styles = StyleSheet.create({
 
   map: {
     width: '100%',
-    height: 120,
+    height: 150,
     borderRadius: 12,
   },
 
@@ -1046,7 +1157,7 @@ const styles = StyleSheet.create({
 
   noticeBox: {
     padding: 15,
-    backgroundColor: '#fefae0',
+    backgroundColor: '#fff',
     borderRadius: 10,
     marginTop: 20,
     marginHorizontal: 20,

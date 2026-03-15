@@ -334,19 +334,6 @@ export default function ProfileScreen() {
               }) : 'Unknown'}
             </Text>
           )}
-          {/* {isOwnProfile && (
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => navigation.navigate('EditProfile')}
-              >
-                <Text style={styles.buttonText}>Edit Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Share Profile</Text>
-              </TouchableOpacity>
-            </View>
-          )} */}
 
           {isOwnProfile && (
             <View style={styles.buttonRow}>
@@ -430,7 +417,7 @@ const styles = StyleSheet.create({
 
 
   headerSection: {
-    height: 100,
+    height: 80,
     backgroundColor: 'white', 
     justifyContent: 'center',
     position: 'relative',
@@ -451,6 +438,8 @@ const styles = StyleSheet.create({
   },
   statBox: {
     alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'column'
   },
   statNumber: {
     fontSize: 20,
@@ -458,8 +447,9 @@ const styles = StyleSheet.create({
     color: '#0F6B5B', // emerald green
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 16,
     color: 'black',
+    fontWeight: '700'
   },
 
   profileContainer: {
@@ -511,26 +501,31 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: '#0F6B5B', // emerald green primary button
-    paddingVertical: 10,
-    borderRadius: 8,
-    flex: 1,
+    backgroundColor: '#FFFFFF',      // from createButton
+    borderWidth: 2,
+    borderColor: '#0F6B5B',         // same green as original createButton
+    paddingVertical: 10,             // from createButton
+    borderRadius: 10,                // keep createButton radius
+    flex: 1,                         // preserve existing button layout
     alignItems: 'center',
     justifyContent: 'center',
   },
-
+  
   buttonText: {
-    color: '#FFFCF1',
-    fontWeight: '600',
-    fontSize: 14,
+    color: '#0F6B5B',                // green text from createButtonText
+    fontWeight: '800',                // from createButtonText
+    fontFamily: 'Poppins-Bold',      // from createButtonText
+    fontSize: 16,                     // from createButtonText
+    textAlign: 'center',              // ensures text is centered
   },
 
   aboutText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#444',
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 16,
+    fontWeight: '600'
   },
 
   tabContainer: {
@@ -549,7 +544,7 @@ const styles = StyleSheet.create({
   },
 
   tabText: {
-    fontSize: 14,
+    fontSize: 18,
     color: '#888',
     fontWeight: '500',
   },
@@ -562,7 +557,7 @@ const styles = StyleSheet.create({
   activeUnderline: {
     height: 2,
     backgroundColor: '#0F6B5B',
-    width: 24,
+    width: 48,
     marginTop: 4,
     borderRadius: 1,
   },
@@ -715,21 +710,27 @@ const styles = StyleSheet.create({
   },
 
   statImageWrapper: {
-    width: 60,           // match your image width
-    height: 60,          // match your image height
+    width: 45,           // match your image width
+    height: 45,          // match your image height
     justifyContent: 'center', // vertical center
     alignItems: 'center',     // horizontal center
     position: 'relative',     // needed for absolute overlay
   },
   statNumberOverlay: {
     position: 'absolute',
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#fff',       // text color on top of image
+    color: '#000',            // white text
+    textAlign: 'center',
+  
+    // gold "border" via text shadow
+    // textShadowColor: '#fff',  // gold
+    // textShadowOffset: { width: 0, height: 0 },
+    // textShadowRadius: 4,          // adjust for thickness
   },
   statImage: {
-    width: 60,
-    height: 60,
+    width: 45,
+    height: 45,
     resizeMode: 'contain',
   },
 

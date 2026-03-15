@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../Styles/theme';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from 'src/firebase/config';
 
 type AuthStackParamList = {
   CreateAccount: undefined;
@@ -28,11 +30,30 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handlePasswordReset = () => {
+  const handlePasswordReset = async () => {
+    if (!email) {
+      alert('Please enter your email.');
+      return;
+    }
+  
     setLoading(true);
-    // TODO: Add Firebase password reset logic here
-    console.log('Password reset email sent to:', email);
-    setLoading(false);
+  
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert(`Password reset email sent to ${email}. Check your inbox.`);
+      setEmail(''); // clear input
+    } catch (error: any) {
+      console.error(error);
+      if (error.code === 'auth/user-not-found') {
+        alert('No account found with that email.');
+      } else if (error.code === 'auth/invalid-email') {
+        alert('Please enter a valid email address.');
+      } else {
+        alert('Error sending password reset email. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,8 +84,12 @@ export default function ForgotPasswordScreen() {
       />
 
       {/* Reset Password Button */}
-      <TouchableOpacity style={styles.resetButton} onPress={handlePasswordReset} disabled={loading}>
-        <Text style={styles.resetText}>
+      <TouchableOpacity 
+        style={styles.resetButton} 
+        onPress={handlePasswordReset} 
+        disabled={loading || !email.trim()}
+      >
+          <Text style={styles.resetText}>
           {loading ? 'Sending...' : 'Reset Password'}
         </Text>
       </TouchableOpacity>
