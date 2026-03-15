@@ -117,36 +117,36 @@ const [reservedTimes, setReservedTimes] = useState<[]>(
 const navigation = useNavigation();
 
 
-  async function geocodeAddress(fullAddress: string) {
-    const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(
-      fullAddress
-    )}&apiKey=${HERE_API_KEY}`;
-  
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Failed to geocode address');
-  
-    const data = await response.json();
-    if (!data.items || data.items.length === 0) {
-      throw new Error('No geocode results found');
-    }
-  
-    const item = data.items[0];
-  
-    return {
-      address: item.address.label, // normalized address
-      city: item.address.city || null,
-      province: item.address.stateCode || item.address.state || null,
-      country: item.address.countryName || null,
-      district:
-        item.address.district ||
-        item.address.subdistrict ||
-        item.address.neighborhood ||
-        null,
-      lat: item.position.lat,
-      lng: item.position.lng,
-    };
+async function geocodeAddress(fullAddress: string) {
+  const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(
+    fullAddress
+  )}&apiKey=${HERE_API_KEY}`;
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Failed to geocode address');
+
+  const data = await response.json();
+  if (!data.items || data.items.length === 0) {
+    throw new Error('No geocode results found');
   }
-  
+
+  const item = data.items[0];
+
+  return {
+    address: item.address.label,
+    city: item.address.city || null,
+    province: item.address.stateCode || item.address.state || null,
+    postalCode: item.address.postalCode || null, 
+    country: item.address.countryName || null,
+    district:
+      item.address.district ||
+      item.address.subdistrict ||
+      item.address.neighborhood ||
+      null,
+    lat: item.position.lat,
+    lng: item.position.lng,
+  };
+}
 
 
 useEffect(() => {
@@ -280,79 +280,6 @@ const uploadImageAsync = async (uri: string, userId: string): Promise<string> =>
     setImages(updated);
     if (mainImage === uri) setMainImage(updated[0] || null);
   };
-
-
-
-// const handleSubmit = async () => {
-//   if (!userId) {
-//     alert('You must be logged in.');
-//     return;
-//   }
-
-//   try {
-//     setSubmitting(true); // <-- start submitting
-
-//     // const fullAddress = `${address}, ${postalCode}`;
-//     // const location = await geocodeAddress(fullAddress);
-//     const fullAddress = locationAddress; // from autocomplete
-//     const location = selectedLocation
-//       ? {
-//           lat: selectedLocation.lat,
-//           lng: selectedLocation.lng,
-//           address: locationAddress,
-//         }
-//       : await geocodeAddress(`${address}, ${postalCode}`);
-
-//     const uploadedImageURLs: string[] = [];
-
-//     for (const uri of images) {
-//       // If already a URL (edit mode), skip upload
-//       if (uri.startsWith('http')) {
-//         uploadedImageURLs.push(uri);
-//       } else {
-//         const url = await uploadImageAsync(uri, userId);
-//         uploadedImageURLs.push(url);
-//       }
-//     }
-
-//     const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
-
-//     const postData = {
-//       title,
-//       description,
-//       dimensions: { width, length, height },
-//       storageType,
-//       usageType,
-//       mainImage: mainImageURL,
-//       images: uploadedImageURLs,
-//       userId,
-//       postType,
-//       isPublic, 
-//       prices: prices,
-//       address: fullAddress,
-//       accessibility,
-//       security,
-//       blockedTimes: blockedTimes,
-//       reservedTimes,
-//       location: {
-//         address: location.address,
-//         city: location.city,
-//         province: location.province,
-//         country: location.country,
-//         district: location.district,
-//         lat: location.lat,
-//         lng: location.lng,
-//       },
-//     };
-
-//     await onSubmit(postData);
-//   } catch (error: any) {
-//     console.error('Form submission error:', error);
-//     alert(`Error: ${error.message}`);
-//   } finally {
-//     setSubmitting(false); // <-- stop submitting
-//   }
-// };
   
 
 
@@ -376,6 +303,7 @@ const handleSubmit = async () => {
         locationData = {
           lat: selectedLocation.lat,
           lng: selectedLocation.lng,
+          postalCode: null,
           address: locationAddress,
           city: null,
           province: null,
@@ -427,6 +355,7 @@ const handleSubmit = async () => {
         district: locationData.district,
         lat: locationData.lat,
         lng: locationData.lng,
+        postalCode: locationData.postalCode,
       },
     };
 

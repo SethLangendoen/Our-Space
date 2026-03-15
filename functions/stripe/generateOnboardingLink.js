@@ -11,6 +11,8 @@ function getStripe() {
   return stripe;
 }
 
+
+
 async function createOnboardingLinkLogic(userId) {
   const db = admin.firestore();
   const user = await db.collection("users").doc(userId).get();

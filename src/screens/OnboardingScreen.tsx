@@ -44,43 +44,43 @@ const onboardingSlides: Slide[] = [
     key: '1',
     title: 'Welcome to Our Space!',
     description: 'Discover the easiest way to store your stuff or earn from unused space - right in your neighbourhood',
-    image: require('../../assets/Onboarding/onboarding1.webp'),
+    image: require('../../assets/Onboarding/slideImages/1stOnboardingSlide.png'),
   },
   {
     key: '2',
     title: 'Find storage near you',
     description: 'Quickly search, compare, and book trusted spaces nearby.',
-    image: require('../../assets/Onboarding/onboarding2.webp'),
+    image: require('../../assets/Onboarding/slideImages/2ndOnboardingSlide.png'),
   },
   {
     key: '3',
     title: 'Earn money from your unused space.',
     description: 'List your garage, basement, closet, shed and more - start earning in minutes.',
-    image: require('../../assets/Onboarding/onboarding3.webp'),
+    image: require('../../assets/Onboarding/slideImages/3rdOnboardingSlide.png'),
   },
   {
     key: '4',
     title: 'Affordable, local, and personal.',
     description: 'No more overpriced, far-away storage units. OURSPACE brings the community together.',
-    image: require('../../assets/Onboarding/onboarding5.webp'),
+    image: require('../../assets/Onboarding/slideImages/4thOnboardingSlide.png'),
   },
   {
     key: '5',
     title: 'Secure and stress-free.',
-    description: 'In-app messaging, payments, reviews, and insurance options keep everyone protected',
-    image: require('../../assets/Onboarding/onboarding6.webp'),
+    description: 'In-app messaging, payments, reviews, and host verification keeps everyone protected',
+    image: require('../../assets/Onboarding/slideImages/5thOnboardingSlide.png'),
   },
+  // {
+  //   key: '6',
+  //   title: 'Get started and earn a bonus.',
+  //   description: 'List your first space or book storage to unlock launch rewards',
+  //   image: require('../../assets/Onboarding/slideImages/6thOnboardingSlide.png'),
+  // },
   {
     key: '6',
-    title: 'Get started and earn a bonus.',
-    description: 'List your first space or book storage to unlock launch rewards',
-    image: require('../../assets/Onboarding/onboarding7.webp'),
-  },
-  {
-    key: '7',
     title: 'You are all set!',
     description: 'Join the OURSPACE community and make storage simpler.',
-    image: require('../../assets/Onboarding/onboarding8.webp'),
+    image: require('../../assets/Onboarding/slideImages/1stOnboardingSlide.png'),
     isFinal: true,
   },
 ];
@@ -186,17 +186,17 @@ const OnboardingScreen = () => {
       >
         {item.isFinal ? (
           <>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.button}
               onPress={() => navigation.navigate('Auth')}
             >
               <Text style={styles.buttonText}>Sign Up</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity
               style={[styles.button, styles.secondaryButton]}
               onPress={() => navigation.navigate('MainTabs')}
             >
-              <Text style={styles.secondaryButtonText}>Explore First</Text>
+              <Text style={styles.secondaryButtonText}>Explore Spaces</Text>
             </TouchableOpacity>
 
 
@@ -274,13 +274,13 @@ const styles = StyleSheet.create({
     width,
     flex: 1,
     paddingHorizontal: 30,
-    paddingVertical: 40,
+    paddingVertical: 0,
     justifyContent: 'flex-start', // don't use space-between
   },
 
   // neweww
   textContainer: {
-    marginTop: 60,
+    marginTop: 100,
     marginBottom: 20,
   },
 

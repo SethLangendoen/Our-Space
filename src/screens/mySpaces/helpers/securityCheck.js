@@ -330,65 +330,158 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
 
 
 
+// const styles = StyleSheet.create({
+//   container: {
+//     marginVertical: 10,
+//     padding: 15,
+//     borderRadius: 10,
+//     backgroundColor: '#FFFCF1',
+//     borderWidth: 1,
+//     borderColor: '#0F6B5B',
+//   },
+//   lockedContainer: {
+//     backgroundColor: '#f0f0f0',
+//     borderColor: '#ccc',
+//   },
+//   title: {
+//     fontWeight: '700',
+//     fontSize: 16,
+//     marginBottom: 8,
+//     color: '#0F6B5B',
+//   },
+//   infoText: {
+//     fontSize: 14,
+//     marginBottom: 6,
+//   },
+//   codeText: {
+//     fontSize: 16,
+//     fontWeight: '600',
+//     marginBottom: 8,
+//     color: '#0F6B5B',
+//   },
+//   successText: {
+//     color: 'green',
+//     fontWeight: '600',
+//     marginVertical: 4,
+//   },
+//   actionButton: {
+//     backgroundColor: '#0F6B5B',
+//     paddingVertical: 10,
+//     paddingHorizontal: 12,
+//     borderRadius: 6,
+//     alignItems: 'center',
+//     marginTop: 10,
+//   },
+//   actionButtonText: {
+//     color: '#FFF',
+//     fontWeight: '600',
+//   },
+//   codeInput: {
+//     borderWidth: 1,
+//     borderColor: '#0F6B5B',
+//     borderRadius: 6,
+//     padding: 8,
+//     marginVertical: 6,
+//     width: 80,
+//     textAlign: 'center',
+//   },
+//   lockedText: {
+//     fontSize: 14,
+//     color: '#999',
+//     fontStyle: 'italic',
+//     marginBottom: 6,
+//   },
+// });
+
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
-    padding: 15,
-    borderRadius: 10,
-    backgroundColor: '#FFFCF1',
+    marginVertical: 16,
+    padding: 18,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#0F6B5B',
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
+
   lockedContainer: {
-    backgroundColor: '#f0f0f0',
-    borderColor: '#ccc',
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
   },
+
   title: {
-    fontWeight: '700',
-    fontSize: 16,
-    marginBottom: 8,
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 18,
     color: '#0F6B5B',
+    marginBottom: 12,
   },
+
   infoText: {
+    fontFamily: 'Poppins-Regular',
     fontSize: 14,
-    marginBottom: 6,
+    color: '#374151',
+    marginBottom: 10,
+    lineHeight: 20,
   },
+
   codeText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 20,
+    letterSpacing: 2,
+    textAlign: 'center',
     color: '#0F6B5B',
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginVertical: 10,
   },
+
   successText: {
-    color: 'green',
-    fontWeight: '600',
-    marginVertical: 4,
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    color: '#10B981',
+    marginTop: 6,
   },
+
   actionButton: {
     backgroundColor: '#0F6B5B',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 12,
   },
+
   actionButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 14,
+    color: '#FFFFFF',
   },
+
   codeInput: {
     borderWidth: 1,
-    borderColor: '#0F6B5B',
-    borderRadius: 6,
-    padding: 8,
-    marginVertical: 6,
-    width: 80,
+    borderColor: '#D1D5DB',
+    borderRadius: 10,
+    paddingVertical: 10,
+    fontSize: 18,
+    fontFamily: 'Poppins-SemiBold',
     textAlign: 'center',
+    letterSpacing: 4,
+    marginVertical: 10,
+    width: 120,
+    alignSelf: 'center',
+    backgroundColor: '#F9FAFB',
   },
+
   lockedText: {
-    fontSize: 14,
-    color: '#999',
+    fontFamily: 'Poppins-Regular',
+    fontSize: 13,
+    color: '#9CA3AF',
     fontStyle: 'italic',
-    marginBottom: 6,
+    marginBottom: 10,
+    lineHeight: 18,
   },
 });

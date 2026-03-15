@@ -352,6 +352,10 @@ exports.cancelReservationEarly = onCall(
     const cancellationBase = calculateCancellationBaseAmount(reservation, space);
     console.log("Cancellation base:", cancellationBase);
 
+
+
+
+
     const PLATFORM_FEE_RATE = 0.095;
     const renterFee = Math.round(cancellationBase * PLATFORM_FEE_RATE);
     const hostFee = Math.round(cancellationBase * PLATFORM_FEE_RATE);
@@ -412,14 +416,14 @@ exports.cancelReservationEarly = onCall(
           currency: "cad",
           customer_details: { 
             address: hostAddress || { country: "CA", state: "AB" },
-            address_source: "billing"   // must be "billing" or "shipping"
+            address_source: "billing"   
           },
           line_items: [
             { 
               amount: applicationFee, 
               quantity: 1, 
               tax_code: "txcd_10000000",
-              reference: "platform_fee"  // <-- required
+              reference: "platform_fee" 
             },
           ],
         });

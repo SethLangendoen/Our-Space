@@ -222,7 +222,7 @@ const renderContent = () => {
         <View style={styles.placeholderImage}>
           <Text style={styles.message}>Spaces you create will show up here</Text>
           <Image
-            source={require('../../../assets/mySpaces/awaitingPosts.png')}
+            source={require('../../../assets/mySpaces/mascotPointDown.png')}
             style={styles.awaitingImage}
           />
         </View>
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
 
   message: {
     textAlign: 'center',
-    marginTop: 100,
+    marginTop: 80,
     marginBottom: 10,
     fontSize: 20,
     color: '#999999',

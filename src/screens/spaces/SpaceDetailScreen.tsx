@@ -499,12 +499,12 @@ const futureBlocked = startDate
         Accessibility:
         <Text style={styles.value}>
           {' '}
-          {space.accessibility.includes('By Appointment') && (
+          {space.accessibility?.includes('By Appointment') && (
             <Text>
               Appointments are required for space visits. 
             </Text>
           )}
-          {space.accessibility.includes('24/7') && (
+          {space.accessibility?.includes('24/7') && (
             <Text>
               Visits can be made at any time. 
             </Text>

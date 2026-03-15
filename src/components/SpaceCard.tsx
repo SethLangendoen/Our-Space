@@ -1,7 +1,10 @@
 
 
 import React from 'react';
+// import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+
+// import { Image } from 'expo-image';
 
 // Usage icons
 const iconsMap: { [key: string]: any } = {
@@ -119,12 +122,23 @@ const publicPrice = publicPriceEntry
       {item.mainImage && (
         <View style={styles.imageWrapper}>
 
-          <Image
+          {/* <Image
             source={{ uri: item.mainImage }}
             style={styles.mainImage}
             resizeMode="cover"
+          /> */}
+
+          <Image
+            source={{ uri: item.mainImage }}
+            style={styles.mainImage}
+            // contentFit="cover" // keeps aspect ratio, fills container
+            // placeholder={require('../../assets/badges/complete/firstHost.png')}
+            // cachePolicy="memory-disk" // caching
           />
+
         </View>
+
+
       )}
 
       {/* ---------- Price + Usage Icons ---------- */}

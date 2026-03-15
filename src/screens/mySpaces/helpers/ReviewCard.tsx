@@ -105,16 +105,23 @@ export default function ReviewCard({
         {role === 'host' ? 'Leave a review for the renter' : 'Leave a review for the host'}
       </Text>
 
-      <Text style={styles.label}>Rating:</Text>
+      {/* <Text style={styles.label}>Rating:</Text> */}
       <View style={styles.ratingRow}>
+        <View style={styles.stars}>
         {[1, 2, 3, 4, 5].map(num => (
           <TouchableOpacity key={num} onPress={() => setRating(num)}>
             <Text style={[styles.star, rating >= num && styles.selectedStar]}>★</Text>
           </TouchableOpacity>
         ))}
+        </View>
+        {rating > 0 && (
+          <Text style={{ marginBottom: 0, color: '#777', fontSize: 24 }}>
+            {rating} / 5
+          </Text>
+        )}
       </View>
 
-      <Text style={styles.label}>Review:</Text>
+      {/* <Text style={styles.label}>Review:</Text> */}
       <TextInput
         style={styles.textInput}
         multiline
@@ -131,55 +138,127 @@ export default function ReviewCard({
   );
 }
 
+// const styles = StyleSheet.create({
+//   container: {
+//     marginTop: 12,
+//     padding: 12,
+//     backgroundColor: '#FFF9F0',
+//     borderRadius: 10,
+//     borderWidth: 1,
+//     borderColor: '#0F6B5B',
+//   },
+//   title: {
+//     fontWeight: '700',
+//     fontSize: 14,
+//     marginBottom: 8,
+//     color: '#0F6B5B',
+//   },
+//   label: {
+//     fontSize: 13,
+//     marginTop: 8,
+//     marginBottom: 4,
+//     color: '#333',
+//   },
+//   ratingRow: {
+//     flexDirection: 'row',
+//     marginBottom: 8,
+//   },
+//   star: {
+//     fontSize: 24,
+//     color: '#ccc',
+//     marginHorizontal: 2,
+//   },
+//   selectedStar: {
+//     color: '#FFD700',
+//   },
+//   textInput: {
+//     borderWidth: 1,
+//     borderColor: '#0F6B5B',
+//     borderRadius: 6,
+//     padding: 8,
+//     textAlignVertical: 'top',
+//   },
+//   submitButton: {
+//     backgroundColor: '#0F6B5B',
+//     paddingVertical: 10,
+//     borderRadius: 6,
+//     alignItems: 'center',
+//     marginTop: 10,
+//   },
+//   submitButtonText: {
+//     color: '#FFF',
+//     fontWeight: '600',
+//   },
+// });
+
 const styles = StyleSheet.create({
   container: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#FFF9F0',
-    borderRadius: 10,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#0F6B5B',
+    borderColor: '#E6E6E6',
   },
+
   title: {
+    fontSize: 16,
     fontWeight: '700',
-    fontSize: 14,
-    marginBottom: 8,
     color: '#0F6B5B',
+    marginBottom: 14,
   },
+
   label: {
-    fontSize: 13,
-    marginTop: 8,
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: '600',
     color: '#333',
+    marginBottom: 6,
   },
+
   ratingRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 14,
+    alignItems: 'center',
+    justifyContent: 'space-between'
   },
+
+  stars: {
+    flexDirection: 'row'
+  },
+
   star: {
-    fontSize: 24,
-    color: '#ccc',
-    marginHorizontal: 2,
+    fontSize: 32,
+    color: '#DADADA',
+    marginRight: 6,
   },
+
   selectedStar: {
     color: '#FFD700',
   },
+
   textInput: {
     borderWidth: 1,
-    borderColor: '#0F6B5B',
-    borderRadius: 6,
-    padding: 8,
+    borderColor: '#E0E0E0',
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 90,
+    fontSize: 14,
+    backgroundColor: '#FAFAFA',
     textAlignVertical: 'top',
   },
+
   submitButton: {
+    marginTop: 14,
     backgroundColor: '#0F6B5B',
-    paddingVertical: 10,
-    borderRadius: 6,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    marginTop: 10,
+    justifyContent: 'center',
   },
+
   submitButtonText: {
-    color: '#FFF',
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '600',
   },
 });

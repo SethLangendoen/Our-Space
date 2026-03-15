@@ -615,7 +615,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     showsVerticalScrollIndicator={false}
     >
 
-      <Text style={styles.title}>Reservation Request For</Text>
+      {/* <Text style={styles.title}>Reservation For</Text> */}
       <Text style={styles.spaceTitle}>{reservation.spaceTitle}</Text>
 
       <View style={styles.profileRow}>
@@ -650,11 +650,13 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 			)}
 
 
-      <View style={styles.details}>
+      <View style={styles.pricingBox}>
 
         
         {!isEditing ? (
-          <>
+          <View>
+
+        <View style={styles.card}>
 
           <View style={styles.horizontalDates}>
             {/* START DATE */}
@@ -696,38 +698,59 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               )}
             </View>
           </View>
+          </View>
 
 
-            <Text style={styles.detailText}>
-            <Text style={styles.nameText}>{requesterInfo?.firstName}'s request:  "{reservation.description}"</Text>
+          
+
+          <View style={styles.card}>
+
+          <View style={styles.detailBlock}>
+            <Text style={styles.detailTitle}>
+              {requesterInfo?.firstName}'s request
             </Text>
-            <Text style={styles.detailText}>
-            <Text style={styles.nameText}>Approximate Duration: "{reservation.storageDuration}"</Text>
+            <Text style={styles.detailDescription}>
+              {reservation.description}
             </Text>
-            <Text style={styles.detailText}>
-              <Text style={styles.nameText}>
-                Location:{" "}
-                {reservation?.status === 'confirmed' && space?.address
-                  ? `"${space.address}"`
-                  : reservation?.status === 'requested'
-                  ? "Exact location displayed upon confirmation"
-                  : "Location unavailable"}
-              </Text>
+          </View>
+
+          <View style={styles.detailBlock}>
+            <Text style={styles.detailTitle}>
+              Approximate Duration
             </Text>
+            <Text style={styles.detailDescription}>
+              {reservation.storageDuration}
+            </Text>
+          </View>
+
+          <View style={styles.detailBlock}>
+            <Text style={styles.detailTitle}>
+              Location
+            </Text>
+            <Text style={styles.detailDescription}>
+              {reservation?.status === 'confirmed' && space?.address
+                ? `${space.address}`
+                : reservation?.status === 'requested'
+                ? "Exact location displayed upon confirmation"
+                : "Location unavailable"}
+            </Text>
+          </View>
+          </View>
+
+          {canEdit && (
+            <TouchableOpacity
+              onPress={() => setIsEditing(true)}
+              style={styles.editButton} // subtle styling
+            >
+              <Text style={styles.editButtonText}>Edit Request</Text>
+            </TouchableOpacity>
+          )}
+
+          </View>
 
 
-            {canEdit && (
-              <TouchableOpacity
-                onPress={() => setIsEditing(true)}
-                style={styles.editButton} // subtle styling
-              >
-                <Text style={styles.editButtonText}>Edit Request</Text>
-              </TouchableOpacity>
-            )}
-
-
-          </>
         ) : (
+
           <>
             <BlockedCalendar
               // blockedTimes={[]}          
@@ -751,19 +774,10 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           </>
         )}
 
-
-
-      {/* <ReservationStatusStepper status={reservation.status} userRole={role} /> */}
-
-
       {space && (
-        <View style={styles.pricingBox}>
-          {/* Weekly Price */}
-          <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>{reservation.pricePeriod} price:</Text>
-            <Text style={styles.pricingValue}>${Number(reservation.price).toFixed(2)}</Text>
-          </View>
+        <View style={styles.card}>
 
+        <View >
           {/* Next Payment Date */}
           {reservation.nextPaymentDate && (
             <View style={styles.pricingRow}>
@@ -774,6 +788,13 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             </View>
           )}
 
+
+          {/* Weekly Price */}
+          <View style={styles.pricingRow}>
+            <Text style={styles.pricingLabel}>{reservation.pricePeriod} price:</Text>
+            <Text style={styles.pricingValue}>${Number(reservation.price).toFixed(2)}</Text>
+          </View>
+
           {/* Host calculations */}
           {role === 'host' && (() => {
             const base = Number(reservation.price);
@@ -783,8 +804,12 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               <>
                 <View style={styles.pricingRow}>
                   <Text style={styles.pricingLabel}>Platform Fee</Text>
-                  <Text style={styles.pricingValue}>-${platformFee.toFixed(2)}</Text>
+                  <Text style={styles.pricingValue}>${platformFee.toFixed(2)}</Text>
                 </View>
+
+                <View style={styles.divider}/>
+
+
                 <View style={styles.pricingRow}>
                   <Text style={styles.pricingLabel}>Total {reservation.pricePeriod} Payout</Text>
                   <Text style={styles.pricingValue}>${payout.toFixed(2)}</Text>
@@ -802,24 +827,28 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               <>
                 <View style={styles.pricingRow}>
                   <Text style={styles.pricingLabel}>Platform Fee</Text>
-                  <Text style={styles.pricingValue}>${platformFee.toFixed(2)}</Text>
+                  <Text style={styles.pricingValue}>{platformFee.toFixed(2)}</Text>
                 </View>
+
+                <View style={styles.divider}/>
+
                 <View style={styles.pricingRow}>
-                  <Text style={styles.pricingLabel}>Total {reservation.pricePeriod} Cost</Text>
-                  <Text style={styles.pricingValue}>${totalCost.toFixed(2)} CAD</Text>
+                  <Text style={styles.pricingLabel}>Total {reservation.pricePeriod} Cost (CAD)</Text>
+                  <Text style={styles.pricingValue}>${totalCost.toFixed(2)}</Text>
                 </View>
               </>
             );
           })()}
+        </View>
         </View>
       )}
 
 
 
 
-      <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
+      {/* <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
         <Text style={styles.messageButtonText}>Message User</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       </View>
     
@@ -1037,7 +1066,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             })
           }
         >
-          <Text style={styles.actionButtonText}>Confirm Request</Text>
+          <Text >Confirm Request</Text>
         </TouchableOpacity>
       )}
 
@@ -1055,7 +1084,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             })
           }
         >
-          <Text style={styles.actionButtonText}>Confirm Booking</Text>
+          <Text>Confirm Booking</Text>
         </TouchableOpacity>
       )}
 
@@ -1208,6 +1237,9 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   })()
 )}
 
+    <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
+        <Text style={styles.messageButtonText}>Message User</Text>
+      </TouchableOpacity>
 
 
     {/* </View> */}
@@ -1236,9 +1268,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   endDateChange: {
-    backgroundColor: '#FFFFFF',
+    // backgroundColor: '#FFFFFF',
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 8,
     alignSelf: 'flex-start',
     width: '100%'
@@ -1249,7 +1281,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: COLORS.primary,
     marginBottom: 20,
-
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#EEE",
+    marginVertical: 8,
   },
   profileRow: {
     flexDirection: 'row',
@@ -1263,6 +1299,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: 'flex-start',
     width: '100%'
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   editButton: {
     paddingVertical: 4,
@@ -1298,27 +1345,27 @@ const styles = StyleSheet.create({
   pricingBox: {
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#F9F9F9',
+    // backgroundColor: '#F9F9F9',
     marginVertical: 10,
   },
   
   pricingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 2, // spacing between rows
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
   },
   
   pricingLabel: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14,
-    color: '#333',
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 16,
+    color: "#000",
   },
   
   pricingValue: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 14,
-    color: '#0F6B5B',
+    fontFamily: "Poppins-Bold",
+    fontSize: 18,
+    color: "#0F6B5B",
   },
   
   
@@ -1331,8 +1378,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
-    width: 128,
-    height: 128,
+    width: 100,
+    height: 100,
     borderRadius: 64,
     backgroundColor: '#ccc',
   },
@@ -1350,6 +1397,27 @@ const styles = StyleSheet.create({
   detailText: {
     marginVertical: 0,
     fontSize: 16,
+  },
+
+  detailTitle: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  
+  detailDescription: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 18,
+    color: '#0F6B5B',
+    marginTop: 2,
+  },
+  
+  detailBlock: {
+    marginBottom: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
   bold: {
     fontWeight: '600',
@@ -1407,9 +1475,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButtonText: {
-    color: '#FFF',
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 16,
+    backgroundColor: "#0F6B5B",
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginTop: 14,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 3,
   },
   codeRow: {
     flexDirection: 'row',
@@ -1519,18 +1594,11 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   messageButton: {
-    backgroundColor: "#10B981", // soft emerald green
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    borderRadius: 12,           // rounded edges
+    backgroundColor: "#10B981",
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
-    marginVertical: 0,          // optional spacing
-    shadowColor: "#000",        // soft shadow for depth
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,               // Android shadow
-    marginBottom: 0,
+    marginTop: 20,
   },
   
   messageButtonText: {
@@ -1543,19 +1611,15 @@ const styles = StyleSheet.create({
   horizontalDates: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     marginVertical: 0,
+    paddingHorizontal: 10,
   },
   
   dateBlock: {
     alignItems: 'center',
     marginHorizontal: 0,
-    // backgroundColor: '#fff', // white background
-    // paddingVertical: 8,
-    // paddingHorizontal: 16,
-    // borderRadius: 12,
-    // borderWidth: 1,           // thin border
-    // borderColor: 'rgba(0,0,0,0.1)', // very subtle black
+    paddingBottom: 10,
   },
   
   
@@ -1579,7 +1643,7 @@ const styles = StyleSheet.create({
   },
   
   dateSeparator: {
-    fontSize: 24,
+    fontSize: 34,
     fontWeight: '700',
     color: '#000',
   },

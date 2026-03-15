@@ -139,7 +139,7 @@ export default ReservationStatusStepper;
 const styles = StyleSheet.create({
 
 	stepperAndText: {
-		marginVertical: 20,
+		marginVertical: 0,
 	},
 
   stepperContainer: {
