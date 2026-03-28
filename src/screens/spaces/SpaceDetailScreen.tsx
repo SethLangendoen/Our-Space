@@ -28,6 +28,9 @@ type RootStackParamList = {
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
 
+
+
+
 // export default function SpaceDetailScreen({ route }: Props) {
   export default function SpaceDetailScreen({ navigation, route }: Props) {
 
@@ -411,34 +414,32 @@ const futureBlocked = startDate
 
 
 
-
 <TouchableOpacity
   style={styles.userRow}
   onPress={() => {
-    if (space?.userId) {
+    if (space?.userId && space.userId !== auth.currentUser?.uid) {
+      // Only navigate if it's NOT your own profile
       navigation.navigate('UserProfile', { userId: space.userId });
     }
+    // else do nothing
   }}
 >
+  <View style={styles.userRow}>
+    <Image
+      source={
+        userData?.profileImage
+          ? { uri: userData.profileImage }
+          : require('../../../assets/blankProfile.png')
+      }
+      style={styles.userImage}
+    />
 
-<View style={styles.userRow}>
-  <Image
-    source={
-      userData?.profileImage
-        ? { uri: userData.profileImage }
-        : require('../../../assets/blankProfile.png')
-    }
-    style={styles.userImage}
-  />
-
-  <Text style={styles.userName}>
-    {userData
-      ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
-      : 'Unknown User'}
-  </Text>
-
-</View>
-
+    <Text style={styles.userName}>
+      {userData
+        ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
+        : 'Unknown User'}
+    </Text>
+  </View>
 </TouchableOpacity>
 
 
@@ -448,25 +449,6 @@ const futureBlocked = startDate
 
       {space.description && <Text style={styles.description}>{space.description}</Text>}
       
-{/* 
-      {space.prices && (
-        <View >
-          {(['daily', 'weekly', 'monthly'])
-            .filter((period) => space.prices[period]?.enabled) // Only show enabled
-            .map((period) => {
-              const data = space.prices[period];
-              if (!data) return null;
-
-              return (
-                <Text key={period} style={styles.price}>
-                  ${parseFloat(data.amount || '0').toFixed(2)} CAD{' '}
-                  {period.charAt(0).toUpperCase() + period.slice(1)}
-                  {data.isPublic && ' (Prioritized)'}
-                </Text>
-              );
-            })}
-        </View>
-      )} */}
 
 {space.prices && (
   <View style={styles.priceContainer}>
@@ -536,52 +518,6 @@ const futureBlocked = startDate
     )}
   </View>
 </View>
-
-      {/* {totalTimeLabel && (
-        <View >
-          <Text style={styles.label}>
-          Total Time Booked: 
-          <Text style={styles.value}>{totalTimeLabel}</Text>
-          </Text>
-        </View>
-      )}
-      
-
-      <Text style={styles.label}>
-        Location:{' '}
-        <Text style={styles.value}>
-          {space.location.district + ', ' || ''} {space.location.city}
-        </Text>
-
-      </Text>
-
-
-
-      <Text style={styles.label}>
-        Space Size:
-        <Text style={styles.value}>
-          {' '}
-          {space.dimensions?.width || '?'}ft (W) × {space.dimensions?.length || '?'}ft (L) × {space.dimensions?.height || '?'}ft (H)
-        </Text>
-      </Text>
-
-      <Text style={styles.label}>
-        Accessibility:
-        <Text style={styles.value}>
-          {' '}
-          {space.accessibility?.includes('By Appointment') && (
-            <Text>
-              Appointments are required for space visits. 
-            </Text>
-          )}
-          {space.accessibility?.includes('24/7') && (
-            <Text>
-              Visits can be made at any time. 
-            </Text>
-          )}
-        </Text>
-      </Text> */}
-
 
 
       <Text style={styles.featureTitle}>
@@ -656,52 +592,10 @@ const futureBlocked = startDate
     </Text>
   </View>
 
-  {/* END */}
-  {/* <View style={styles.dateRow}>
-    <Text style={styles.dateLabel}>End</Text>
-    <Text style={styles.dateValue}>
-      {selectedRange.end
-        ? selectedRange.end.toDateString()
-        : futureBlocked
-          ? 'Selection required'
-          : 'TBD'}
-    </Text>
-  </View> */}
+
 
 </View>
 
-  {/* {space.prices && (
-    <View style={{ marginVertical: 10 }}>
-      <Text style={styles.label}>Select Pricing Period</Text>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        {(['daily', 'weekly', 'monthly'] as const)
-          .filter(period => space.prices[period]?.enabled)
-          .map(period => {
-            const data = space.prices[period];
-            if (!data) return null;
-
-            const isSelected = selectedPricePeriod === period;
-
-            return (
-              <TouchableOpacity
-                key={period}
-                style={{
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  backgroundColor: isSelected ? '#FFBA00' : '#eee',
-                  borderRadius: 6,
-                }}
-                onPress={() => setSelectedPricePeriod(period)}
-              >
-                <Text style={{ color: isSelected ? 'white' : 'black' }}>
-                  {period.charAt(0).toUpperCase() + period.slice(1)} (${parseFloat(data.amount || '0').toFixed(2)})
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-      </View>
-    </View>
-  )} */}
 
   {space.prices && (
   <View style={{ marginVertical: 20, paddingBottom: 10 }}>

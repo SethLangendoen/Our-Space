@@ -16,6 +16,7 @@ export default {
       backgroundColor: "#ffffff"
     },
     ios: {
+      icon: "./assets/icon.png",
       supportsTablet: true,
       bundleIdentifier: "com.slangend.OurSpaceExpo",
       config: {
@@ -30,6 +31,7 @@ export default {
       },
     },
     android: {
+      icon: "./assets/icon.png",
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"

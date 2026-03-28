@@ -93,7 +93,17 @@ export default function MessagesScreen({ route }: Props) {
     fetchOtherUserData();
   }, [otherUser]);
 
+  function updateFirstResponseTime(chatId: string, uid: string) {
+    throw new Error('Function not implemented.');
+  }
+  
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+    });
 
+    return () => unsubscribeAuth();
+  }, []);
+  
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -111,8 +121,11 @@ export default function MessagesScreen({ route }: Props) {
   
     // Just in case, dismiss keyboard
     Keyboard.dismiss();
+    await updateFirstResponseTime(chatId, auth.currentUser!.uid);
+
   };
   
+
 
   const renderItem = ({ item }: { item: Message }) => {
     const isCurrentUser = item.senderId === auth.currentUser?.uid;
@@ -241,23 +254,17 @@ export default function MessagesScreen({ route }: Props) {
         <View style={styles.container}>
 
 
-
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              keyExtractor={(item) => item.id}
-              renderItem={renderItem}
-              contentContainerStyle={{ paddingVertical: 10 }}
-              onContentSizeChange={() =>
-                flatListRef.current?.scrollToEnd({ animated: true })
-              }
-              onLayout={() =>
-                flatListRef.current?.scrollToEnd({ animated: true })
-              }
-              keyboardShouldPersistTaps="handled" // allows taps to go through when keyboard is open
-              keyboardDismissMode="on-drag"       // dismiss keyboard when user drags
-              showsVerticalScrollIndicator={false}
-            />
+<FlatList
+  ref={flatListRef}
+  data={[...messages].reverse()} // ← clone and reverse
+  keyExtractor={(item) => item.id}
+  renderItem={renderItem}
+  contentContainerStyle={{ paddingVertical: 10 }}
+  keyboardShouldPersistTaps="handled"
+  keyboardDismissMode="on-drag"
+  showsVerticalScrollIndicator={false}
+  inverted // <-- Add this
+/>
 
 
 

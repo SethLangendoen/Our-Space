@@ -1,90 +1,58 @@
 
-
-
-// import React, { useEffect } from 'react';
-// import { View, StyleSheet, Image, Dimensions } from 'react-native';
-// import { useNavigation } from '@react-navigation/native';
-// import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-// import { RootStackParamList } from '../types/types';
-
-// type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SplashScreen'>;
-
-// const SplashScreen = () => {
-//   const navigation = useNavigation<SplashScreenNavigationProp>();
-
-//   useEffect(() => {
-//     const timeout = setTimeout(() => {
-//       // Use replace to ensure that the splash screen is not part of the navigation stack
-//       navigation.replace('Onboarding');
-//     }, 2000); 
-
-//     return () => clearTimeout(timeout);
-//   }, [navigation]);
-
-//   return (
-//     <View style={styles.container}>
-//       {/* <Image source={require('../../assets/ourSpaceLogos/party.GIF')} style={styles.logoImage} /> */}
-//       <Image source={require('../../assets/ourSpaceLogos/party.gif')} style={styles.logoImage} />
-
-//     </View>
-//   );
-// };
-
-// export default SplashScreen;
-
-// const { width } = Dimensions.get('window');
-
-
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#FFFCF1', // Wheat/Cream Background for warmth
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   logoImage: {
-//     width: width * 0.5,       // Adjusted to 50% for cleaner spacing
-//     height: width * 0.5,
-//     resizeMode: 'contain',
-//   },
-// });
-
-
-
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Image, Dimensions, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/types';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '../firebase/config';
+
+type RootStackParamList = {
+  SplashScreen: undefined;
+  Onboarding: undefined;
+  Auth: undefined;
+  MainTabs: undefined;
+};
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SplashScreen'>;
 
 const SplashScreen = () => {
   const navigation = useNavigation<SplashScreenNavigationProp>();
   const [showGif, setShowGif] = useState(true);
-  const fadeAnim = new Animated.Value(1); // initial opacity = 1
+  const fadeAnim = new Animated.Value(1);
 
   useEffect(() => {
-    // Hide GIF after it finishes playing (2s here)
-    const timeout = setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 500, // fade out smoothly
-        useNativeDriver: true,
-      }).start(() => setShowGif(false));
-    }, 2000); // match GIF duration
+    let timeout: NodeJS.Timeout;
+    let navTimeout: NodeJS.Timeout;
 
-    // Navigate after total splash time
-    const navTimeout = setTimeout(() => {
-      navigation.replace('Onboarding');
-    }, 1700);
+    // Listen for Firebase auth state
+    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+      // Hide GIF after 2s
+      timeout = setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => setShowGif(false));
+      }, 2000);
+
+      // Navigate after GIF duration
+      navTimeout = setTimeout(() => {
+        if (user) {
+          // Authenticated → MainTabs
+          navigation.replace('MainTabs');
+        } else {
+          // Not logged in → Onboarding
+          navigation.replace('Onboarding');
+        }
+      }, 1000); // slightly longer than fade to ensure smooth transition
+    });
 
     return () => {
       clearTimeout(timeout);
       clearTimeout(navTimeout);
+      unsubscribe();
     };
-  }, []);
+  }, [navigation]);
 
   return (
     <View style={styles.container}>

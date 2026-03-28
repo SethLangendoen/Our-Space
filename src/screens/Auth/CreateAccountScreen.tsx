@@ -21,16 +21,41 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../Styles/theme';
 
+// type AuthStackParamList = {
+//   CreateAccount: undefined;
+//   Login: undefined;
+//   ForgotPassword: undefined;
+// };
+
+
+
+// type CreateAccountScreenNavigationProp = NativeStackNavigationProp<
+//   AuthStackParamList,
+//   'CreateAccount'
+// >;
+
+// Root stack params
+type RootStackParamList = {
+  SplashScreen: undefined;
+  Onboarding: undefined;
+  Auth: undefined;
+  MainTabs: undefined;
+};
+
+// Use a composite navigation type
+import { CompositeNavigationProp } from '@react-navigation/native';
+
 type AuthStackParamList = {
   CreateAccount: undefined;
   Login: undefined;
   ForgotPassword: undefined;
 };
 
-type CreateAccountScreenNavigationProp = NativeStackNavigationProp<
-  AuthStackParamList,
-  'CreateAccount'
+type CreateAccountScreenNavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<AuthStackParamList, 'CreateAccount'>,
+  NativeStackNavigationProp<RootStackParamList>
 >;
+
 
 export default function CreateAccountScreen() {
   const navigation = useNavigation<CreateAccountScreenNavigationProp>();
@@ -69,7 +94,49 @@ export default function CreateAccountScreen() {
 
 
 
-  const handleCreateAccount = async () => {
+//   const handleCreateAccount = async () => {
+//   setErrorMessage('');
+
+//   if (password !== confirmPassword) {
+//     setErrorMessage('Passwords do not match.');
+//     return;
+//   }
+
+//   if (!validatePassword(password)) {
+//     setErrorMessage(
+//       'Password must be at least 8 characters and include a number or symbol.'
+//     );
+//     return;
+//   }
+
+//   try {
+//     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+//     const user = userCredential.user;
+
+//     if (user) {
+//       // ✅ Send verification email
+//       await sendEmailVerification(user);
+      
+//       // ✅ Immediately sign out to prevent access before verification
+//       await signOut(auth);
+
+//       // ✅ Inform the user
+//       setErrorMessage('A verification email has been sent. Please check your inbox.');
+//     }
+//   } catch (error: any) {
+//     if (error.code === 'auth/email-already-in-use') {
+//       setErrorMessage('An account already exists with this email.');
+//     } else if (error.code === 'auth/invalid-email') {
+//       setErrorMessage('The email address is not valid.');
+//     } else if (error.code === 'auth/weak-password') {
+//       setErrorMessage('Password should be at least 6 characters.');
+//     } else {
+//       setErrorMessage('An unexpected error occurred. Please try again.');
+//     }
+//   }
+// };
+
+const handleCreateAccount = async () => {
   setErrorMessage('');
 
   if (password !== confirmPassword) {
@@ -89,14 +156,17 @@ export default function CreateAccountScreen() {
     const user = userCredential.user;
 
     if (user) {
-      // ✅ Send verification email
+      // ✅ Send verification email (optional)
       await sendEmailVerification(user);
-      
-      // ✅ Immediately sign out to prevent access before verification
-      await signOut(auth);
 
-      // ✅ Inform the user
-      setErrorMessage('A verification email has been sent. Please check your inbox.');
+      // ✅ Remove signOut so user stays logged in
+      // await signOut(auth); <-- REMOVE THIS
+
+      // ✅ Navigate to MainTabs or home screen immediately
+      navigation.replace('MainTabs');
+
+      // ✅ Optionally inform the user to check email
+      setErrorMessage('Account created! Please check your email for verification.');
     }
   } catch (error: any) {
     if (error.code === 'auth/email-already-in-use') {
@@ -128,7 +198,7 @@ export default function CreateAccountScreen() {
           <Text style={styles.title}>Create account</Text>
 
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.authButton}
             disabled={!request}
             onPress={() => {
@@ -139,18 +209,18 @@ export default function CreateAccountScreen() {
             <Text style={styles.authText}>Sign up with Google</Text>
           </TouchableOpacity>
 
-          {/* Facebook Sign Up */}
           <TouchableOpacity style={styles.authButton}>
             <Ionicons name="logo-facebook" size={20} color="#1877F2" />
             <Text style={styles.authText}>Sign up with Facebook</Text>
           </TouchableOpacity>
 
-          {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.line} />
             <Text style={styles.orText}>OR</Text>
             <View style={styles.line} />
-          </View>
+          </View> */}
+
+
 
           {/* Email Input */}
           <Text style={styles.label}>Email*</Text>

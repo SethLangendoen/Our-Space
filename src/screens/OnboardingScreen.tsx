@@ -186,12 +186,12 @@ const OnboardingScreen = () => {
       >
         {item.isFinal ? (
           <>
-            {/* <TouchableOpacity
+            <TouchableOpacity
               style={styles.button}
               onPress={() => navigation.navigate('Auth')}
             >
               <Text style={styles.buttonText}>Sign Up</Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.secondaryButton]}
               onPress={() => navigation.navigate('MainTabs')}

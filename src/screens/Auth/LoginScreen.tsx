@@ -17,13 +17,36 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../Styles/theme';
 
+// type AuthStackParamList = {
+//   CreateAccount: undefined;
+//   Login: undefined;
+//   ForgotPassword: undefined;
+// };
+
+// type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+
+// Root stack params
+type RootStackParamList = {
+  SplashScreen: undefined;
+  Onboarding: undefined;
+  Auth: undefined;
+  MainTabs: undefined;
+};
+
+// Use a composite navigation type
+import { CompositeNavigationProp } from '@react-navigation/native';
+
 type AuthStackParamList = {
   CreateAccount: undefined;
   Login: undefined;
   ForgotPassword: undefined;
 };
 
-type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+type LoginScreenNavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<AuthStackParamList, 'CreateAccount'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginScreenNavigationProp>();
@@ -40,6 +63,8 @@ export default function LoginScreen() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Logged in:', userCredential.user);
+      navigation.replace('MainTabs');
+
       // Navigate to a different screen or show success UI if needed
     } catch (error: any) {
   

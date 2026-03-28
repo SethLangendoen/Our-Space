@@ -1,7 +1,7 @@
 
 
 
-import React, { useState, useCallback, useEffect } from 'react'; // Added useCallback
+import React, { useState, useCallback, useEffect, useRef } from 'react'; // Added useCallback
 import {
   View,
   Text,
@@ -52,6 +52,7 @@ type FiltersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList,
 const GOOGLE_PLACES_KEY =
   Constants.expoConfig?.extra?.GOOGLE_PLACES_KEY;
 console.log(GOOGLE_PLACES_KEY)
+
 
 export default function FiltersScreen() {
   // FIX 2: Correctly initialize useNavigation and type it

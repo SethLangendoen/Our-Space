@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, TabRouter } from '@react-navigation/native';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../../firebase/config';
 import { collection, query, where, getDocs, or, and } from 'firebase/firestore';
@@ -31,7 +31,7 @@ type MySpacesScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 export default function MySpacesScreen() {
-  const navigation = useNavigation<MySpacesScreenNavigationProp>();
+  const navigation = useNavigation<any>();  
   const [selectedTab, setSelectedTab] = useState<'My Spaces' | 'Bookings'>('Bookings');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -205,23 +205,30 @@ const renderContent = () => {
   switch (selectedTab) {
     case 'My Spaces':
       return awaitingPosts.length > 0 ? (
-      awaitingPosts.map((post) => (
-        <SpaceCard
-          key={post.id}
-          item={post}
-          onPress={() => {
-            if (post.activeReservationId) {
-              Alert.alert(
-                'Space Currently Rented',
-                'Spaces are not editable while being rented.'
-              );
-              return;
-            }
-            navigation.navigate('EditSpaceScreen', { spaceId: post.id });
-          }}
-          showPublicPrivateBadge={true}
-        />
-      ))
+        awaitingPosts.map((post) => (
+          <SpaceCard
+            key={post.id}
+            item={post}
+            showPublicPrivateBadge={true}
+            showEditButton={true}
+            onEditPress={() => {
+              if (post.activeReservationId) {
+                Alert.alert(
+                  'Space Currently Rented',
+                  'Spaces are not editable while being rented.'
+                );
+                return;
+              }
+              navigation.navigate('EditSpaceScreen', { spaceId: post.id });
+            }}
+            onPress={() => {
+              navigation.navigate('Spaces', {
+                screen: 'SpaceDetail',
+                params: { spaceId: post.id, from: 'MySpaces' },
+              });
+            }}
+          />
+        ))
       ) : (
         <View style={styles.placeholderImage}>
           <Text style={styles.message}>Spaces you create will show up here</Text>
@@ -317,6 +324,8 @@ const renderContent = () => {
           </Text>
         </TouchableOpacity>
       ))}
+
+      
       </View>
 
 

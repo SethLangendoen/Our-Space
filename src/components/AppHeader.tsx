@@ -1,267 +1,123 @@
-
-
-// // // import { View, TouchableOpacity, Image } from 'react-native';
-// // // import React from 'react';
-// // // import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-// // // type AppHeaderProps = {
-// // //   navigation: NativeStackNavigationProp<any>; 
-// // // };
-
-// // // export default function AppHeader({ navigation }: AppHeaderProps) {
-// // //   const canGoBack = navigation.canGoBack();
-
-// // //   return (
-// // //     <View
-// // //       style={{
-// // //         flexDirection: 'row',
-// // //         alignItems: 'center',
-// // //         justifyContent: 'space-between',
-// // //         height: 90,
-// // //         paddingTop: 40,
-// // //         paddingHorizontal: 15,
-// // //         backgroundColor: 'white', // optional
-// // //       }}
-// // //     >
-// // //       {/* Left: Back button */}
-// // //       {canGoBack ? (
-// // //         <TouchableOpacity onPress={() => navigation.goBack()}>
-// // //           <Image
-// // //             source={require('../../assets/backArrow.png')}
-// // //             style={{ width: 28, height: 28 }}
-// // //             resizeMode="contain"
-// // //           />
-// // //         </TouchableOpacity>
-// // //       ) : (
-// // //         <View style={{ width: 28 }} /> // placeholder keeps spacing consistent
-// // //       )}
-
-// // //       {/* Center: Logo */}
-// // //       <Image
-// // //         source={require('../../assets/ourSpaceLogos/ourSpaceHorizontal.png')}
-// // //         style={{ width: 220, height: 140 }} // bump up size
-// // //         resizeMode="contain"
-// // //       />
-
-// // //       {/* Right: Spacer (balances the arrow on the left) */}
-// // //       <View style={{ width: 28 }} />
-// // //     </View>
-// // //   );
-// // // }
-
-// // import { View, TouchableOpacity, Image, Text } from 'react-native';
-// // import React from 'react';
-// // import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-// // import { useRoute } from '@react-navigation/native';
-
-// // type AppHeaderProps = {
-// //   navigation: NativeStackNavigationProp<any>; 
-// // };
-
-// // export default function AppHeader({ navigation }: AppHeaderProps) {
-// //   const route = useRoute();
-// //   const routeName = route.name;
-
-// //   // Screens where we want the logo replaced with the title
-// //   const titleScreens: string[] = ['Filters', 'SomeOtherScreen']; // add as needed
-// //   const showTitleInsteadOfLogo = titleScreens.includes(routeName);
-
-// //   // Determine if back button should show
-// //   const hideBackButtonOnMainTabs = ['Spaces', 'Profile', 'Bookings'].includes(routeName); // main tab screens
-// //   const showBackButton = navigation.canGoBack() && !hideBackButtonOnMainTabs;
-
-// //   return (
-// //     <View
-// //       style={{
-// //         flexDirection: 'row',
-// //         alignItems: 'center',
-// //         justifyContent: 'space-between',
-// //         height: 90,
-// //         paddingTop: 40,
-// //         paddingHorizontal: 15,
-// //         backgroundColor: 'white',
-// //       }}
-// //     >
-// //       {/* Left: Back button */}
-// //       {showBackButton ? (
-// //         <TouchableOpacity onPress={() => navigation.goBack()}>
-// //           <Image
-// //             source={require('../../assets/backArrow.png')}
-// //             style={{ width: 28, height: 28 }}
-// //             resizeMode="contain"
-// //           />
-// //         </TouchableOpacity>
-// //       ) : (
-// //         <View style={{ width: 28 }} />
-// //       )}
-
-// //       {/* Center: Logo or title */}
-// //       {showTitleInsteadOfLogo ? (
-// //         <Text style={{ fontSize: 20, fontWeight: '600' }}>{routeName}</Text>
-// //       ) : (
-// //         <Image
-// //           source={require('../../assets/ourSpaceLogos/ourSpaceHorizontal.png')}
-// //           style={{ width: 220, height: 140 }}
-// //           resizeMode="contain"
-// //         />
-// //       )}
-
-// //       {/* Right: Spacer */}
-// //       <View style={{ width: 28 }} />
-// //     </View>
-// //   );
-// // }
-
-
-
-
-
-// import { View, TouchableOpacity, Image, Text } from 'react-native';
-// import React from 'react';
-// import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-// import { useRoute } from '@react-navigation/native';
-
-// type AppHeaderProps = {
-//   navigation: NativeStackNavigationProp<any>;
-// };
-
-// export default function AppHeader({ navigation }: AppHeaderProps) {
-//   const route = useRoute();
-//   const routeName = route.name;
-//   console.log(routeName); 
-
-//   // Screens where the logo should be replaced with the screen title
-//   const titleScreens: string[] = ['Filters', 'SpaceDetail', 'UserProfile', 'EditSpaceScreen', 'ConfirmedReservationScreen', 'MessagesScreen', 'EditProfile']; // add more screens as needed
-//   const showTitleInsteadOfLogo = titleScreens.includes(routeName);
-
-//   // Main tab screens where back button should never show
-//   const mainTabScreens: string[] = ['SpacesMain', 'Profile', 'Bookings']; // adjust to your tab names
-//   const showBackButton = navigation.canGoBack() && !mainTabScreens.includes(routeName);
-
-//   return (
-//     <View
-//       style={{
-//         flexDirection: 'row',
-//         alignItems: 'center',
-//         justifyContent: 'space-between',
-//         height: 90,
-//         paddingTop: 40,
-//         paddingHorizontal: 15,
-//         backgroundColor: 'white',
-//       }}
-//     >
-//       {/* Left: Back button */}
-//       {showBackButton ? (
-//         <TouchableOpacity onPress={() => navigation.goBack()}>
-//           <Image
-//             source={require('../../assets/backArrow.png')}
-//             style={{ width: 28, height: 28 }}
-//             resizeMode="contain"
-//           />
-//         </TouchableOpacity>
-//       ) : (
-//         <View style={{ width: 28 }} /> // placeholder keeps spacing
-//       )}
-
-//       {/* Center: Logo or Title */}
-//       {showTitleInsteadOfLogo ? (
-//         <Text style={{ fontSize: 20, fontWeight: '600' }}>{routeName}</Text>
-//       ) : (
-//         <Image
-//           source={require('../../assets/ourSpaceLogos/ourSpaceHorizontal.png')}
-//           style={{ width: 220, height: 140 }}
-//           resizeMode="contain"
-//         />
-//       )}
-
-//       {/* Right: Spacer */}
-//       <View style={{ width: 28 }} />
-//     </View>
-//   );
-// }
-
-
-
-import { View, TouchableOpacity, Image, Text } from 'react-native';
+import { View, TouchableOpacity, Image, Text, StyleSheet } from 'react-native';
 import React from 'react';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRoute } from '@react-navigation/native';
 
 type AppHeaderProps = {
   navigation: NativeStackNavigationProp<any>;
-  showSettings?: boolean; // 👈 new prop
+  showSettings?: boolean;
+};
+
+// Map route names to friendly display names
+const routeNameMap: Record<string, string> = {
+  SpacesMain: 'Browse',
+  MySpacesMain: 'My Spaces',
+  ChatsMain: 'Messages',
+  ProfileMain: 'Profile',
+  Filters: 'Filters',
+  'Space Detail Screen': 'Space Details',
+  UserProfile: 'User Profile',
+  EditSpaceScreen: 'Edit Space',
+  ConfirmedReservationScreen: 'Reservation Confirmed',
+  MessagesScreen: 'Messages',
+  EditProfile: 'Edit Profile',
+  SettingsStack: 'Settings',
+  RequestDetailScreen: 'Booking',
+  CreateAccount: 'Authentication',
+  ForgotPassword: 'Authentication',
+  Login: 'Authentication',
+
 };
 
 export default function AppHeader({ navigation, showSettings }: AppHeaderProps) {
-  const route = useRoute();
-  const routeName = route.name;
+  // const route = useRoute();
+  const route = useRoute<any>();
 
-  const titleScreens: string[] = [
-    'Filters',
-    'SpaceDetail',
-    'UserProfile',
-    'EditSpaceScreen',
-    'ConfirmedReservationScreen',
-    'MessagesScreen',
-    'EditProfile',
-  ];
-  const showTitleInsteadOfLogo = titleScreens.includes(routeName);
+  const routeName = route.name;
 
   const mainTabScreens: string[] = ['SpacesMain', 'Profile', 'Bookings'];
   const showBackButton = navigation.canGoBack() && !mainTabScreens.includes(routeName);
 
+  // Get the friendly title from the map, fallback to routeName if not mapped
+  const displayTitle = routeNameMap[routeName] || routeName;
+
+const fromRoute = route.params?.from;
+
+const handleBack = () => {
+  if (fromRoute) {
+    navigation.navigate(fromRoute);
+  } else {
+    navigation.goBack(); // fallback
+  }
+};
+
+
+
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: 100,
-        paddingTop: 60,
-        paddingHorizontal: 15,
-        paddingBottom: 0,
-        backgroundColor: 'white',
-      }}
-    >
+    <View style={styles.container}>
       {/* Left: Back button */}
       {showBackButton ? (
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Image
-            source={require('../../assets/backArrow.png')}
-            style={{ width: 28, height: 28 }}
-            resizeMode="contain"
-          />
+        <TouchableOpacity onPress={handleBack}>
+          <Image source={require('../../assets/backArrow.png')} style={styles.icon} />
         </TouchableOpacity>
       ) : (
-        <View style={{ width: 28 }} />
+        <View style={styles.iconSpacer} />
       )}
 
-      {/* Center: Logo or Title */}
-      {showTitleInsteadOfLogo ? (
-        <Text style={{ fontSize: 20, fontWeight: '600' }}>{routeName}</Text>
-      ) : (
+      {/* Center: Logo and Title */}
+      <View style={styles.logoTitleContainer}>
         <Image
-          source={require('../../assets/ourSpaceLogos/ourSpaceHorizontal.png')}
-          style={{ width: 220, height: 140 }}
+          source={require('../../assets/ourSpaceLogos/boxOnly.png')}
+          style={styles.logo}
           resizeMode="contain"
         />
-      )}
+        <Text style={styles.title}>{displayTitle}</Text>
+      </View>
 
-      {/* Right: Settings or Spacer */}
+      {/* Right: Settings or spacer */}
       {showSettings ? (
         <TouchableOpacity
           onPress={() =>
             navigation.navigate('SettingsStack', { screen: 'SettingsScreen' })
           }
         >
-          <Image
-            source={require('../../assets/settings.png')}
-            style={{ width: 24, height: 24 }}
-          />
+          <Image source={require('../../assets/settings.png')} style={styles.icon} />
         </TouchableOpacity>
       ) : (
-        <View style={{ width: 28 }} />
+        <View style={styles.iconSpacer} />
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 100,
+    paddingTop: 60,
+    paddingHorizontal: 15,
+    backgroundColor: 'white',
+  },
+  icon: {
+    width: 28,
+    height: 28,
+  },
+  iconSpacer: {
+    width: 28,
+  },
+  logoTitleContainer: {
+    flexDirection: 'row', // horizontal layout
+    alignItems: 'center',
+  },
+  logo: {
+    width: 30,
+    height: 30,
+    marginRight: 5,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+});

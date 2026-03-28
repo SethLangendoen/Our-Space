@@ -86,7 +86,7 @@ export default function MainTabs() {
               }}
             />
           ),
-          tabBarLabel: 'Spaces',
+          tabBarLabel: 'Browse',
         }}
       />
       <Tab.Screen

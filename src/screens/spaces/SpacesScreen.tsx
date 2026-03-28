@@ -1,6 +1,6 @@
 
 import { RouteProp, useRoute } from '@react-navigation/native';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -143,7 +143,7 @@ export default function SpacesScreen() {
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
-  
+  const prevFiltersRef = useRef<FilterData | null>(null);
   
   const toggleView = useCallback(() => setIsMapView(prev => !prev), []);
 
@@ -383,10 +383,23 @@ if (filters.storageType?.length && space.storageType?.length) {
 
   // Fetch spaces on initial mount and when filters change
 
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     fetchAndFilterSpaces();
+  //   }, [fetchAndFilterSpaces])
+  // );
+
   useFocusEffect(
     useCallback(() => {
-      fetchAndFilterSpaces();
-    }, [fetchAndFilterSpaces])
+      // Compare current filters with previous filters
+      const filtersChanged =
+        JSON.stringify(filters) !== JSON.stringify(prevFiltersRef.current);
+  
+      if (filtersChanged || spaces.length === 0) {
+        fetchAndFilterSpaces();
+        prevFiltersRef.current = filters ? { ...filters } : null;
+      }
+    }, [filters, fetchAndFilterSpaces, spaces.length])
   );
   
   // --- Render ---
@@ -396,19 +409,21 @@ if (filters.storageType?.length && space.storageType?.length) {
       <View style={styles.header}>
         <TouchableOpacity style={styles.toggleButton} onPress={toggleView}>
           <Ionicons name={isMapView ? 'list' : 'map'} size={20} color="#333" />
-          <Text style={styles.toggleText}>{isMapView ? 'List' : 'Map'}</Text>
+          {/* <Text style={styles.toggleText}>{isMapView ? 'List' : 'Map'}</Text> */}
         </TouchableOpacity>
 
-        {searchInfo && (
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={{ fontSize: 12, color: '#333' }} numberOfLines={1}>
-              📍 {searchInfo.address}
-            </Text>
-            <Text style={{ fontSize: 12, color: '#666' }}>
-              Radius: {searchInfo.radius} km
-            </Text>
-          </View>
-        )}
+        <TouchableOpacity
+  style={styles.locationButton}
+  onPress={() =>
+    navigation.navigate('Filters', { currentFilters: route.params?.filters })
+  }
+  activeOpacity={0.8}
+>
+  <Ionicons name="search" size={20} color="#666" style={{ marginRight: 8 }} />
+  <Text style={styles.locationButtonText} numberOfLines={1}>
+    {searchInfo?.address || 'Search by location'}
+  </Text>
+</TouchableOpacity>
 
         <View style={styles.savedAndFilter}>
           <TouchableOpacity
@@ -600,8 +615,8 @@ if (filters.storageType?.length && space.storageType?.length) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 15,
-    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingHorizontal: 10,
     backgroundColor: COLORS.lighterGrey,
   },
 
@@ -609,7 +624,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
+
   },
 
   toggleButton: {
@@ -647,6 +663,25 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 
+  locationButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#DDD',
+  },
+  
+  locationButtonText: {
+    fontSize: 14,
+    color: '#333',
+    flexShrink: 1,
+  },
+
   pinIcon: {
     width: 24,
     height: 24,
@@ -659,8 +694,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: width,
-    backgroundColor: COLORS.lighterGrey,
-    padding: 10,
+    backgroundColor: "transparent",
+    paddingHorizontal: 20,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     shadowColor: '#000',
@@ -672,9 +707,11 @@ const styles = StyleSheet.create({
 
   closeButton: {
     position: 'absolute',
-    right: 12,
-    top: 12,
+    right: 14,
+    top:0,
     zIndex: 10,
+    backgroundColor: 'grey',
+    borderRadius: '30%',
 
   },
 
