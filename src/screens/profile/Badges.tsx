@@ -15,84 +15,78 @@ interface BadgesProps {
 
 const badgeList = [
 	{
+	  id: 'socialStar',
+	  title: 'Social Star',
+	  description: 'Engage actively on social platforms.',
+	  isCompleted: false,
+	  iconCompleted: require('../../../assets/badges/complete/RegSocialStar.png'),
+	  iconIncomplete: require('../../../assets/badges/incomplete/FDSocialStar.png'),
+	},
+  {
+	  id: 'firstMilestone',
+	  title: 'First Milestone',
+	  description: 'Complete Your First Milestone',
+	  isCompleted: false,
+	  iconCompleted: require('../../../assets/badges/complete/Reg1stMilestone.png'),
+	  iconIncomplete: require('../../../assets/badges/incomplete/FD1stMilestone.png'),
+	},
+	{
+	  id: 'RegVerifiedHero',
+	  title: 'Verified Hero',
+	  description: 'Verify your identity and payment method.',
+	  isCompleted: false,
+	  iconCompleted: require('../../../assets/badges/complete/RegVerifiedHero.png'),
+	  iconIncomplete: require('../../../assets/badges/incomplete/FDVerifiedHero.png'),
+	},
+
+  {
 	  id: '5StarStreak',
 	  title: '5 Star Streak',
-	  description: 'Receive three 5-star reviews.',
+	  description: 'Receive 3 five-star reviews.',
 	  isCompleted: false,
-	  iconCompleted: require('../../../assets/badges/complete/5StarStreak.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/5StarStreak.png'),
+	  iconCompleted: require('../../../assets/badges/complete/Reg5StarStreak.png'),
+	  iconIncomplete: require('../../../assets/badges/incomplete/FD5StarStreak.png'),
+	},
+  {
+	  id: 'speedyReplier',
+	  title: 'Speedy Replier',
+	  description: 'Respond to guest inquiries in under an hour.',
+	  isCompleted: false,
+	  iconCompleted: require('../../../assets/badges/complete/RegSpeedyReplier.png'),
+	  iconIncomplete: require('../../../assets/badges/incomplete/FDSpeedyReplier.png'),
+	},
+  {
+	  id: 'Reg100DayMVP',
+	  title: '100 Day MVP',
+	  description: 'Be a member for over 100 days.',
+	  isCompleted: true,
+	  iconCompleted: require('../../../assets/badges/complete/Reg100DayMVP.png'),
+	  iconIncomplete: require('../../../assets/badges/incomplete/FD100DayMVP.png'),
 	},
 	{
 	  id: '10XHost',
 	  title: '10X Host',
 	  description: 'Host 10 unique guests on your listings.',
 	  isCompleted: false,
-	  iconCompleted: require('../../../assets/badges/complete/10XHost.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/10XHost.png'),
+	  iconCompleted: require('../../../assets/badges/complete/Reg5XSpacer.png'),
+	  iconIncomplete: require('../../../assets/badges/incomplete/FD5XSpacer.png'),
 	},
+
 	{
-	  id: '100DayMVP',
-	  title: '100 Day MVP',
-	  description: 'Be a member for over 100 days.',
-	  isCompleted: true,
-	  iconCompleted: require('../../../assets/badges/complete/100DayMVP.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/100DayMVP.png'),
-	},
-	{
-	  id: 'firstHost',
-	  title: 'First Host',
-	  description: 'Successfully host your first guest.',
+	  id: 'allStarTier',
+	  title: 'All Star Tier',
+	  description: 'Receive 10 five-star reviews',
 	  isCompleted: false,
-	  iconCompleted: require('../../../assets/badges/complete/firstHost.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/firstHost.png'),
+	  iconCompleted: require('../../../assets/badges/complete/RegAllStarTier.png'),
+	  iconIncomplete: require('../../../assets/badges/incomplete/FDAllStarTier.png'),
 	},
 	{
-	  id: 'firstStash',
-	  title: 'First Stash',
-	  description: 'Start your first storage booking.',
-	  isCompleted: false,
-	  iconCompleted: require('../../../assets/badges/complete/firstStash.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/firstStash.png'),
-	},
-	// {
-	//   id: 'fullHouse',
-	//   title: 'Full House',
-	//   description: 'Have 100% occupancy for a full week.',
-	//   isCompleted: false,
-	//   iconCompleted: require('../../../assets/badges/complete/fullHouse.png'),
-	//   iconIncomplete: require('../../../assets/badges/incomplete/fullHouse.png'),
-	// },
-	{
-	  id: 'respectedRoyalty',
-	  title: 'Respected Royalty',
+	  id: '30DayStreak',
+	  title: '30 Day Streak',
 	  description: 'Get over 30 days booked on a space',
 	  isCompleted: false,
-	  iconCompleted: require('../../../assets/badges/complete/respectedRoyalty.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/respectedRoyalty.png'),
-	},
-	{
-	  id: 'socialStar',
-	  title: 'Social Star',
-	  description: 'Engage actively on social platforms.',
-	  isCompleted: false,
-	  iconCompleted: require('../../../assets/badges/complete/socialStar.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/socialStar.png'),
-	},
-	{
-	  id: 'speedyReplier',
-	  title: 'Speedy Replier',
-	  description: 'Respond to guest inquiries in under an hour.',
-	  isCompleted: false,
-	  iconCompleted: require('../../../assets/badges/complete/speedyReplier.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/speedyReplier.png'),
-	},
-	{
-	  id: 'verifiedHero',
-	  title: 'Verified Hero',
-	  description: 'Verify your identity and payment method.',
-	  isCompleted: false,
-	  iconCompleted: require('../../../assets/badges/complete/verifiedHero.png'),
-	  iconIncomplete: require('../../../assets/badges/incomplete/verifiedHero.png'),
+	  iconCompleted: require('../../../assets/badges/complete/Reg30DayStreak.png'),
+	  iconIncomplete: require('../../../assets/badges/incomplete/FD30DayStreak.png'),
 	},
   ];
   
@@ -178,12 +172,11 @@ const Badges: React.FC<BadgesProps> = ({ isVerified, createdAt }) => {
     if (userBadges[badge.id] !== undefined) isCompleted = userBadges[badge.id];
 
     // Override verifiedHero and 100DayMVP from props
-    if (badge.id === 'verifiedHero') isCompleted = isVerified;
-    if (badge.id === '100DayMVP') isCompleted = has100DayMVP(createdAt);
+    if (badge.id === 'RegVerifiedHero') isCompleted = isVerified;
+    if (badge.id === 'Reg100DayMVP') isCompleted = has100DayMVP(createdAt);
 
     return { ...badge, isCompleted };
   });
-
 
 
   return (
@@ -194,14 +187,6 @@ const Badges: React.FC<BadgesProps> = ({ isVerified, createdAt }) => {
             source={badge.isCompleted ? badge.iconCompleted : badge.iconIncomplete}
             style={styles.badgeIcon}
           />
-		<Text
-		style={[
-			styles.badgeTitle,
-			badge.isCompleted && { fontWeight: 'bold' }, // <-- make bold if completed
-		]}
-		>
-		{badge.title}
-		</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -225,11 +210,11 @@ const styles = StyleSheet.create({
   badgeIcon: {
     width: 100,
     height: 100,
-    marginBottom: 6,
+    marginBottom: 0,
     resizeMode: 'contain',
   },
   badgeTitle: {
-    fontSize: 15,
+    fontSize: 10,
     textAlign: 'center',
     color: '#333',
   },

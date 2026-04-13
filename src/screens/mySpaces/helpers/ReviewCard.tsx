@@ -65,7 +65,7 @@ export default function ReviewCard({
         const badges = revieweeData.badges || {};
 
         // Only proceed if badge is currently false
-        if (!badges['5StarStreak']) {
+        if (!badges['5StarStreak'] || !badges['allStarTier']) {
           const reviewsRef = collection(db, 'users', revieweeId, 'reviews');
 
           // Count existing 5-star reviews
@@ -78,7 +78,14 @@ export default function ReviewCard({
               'badges.5StarStreak': true,
             });
           }
+          if (fiveStarSnap.size >= 10) {
+            await updateDoc(revieweeRef, {
+              'badges.allStarTier': true,
+            });
+          }
+
         }
+        
       }
     }
 

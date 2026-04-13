@@ -467,6 +467,7 @@ if (filters.storageType?.length && space.storageType?.length) {
         // Map View
 
         <>
+
   <MapView
     style={styles.mapView}
     provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined} // iOS defaults to Apple Maps

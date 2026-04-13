@@ -24,8 +24,9 @@ import Badges from './Badges';
 import Reviews from './Reviews';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import { buildUnavailableHoursBlocks } from 'react-native-calendars/src/timeline/Packer';
-const star = require('assets/badges/profileIcon/star.png');
-const badge = require('assets/badges/profileIcon/trophy.png');
+
+const star = require('assets/badges/profileIcon/star1.png');
+const badge = require('assets/badges/profileIcon/trophy2.png');
 
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -174,16 +175,26 @@ export default function ProfileScreen() {
 
   const handleShareProfile = async () => {
     try {
-      const iosAppLink = 'https://apps.apple.com/app/id6759211514'; // your Apple App ID
-      const androidAppLink = 'https://play.google.com/store/apps/details?id=com.slangend.OurSpaceExpo';
+      const iosAppLink = 'https://apps.apple.com/app/id6759211514';
+      const androidAppLink =
+        'https://play.google.com/store/apps/details?id=com.slangend.OurSpaceExpo';
   
       const link = Platform.OS === 'ios' ? iosAppLink : androidAppLink;
   
-      await Share.share({
+      const result = await Share.share({
         message: `Check out OurSpace! Download the app here: ${link}`,
         title: 'OurSpace App',
       });
-      
+  
+      if (result.action === Share.sharedAction) {
+        const userId = auth.currentUser?.uid;
+  
+        if (!userId) return;
+  
+        await updateDoc(doc(db, 'users', userId), {
+          'badges.socialStar': true,
+        });
+      }
     } catch (error) {
       console.log('Error sharing app:', error);
     }
@@ -345,7 +356,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.button} onPress={handleShareProfile}>
-                <Text style={styles.buttonText}>Share Profile</Text>
+                <Text style={styles.buttonText}>Share App </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -417,7 +428,7 @@ const styles = StyleSheet.create({
 
 
   headerSection: {
-    height: 80,
+    height: 100,
     backgroundColor: 'white', 
     justifyContent: 'center',
     position: 'relative',
@@ -710,8 +721,8 @@ const styles = StyleSheet.create({
   },
 
   statImageWrapper: {
-    width: 45,           // match your image width
-    height: 45,          // match your image height
+    width: 60,           // match your image width
+    height: 60,          // match your image height
     justifyContent: 'center', // vertical center
     alignItems: 'center',     // horizontal center
     position: 'relative',     // needed for absolute overlay
@@ -729,8 +740,8 @@ const styles = StyleSheet.create({
     // textShadowRadius: 4,          // adjust for thickness
   },
   statImage: {
-    width: 45,
-    height: 45,
+    width: 60,
+    height: 60,
     resizeMode: 'contain',
   },
 

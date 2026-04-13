@@ -92,10 +92,12 @@ const handleConfirm = async () => {
         renterId: reservation.requesterId,
         reservationId,
       };
+      
       // await updateDoc(spaceRef, {
       //   reservedTimes: arrayUnion(reservedTime),
       //   updatedAt: serverTimestamp(),
       // });
+
       await updateDoc(spaceRef, {
         activeReservationId: reservationId,
         isPublic: false, // if you're hiding it while rented
@@ -139,9 +141,9 @@ const handleConfirm = async () => {
         if (ownerSnap.exists()) {
           const ownerData = ownerSnap.data();
           const ownerBadges = ownerData.badges || {};
-          if (!ownerBadges.firstHost) {
+          if (!ownerBadges.firstMilstone) {
             await updateDoc(ownerRef, {
-              'badges.firstHost': true
+              'badges.firstMilestone': true
             });
           }
         }
@@ -154,9 +156,9 @@ const handleConfirm = async () => {
         if (requesterSnap.exists()) {
           const requesterData = requesterSnap.data();
           const requesterBadges = requesterData.badges || {};
-          if (!requesterBadges.firstStash) {
+          if (!requesterBadges.firstMilestone) {
             await updateDoc(requesterRef, {
-              'badges.firstStash': true
+              'badges.firstMilestone': true
             });
           }
         }

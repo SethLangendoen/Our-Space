@@ -3,7 +3,7 @@ export type RootStackParamList = {
 	SplashScreen: undefined;
 	MainTabs: undefined;
 	Onboarding: undefined;
-
+	Auth: undefined;
   };
   
 // src/types/types.ts

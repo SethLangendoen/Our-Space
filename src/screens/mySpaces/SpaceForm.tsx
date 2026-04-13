@@ -71,7 +71,8 @@ const [address, setAddress] = useState(initialData?.address?.split(',')[0] || ''
 const [postalCode, setPostalCode] = useState(initialData?.address?.split(',')[1]?.trim() || '');
 const [accessibility, setAccessibility] = useState(initialData?.accessibility || null);
 const [security, setSecurity] = useState(initialData?.security || []);
-const [submitting, setSubmitting] = useState(false);
+const [isSubmitting, setIsSubmitting] = useState(false);
+const [isDeleting, setIsDeleting] = useState(false);
 const [isPublic, setIsPublic] = useState<boolean>(initialData?.isPublic ?? true);
 const [images, setImages] = useState<string[]>(initialData?.images || []);
 const [mainImage, setMainImage] = useState<string | null>(initialData?.mainImage || null);
@@ -259,21 +260,33 @@ const uploadImageAsync = async (uri: string, userId: string): Promise<string> =>
 
 
 
-  const pickImage = async () => {
-    if (images.length >= MAX_IMAGES) return;
-	let result = await ImagePicker.launchImageLibraryAsync({
-		mediaTypes: ImagePicker.MediaTypeOptions.Images,
-	  });
-	  
+const MAX_IMAGES = 5;
 
-    if (!result.canceled && result.assets?.length > 0) {
-      const uri = result.assets[0].uri;
-      console.log('Uploading URI:', uri);
+const pickImage = async () => {
+  if (images.length >= MAX_IMAGES) return;
 
-      setImages([...images, uri]);
-      if (!mainImage) setMainImage(uri);
+  const remainingSlots = MAX_IMAGES - images.length;
+
+  let result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsMultipleSelection: true,
+    selectionLimit: remainingSlots, // 👈 prevents over-picking
+    quality: 1,
+  });
+
+  if (!result.canceled && result.assets?.length > 0) {
+    const newUris = result.assets.map(asset => asset.uri);
+
+    // Extra safety (in case some devices ignore selectionLimit)
+    const updatedImages = [...images, ...newUris].slice(0, MAX_IMAGES);
+
+    setImages(updatedImages);
+
+    if (!mainImage && updatedImages.length > 0) {
+      setMainImage(updatedImages[0]);
     }
-  };
+  }
+};
 
   const removeImage = (uri: string) => {
     const updated = images.filter((img) => img !== uri);
@@ -283,21 +296,249 @@ const uploadImageAsync = async (uri: string, userId: string): Promise<string> =>
   
 
 
+// const handleSubmit = async () => {
+//   if (!userId) {
+//     alert('You must be logged in.');
+//     return;
+//   }
+
+//   try {
+//     setSubmitting(true); // start submitting
+
+//     let locationData;
+
+//     if (selectedLocation && locationAddress) {
+//       // If the user picked an autocomplete suggestion, try to use details
+//       try {
+//         locationData = await geocodeAddress(locationAddress); // ensures structured fields
+//       } catch (err) {
+//         console.warn('Failed to geocode autocomplete address, falling back to lat/lng only');
+//         locationData = {
+//           lat: selectedLocation.lat,
+//           lng: selectedLocation.lng,
+//           postalCode: null,
+//           address: locationAddress,
+//           city: null,
+//           province: null,
+//           country: null,
+//           district: null,
+//         };
+//       }
+//     } else {
+//       // Fallback: manually entered address
+//       const fullAddress = `${address}, ${postalCode}`;
+//       locationData = await geocodeAddress(fullAddress);
+//     }
+
+//     const uploadedImageURLs: string[] = [];
+
+//     for (const uri of images) {
+//       if (uri.startsWith('http')) {
+//         uploadedImageURLs.push(uri);
+//       } else {
+//         const url = await uploadImageAsync(uri, userId);
+//         uploadedImageURLs.push(url);
+//       }
+//     }
+
+//     const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
+
+//     const postData = {
+//       title,
+//       description,
+//       dimensions: { width, length, height },
+//       storageType,
+//       usageType,
+//       mainImage: mainImageURL,
+//       images: uploadedImageURLs,
+//       userId,
+//       postType,
+//       isPublic,
+//       prices,
+//       address: locationData.address,
+//       accessibility,
+//       security,
+//       blockedTimes,
+//       reservedTimes,
+//       location: {
+//         address: locationData.address,
+//         city: locationData.city,
+//         province: locationData.province,
+//         country: locationData.country,
+//         district: locationData.district,
+//         lat: locationData.lat,
+//         lng: locationData.lng,
+//         postalCode: locationData.postalCode,
+//       },
+//     };
+
+//     await onSubmit(postData);
+//   } catch (error: any) {
+//     console.error('Form submission error:', error);
+//     alert(`Error: ${error.message}`);
+//   } finally {
+//     setSubmitting(false);
+//   }
+// };
+
+
+// const handleSubmit = async () => {
+//   if (!userId) {
+//     alert('You must be logged in.');
+//     return;
+//   }
+
+//   // --- Validation ---
+//   const missingFields: string[] = [];
+
+//   if (!title?.trim()) missingFields.push('Title');
+//   if (!description?.trim()) missingFields.push('Description');
+//   if (!locationAddress?.trim()) missingFields.push('Address');
+//   if (!width || !length || !height) missingFields.push('Dimensions');
+  
+//   // Prices: check that at least one period is enabled and has an amount
+//   const hasValidPrice = (Object.values(prices) as any[]).some(
+//     (p) => p.enabled && p.amount && p.amount.trim() !== ''
+//   );
+//   if (!hasValidPrice) missingFields.push('Price');
+
+//   if (!accessibility?.length) missingFields.push('Accessibility');
+//   // storageType and usageType could be optional depending on your app logic
+//   if (!storageType?.length) missingFields.push('Storage Type');
+
+//   if (missingFields.length > 0) {
+//     alert(
+//       `Please fill in the following required fields:\n- ${missingFields.join('\n- ')}`
+//     );
+//     return; // stop submission
+//   }
+
+//   // --- Continue submission ---
+//   try {
+//     setSubmitting(true);
+
+//     let locationData;
+
+//     if (selectedLocation && locationAddress) {
+//       try {
+//         locationData = await geocodeAddress(locationAddress);
+//       } catch (err) {
+//         console.warn('Failed to geocode autocomplete address, falling back to lat/lng only');
+//         locationData = {
+//           lat: selectedLocation.lat,
+//           lng: selectedLocation.lng,
+//           postalCode: null,
+//           address: locationAddress,
+//           city: null,
+//           province: null,
+//           country: null,
+//           district: null,
+//         };
+//       }
+//     } else {
+//       const fullAddress = `${address}, ${postalCode}`;
+//       locationData = await geocodeAddress(fullAddress);
+//     }
+
+//     const uploadedImageURLs: string[] = [];
+
+//     for (const uri of images) {
+//       if (uri.startsWith('http')) {
+//         uploadedImageURLs.push(uri);
+//       } else {
+//         const url = await uploadImageAsync(uri, userId);
+//         uploadedImageURLs.push(url);
+//       }
+//     }
+
+//     const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
+
+//     const postData = {
+//       title,
+//       description,
+//       dimensions: { width, length, height },
+//       storageType,
+//       usageType,
+//       mainImage: mainImageURL,
+//       images: uploadedImageURLs,
+//       userId,
+//       postType,
+//       isPublic,
+//       prices,
+//       address: locationData.address,
+//       accessibility,
+//       security,
+//       blockedTimes,
+//       reservedTimes,
+//       location: {
+//         address: locationData.address,
+//         city: locationData.city,
+//         province: locationData.province,
+//         country: locationData.country,
+//         district: locationData.district,
+//         lat: locationData.lat,
+//         lng: locationData.lng,
+//         postalCode: locationData.postalCode,
+//       },
+//     };
+
+//     await onSubmit(postData);
+//   } catch (error: any) {
+//     console.error('Form submission error:', error);
+//     alert(`Error: ${error.message}`);
+//   } finally {
+//     setSubmitting(false);
+//   }
+// };
+
+
 const handleSubmit = async () => {
   if (!userId) {
     alert('You must be logged in.');
     return;
   }
 
+  // --- Validation ---
+  const missingFields: string[] = [];
+
+  if (!title?.trim()) missingFields.push('Title');
+  if (!description?.trim()) missingFields.push('Description');
+  if (!locationAddress?.trim()) missingFields.push('Address');
+  if (!width || !length || !height) missingFields.push('Dimensions');
+
+  // Prices: at least one enabled with amount
+  const hasValidPrice = (Object.values(prices) as any[]).some(
+    (p) => p.enabled && p.amount && p.amount.trim() !== ''
+  );
+  if (!hasValidPrice) missingFields.push('Price');
+
+  if (!accessibility?.length) missingFields.push('Accessibility');
+  if (!storageType?.length) missingFields.push('Storage Type');
+
+  // --- Image validation ---
+  if (!images || images.length === 0) {
+    missingFields.push('At least one image');
+  }
+  if (!mainImage) {
+    missingFields.push('Main image');
+  }
+
+  if (missingFields.length > 0) {
+    alert(
+      `Please fill in the following required fields:\n- ${missingFields.join('\n- ')}`
+    );
+    return; // stop submission
+  }
+
+  // --- Continue submission ---
   try {
-    setSubmitting(true); // start submitting
+    setIsSubmitting(true);
 
     let locationData;
 
     if (selectedLocation && locationAddress) {
-      // If the user picked an autocomplete suggestion, try to use details
       try {
-        locationData = await geocodeAddress(locationAddress); // ensures structured fields
+        locationData = await geocodeAddress(locationAddress);
       } catch (err) {
         console.warn('Failed to geocode autocomplete address, falling back to lat/lng only');
         locationData = {
@@ -312,7 +553,6 @@ const handleSubmit = async () => {
         };
       }
     } else {
-      // Fallback: manually entered address
       const fullAddress = `${address}, ${postalCode}`;
       locationData = await geocodeAddress(fullAddress);
     }
@@ -364,11 +604,9 @@ const handleSubmit = async () => {
     console.error('Form submission error:', error);
     alert(`Error: ${error.message}`);
   } finally {
-    setSubmitting(false);
+    setIsSubmitting(false);
   }
 };
-
-
 
 
   const handleDeletePost = () => {
@@ -457,7 +695,7 @@ const handleSubmit = async () => {
 
 
 
-
+{/* 
 <TextInput
   style={styles.input}
   placeholder="Title"
@@ -471,7 +709,6 @@ const handleSubmit = async () => {
   value={description}
   onChangeText={setDescription}
 />
-
 
 <View style={{ zIndex: 1000, marginBottom: 16 }}>
   <GooglePlacesAutocomplete
@@ -506,10 +743,62 @@ const handleSubmit = async () => {
     }}
     enablePoweredByContainer={false}
   />
+</View> */}
+
+{/* Title */}
+<Text style={styles.label}>Title</Text>
+<TextInput
+  style={styles.input}
+  placeholder="e.g. Storage space in downtown Calgary"
+  value={title}
+  onChangeText={setTitle}
+/>
+
+{/* Description */}
+<Text style={styles.label}>Description</Text>
+<TextInput
+  style={[styles.input, { height: 100 }]}
+  placeholder="e.g. Secure indoor storage space available. Fits boxes, bikes, or small furniture."
+  multiline
+  value={description}
+  onChangeText={setDescription}
+/>
+
+{/* Address */}
+<Text style={styles.label}>Address</Text>
+<View style={{ zIndex: 1000, marginBottom: 16 }}>
+  <GooglePlacesAutocomplete
+    placeholder="e.g. 123 Main St NW"
+    fetchDetails={true}
+    disableScroll={true}
+    query={{
+      key: GOOGLE_PLACES_KEY,
+      language: 'en',
+      components: 'country:ca',
+      types: 'geocode',
+    }}
+    onPress={(data, details = null) => {
+      if (!details) return;
+
+      setLocationAddress(data.description);
+      setSelectedLocation({
+        lat: details.geometry.location.lat,
+        lng: details.geometry.location.lng,
+      });
+    }}
+    textInputProps={{
+      value: locationAddress,
+      onChangeText: (text) => {
+        setLocationAddress(text);
+        setAddress(text.split(',')[0]);
+      },
+    }}
+    enablePoweredByContainer={false}
+  />
 </View>
 
 
-<View style={styles.sizeContainer}>
+{/* <View style={styles.sizeContainer}>
   <TextInput
     style={styles.sizeInput}
     placeholder="Width (ft)"
@@ -532,12 +821,53 @@ const handleSubmit = async () => {
     keyboardType="numeric"
   />
 </View>
+ */}
+
+
+{/* Dimensions */}
+<Text style={styles.label}>Dimensions</Text>
+
+<View style={styles.sizeContainer}>
+  {/* Width */}
+  <View style={styles.dimensionBox}>
+    <Text style={styles.dimensionLabel}>Width</Text>
+    <TextInput
+      style={styles.sizeInput}
+      placeholder="e.g. 5 ft"
+      value={width}
+      onChangeText={setWidth}
+      keyboardType="numeric"
+    />
+  </View>
+
+  {/* Length */}
+  <View style={styles.dimensionBox}>
+    <Text style={styles.dimensionLabel}>Length</Text>
+    <TextInput
+      style={styles.sizeInput}
+      placeholder="e.g. 10 ft"
+      value={length}
+      onChangeText={setLength}
+      keyboardType="numeric"
+    />
+  </View>
+
+  {/* Height */}
+  <View style={styles.dimensionBox}>
+    <Text style={styles.dimensionLabel}>Height</Text>
+    <TextInput
+      style={styles.sizeInput}
+      placeholder="e.g. 8 ft"
+      value={height}
+      onChangeText={setHeight}
+      keyboardType="numeric"
+    />
+  </View>
+</View>
 
 
 
-
-
-<Text style={styles.sectionTitle}>Price</Text>
+{/* <Text style={styles.sectionTitle}>Price</Text>
 
 <View style={styles.priceSection}>
   {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
@@ -552,13 +882,12 @@ const handleSubmit = async () => {
           !isEnabled && { opacity: 0.5 }, // grey out if disabled
         ]}
       >
-        {/* Toggle Button */}
+
 
         <Text style={styles.priceLabel}>
           {period.charAt(0).toUpperCase() + period.slice(1)}
         </Text>
 
-        {/* Price Input */}
         <TextInput
           style={[styles.sizeInput, { flex: 1 }]}
           placeholder="Price"
@@ -573,7 +902,6 @@ const handleSubmit = async () => {
           editable={isEnabled} // only editable if enabled
         />
 
-        {/* Prioritized button */}
         <TouchableOpacity
           style={[
             styles.frequencyButton,
@@ -605,12 +933,7 @@ const handleSubmit = async () => {
             styles.frequencyButton,
             isEnabled && styles.frequencyButtonSelected,
           ]}
-          // onPress={() =>
-          //   setPrices((prev) => ({
-          //     ...prev,
-          //     [period]: { ...prev[period], enabled: !prev[period].enabled },
-          //   }))
-          // }
+
             onPress={() => toggleEnabled(period)}
 
         >
@@ -628,12 +951,123 @@ const handleSubmit = async () => {
       </View>
     );
   })}
+</View> */}
+
+<Text style={styles.sectionTitle}>Price</Text>
+<Text style={styles.sectionDescription}>
+  Set how much you want to charge for your space. You can specify daily, weekly, and monthly rates.
+</Text>
+
+<View style={styles.priceSection}>
+  {/* Top Labels */}
+  <View style={styles.priceHeaderRow}>
+    {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => (
+      <Text key={period} style={styles.priceHeaderText}>
+        {period.charAt(0).toUpperCase() + period.slice(1)}
+      </Text>
+    ))}
+  </View>
+
+  {/* Price Inputs Row */}
+  <View style={styles.priceRow}>
+    {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
+      const data = prices[period];
+      return (
+        <TextInput
+          key={period}
+          style={[
+            styles.sizeInput,
+            styles.priceCell,
+            !data.enabled && { opacity: 0.5 },
+          ]}
+          placeholder="$0"
+          value={data.amount}
+          onChangeText={(val) =>
+            setPrices((prev) => ({
+              ...prev,
+              [period]: { ...prev[period], amount: val },
+            }))
+          }
+          keyboardType="numeric"
+          editable={data.enabled}
+        />
+      );
+    })}
+  </View>
+  
+
+  {/* Prioritized Row */}
+  <View style={styles.priceRow}>
+    {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
+      const data = prices[period];
+      return (
+        <TouchableOpacity
+          key={period}
+          style={[
+            styles.frequencyButton,
+            styles.priceCell,
+            data.isPublic && styles.frequencyButtonSelected,
+            !data.enabled && { opacity: 0.5 },
+          ]}
+          onPress={() =>
+            setPrices((prev) => {
+              const updated = { ...prev };
+              (Object.keys(updated) as PricePeriod[]).forEach((p) => {
+                updated[p].isPublic = p === period;
+              });
+              return updated;
+            })
+          }
+          disabled={!data.enabled}
+        >
+          <Text
+            style={[
+              styles.frequencyText,
+              data.isPublic && styles.frequencyTextSelected,
+            ]}
+          >
+            Prioritized
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+
+  {/* Enabled Row */}
+  <View style={styles.priceRow}>
+    {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
+      const data = prices[period];
+      return (
+        <TouchableOpacity
+          key={period}
+          style={[
+            styles.frequencyButton,
+            styles.priceCell,
+            data.enabled && styles.frequencyButtonSelected,
+          ]}
+          onPress={() => toggleEnabled(period)}
+        >
+          <Text
+            style={[
+              styles.frequencyText,
+              data.enabled && styles.frequencyTextSelected,
+            ]}
+          >
+            {data.enabled ? 'Enabled' : 'Disabled'}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
 </View>
 
 
 
 
 <Text style={styles.sectionTitle}>Visibility</Text>
+<Text style={styles.sectionDescription}>
+  Choose whether your space is visible to others or kept private.
+</Text>
 <View style={styles.optionRow}>
   {['Public', 'Private'].map(option => {
     const selected = (option === 'Public') === isPublic;
@@ -654,6 +1088,9 @@ const handleSubmit = async () => {
 
 {/* Accessibility (Radio Buttons) */}
 <Text style={styles.sectionTitle}>Accessibility:</Text>
+<Text style={styles.sectionDescription}>
+  Choose how and when renters can access your space.
+</Text>
 <View style={styles.optionRow}>
   {['By Appointment', '24/7'].map(option => {
     const selected = accessibility === option;
@@ -674,6 +1111,10 @@ const handleSubmit = async () => {
 
 {/* Security (Checkboxes) */}
 <Text style={styles.sectionTitle}>Security:</Text>
+<Text style={styles.sectionDescription}>
+  Select the safety features available at your space.
+</Text>
+
 <View style={styles.optionRow}>
 {['Video Surveillance', 'Pinpad/Keys', 'Gated Area', 'Smoke Detectors', 'Alarm System', 'On-Site Presence'].map(option => {
     const selected = security.includes(option);
@@ -697,6 +1138,9 @@ const handleSubmit = async () => {
 
 
 <Text style={styles.sectionTitle}>Storage Type</Text>
+<Text style={styles.sectionDescription}>
+  Select the features and characteristics that best describe your space.
+</Text>
 <View style={styles.optionRow}>
   {[
     'Indoor',
@@ -744,6 +1188,10 @@ const handleSubmit = async () => {
 
 
 <Text style={styles.sectionTitle}>Usage Type</Text>
+<Text style={styles.sectionDescription}>
+  Select what your space is suitable for storing.
+</Text>
+
 <View style={styles.optionRow}>
 
 {['Cars/Trucks', 'RV', 'Boats', 'Personal', 'Business'].map((type) => {
@@ -768,15 +1216,17 @@ const handleSubmit = async () => {
 </View>
 
 
-<TouchableOpacity
+{/* <TouchableOpacity
   style={[styles.submitButton, submitting && { opacity: 0.6 }]}
   onPress={handleSubmit}
   disabled={submitting} // ⬅️ disables button
 >
+
   <Text style={styles.submitText}>
     {submitting ? (mode === 'edit' ? 'Updating post...' : 'Creating post...') 
                 : (mode === 'edit' ? 'Update Space' : 'Create Space')}
   </Text>
+
 </TouchableOpacity>
 
 {mode === 'edit' && initialData?.postId && (
@@ -793,9 +1243,36 @@ const handleSubmit = async () => {
       {submitting ? 'Deleting post...' : 'Delete Post'}
     </Text>
   </TouchableOpacity>
+)} */}
+
+
+<TouchableOpacity
+  style={[styles.submitButton, isSubmitting && { opacity: 0.6 }]}
+  onPress={handleSubmit}
+  disabled={isSubmitting || isDeleting}
+>
+  <Text style={styles.submitText}>
+    {isSubmitting
+      ? (mode === 'edit' ? 'Updating post...' : 'Creating post...')
+      : (mode === 'edit' ? 'Update Space' : 'Create Space')}
+  </Text>
+</TouchableOpacity>
+
+{mode === 'edit' && initialData?.postId && (
+  <TouchableOpacity
+    style={[
+      styles.submitButton,
+      { backgroundColor: 'red', marginTop: 10 },
+      isDeleting && { opacity: 0.6 },
+    ]}
+    onPress={handleDeletePost}
+    disabled={isSubmitting || isDeleting}
+  >
+    <Text style={[styles.submitText, { color: 'white' }]}>
+      {isDeleting ? 'Deleting post...' : 'Delete Post'}
+    </Text>
+  </TouchableOpacity>
 )}
-
-
 
 
     {/* </ScrollView> */}
@@ -837,6 +1314,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  priceHeaderRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  
+  priceHeaderText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+  },
+
+  
+  priceCell: {
+    flex: 1,
+    marginHorizontal: 4, // 👈 spacing between columns
+  },
 
   // Label for each period (Daily, Weekly, Monthly)
   priceLabel: {
@@ -873,23 +1368,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F1F1F',
   },
+  // sizeContainer: {
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  //   marginBottom: 10,
+  // },
+  // sizeInput: {
+  //   flex: 1,
+  //   borderWidth: 1,
+  //   borderColor: '#DDD',
+  //   borderRadius: 6,
+  //   padding: 10,
+  //   marginHorizontal: 0,
+  //   backgroundColor: '#FFF',
+  //   fontFamily: 'Poppins-Regular',
+  //   fontSize: 16,
+  //   color: '#1F1F1F',
+  // },
+
   sizeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 16,
   },
-  sizeInput: {
+  
+  dimensionBox: {
     flex: 1,
+  },
+  dimensionBoxMiddle: {
+    marginHorizontal: 8,
+  },
+  
+  dimensionLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  
+  sizeInput: {
     borderWidth: 1,
     borderColor: '#DDD',
     borderRadius: 6,
     padding: 10,
-    marginHorizontal: 0,
     backgroundColor: '#FFF',
     fontFamily: 'Poppins-Regular',
     fontSize: 16,
     color: '#1F1F1F',
   },
+
+
   sectionTitle: {
     fontWeight: '700',
     fontSize: 26,
@@ -1017,6 +1544,13 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontFamily: 'Poppins-Bold',
   },
+
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+    color: '#333',
+  },
   
   priceHint: {
     fontSize: 13,
@@ -1061,6 +1595,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
+  },
+  sectionDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 12,
   },
   
   mainBadge: {
