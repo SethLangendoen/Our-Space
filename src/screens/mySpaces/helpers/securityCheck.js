@@ -87,79 +87,100 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
 
   try {
     await runTransaction(db, async (transaction) => {
-      // ---- READS FIRST ----
+      // ---- ALL READS FIRST ----
       const reservationSnap = await transaction.get(reservationRef);
       if (!reservationSnap.exists()) return;
-
+    
       const reservationData = reservationSnap.data();
-
-      // 🔒 Guard against double completion
       if (reservationData.status === 'completed') return;
-
+    
       const spaceSnap = await transaction.get(spaceRef);
       if (!spaceSnap.exists()) return;
-
+    
       const spaceData = spaceSnap.data();
-
+    
       const hostRef = doc(db, 'users', reservationData.ownerId);
+      const renterRef = doc(db, 'users', reservationData.requesterId);
+    
       const hostSnap = await transaction.get(hostRef);
       if (!hostSnap.exists()) return;
-
+    
+      const renterSnap = await transaction.get(renterRef);
+      if (!renterSnap.exists()) return;
+    
       const hostData = hostSnap.data();
-
+      const renterData = renterSnap.data();
+    
       // ---- COMPUTE ----
       const completedAt = new Date();
+    
+      const bookingDurationMs = reservationData.endDate.toDate().getTime() - reservationData.startDate.toDate().getTime();
 
-      const bookingDurationMs = getBookingDurationMs(
-        reservationData.startDate,
-        completedAt
-      );
-
+      const qualifiesFor30DayStreak = bookingDurationMs >= THIRTY_DAYS_MS;
+    
       const currentTotal = spaceData.totalTimeBooked || 0;
-      const timeCheck = currentTotal - THIRTY_DAYS_MS;
-
-      const qualifiesForRoyalty =
-        timeCheck >= 0 &&
-        !(hostData?.badges?.respectedRoyalty);
-
-      // ---- REMOVE RESERVED TIME ----
+    
       const updatedReservedTimes = (spaceData.reservedTimes || []).filter((rt) => {
         const rtStart = rt.startDate.toDate?.() || new Date(rt.startDate);
         const rtEnd = rt.endDate.toDate?.() || new Date(rt.endDate);
-
+    
         return !(
           rt.renterId === reservationData.requesterId &&
           rtStart.getTime() === reservationData.startDate.toDate().getTime() &&
           rtEnd.getTime() === reservationData.endDate.toDate().getTime()
         );
       });
+    
+      // ---- BADGE LOGIC ----
+      const renterCompletedAsRenter =
+        (renterData.completedAsRenter || 0) + 1;
+    
+      const hostCompletedAsHost =
+        (hostData.completedAsHost || 0) + 1;
+    
+      const renterTotal =
+        renterCompletedAsRenter + (renterData.completedAsHost || 0);
+    
+      const hostTotal =
+        hostCompletedAsHost + (hostData.completedAsRenter || 0);
+    
+      const renterQualifies = renterTotal >= 5;
+      const hostQualifies = hostTotal >= 5;
 
       // ---- WRITES LAST ----
       transaction.update(reservationRef, {
         status: 'completed',
         completedAt,
       });
-
-
-
-      // transaction.update(spaceRef, {
-      //   totalTimeBooked: currentTotal + bookingDurationMs,
-      //   reservedTimes: updatedReservedTimes, // ✅ remove reserved time
-      // });
-      
+    
       transaction.update(spaceRef, {
         totalTimeBooked: currentTotal + bookingDurationMs,
         reservedTimes: updatedReservedTimes,
-        activeReservationId: null,  
-        isPublic: true,              
+        activeReservationId: null,
+        isPublic: true,
+      });
+    
+    
+      transaction.update(renterRef, {
+        completedAsRenter: renterCompletedAsRenter,
+        'badges.5XSpacer': renterQualifies,
+        ...(qualifiesFor30DayStreak &&
+          !renterData?.badges?.['30DayStreak'] && {
+            'badges.30DayStreak': true,
+          }),
       });
 
-      if (qualifiesForRoyalty) {
-        transaction.update(hostRef, {
-          'badges.respectedRoyalty': true,
-        });
-      }
+      transaction.update(hostRef, {
+        completedAsHost: hostCompletedAsHost,
+        'badges.5XSpacer': hostQualifies,
+        ...(qualifiesFor30DayStreak &&
+          !hostData?.badges?.['30DayStreak'] && {
+            'badges.30DayStreak': true,
+          }),
+      });
+
     });
+
 
     console.log('Reservation marked completed and reserved time removed.');
   } catch (err) {
@@ -187,6 +208,8 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
       Alert.alert('Error', 'Failed to verify code.');
     }
   };
+
+  
 
   const handleUploadSecurityPhoto = async () => {
     try {
@@ -327,71 +350,6 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
     </View>
   );
 }
-
-
-
-// const styles = StyleSheet.create({
-//   container: {
-//     marginVertical: 10,
-//     padding: 15,
-//     borderRadius: 10,
-//     backgroundColor: '#FFFCF1',
-//     borderWidth: 1,
-//     borderColor: '#0F6B5B',
-//   },
-//   lockedContainer: {
-//     backgroundColor: '#f0f0f0',
-//     borderColor: '#ccc',
-//   },
-//   title: {
-//     fontWeight: '700',
-//     fontSize: 16,
-//     marginBottom: 8,
-//     color: '#0F6B5B',
-//   },
-//   infoText: {
-//     fontSize: 14,
-//     marginBottom: 6,
-//   },
-//   codeText: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     marginBottom: 8,
-//     color: '#0F6B5B',
-//   },
-//   successText: {
-//     color: 'green',
-//     fontWeight: '600',
-//     marginVertical: 4,
-//   },
-//   actionButton: {
-//     backgroundColor: '#0F6B5B',
-//     paddingVertical: 10,
-//     paddingHorizontal: 12,
-//     borderRadius: 6,
-//     alignItems: 'center',
-//     marginTop: 10,
-//   },
-//   actionButtonText: {
-//     color: '#FFF',
-//     fontWeight: '600',
-//   },
-//   codeInput: {
-//     borderWidth: 1,
-//     borderColor: '#0F6B5B',
-//     borderRadius: 6,
-//     padding: 8,
-//     marginVertical: 6,
-//     width: 80,
-//     textAlign: 'center',
-//   },
-//   lockedText: {
-//     fontSize: 14,
-//     color: '#999',
-//     fontStyle: 'italic',
-//     marginBottom: 6,
-//   },
-// });
 
 const styles = StyleSheet.create({
   container: {

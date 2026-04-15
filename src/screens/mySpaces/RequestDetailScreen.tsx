@@ -844,12 +844,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
       )}
 
 
-
-
-      {/* <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
-        <Text style={styles.messageButtonText}>Message User</Text>
-      </TouchableOpacity> */}
-
       </View>
     
 

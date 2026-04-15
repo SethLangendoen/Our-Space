@@ -64,9 +64,9 @@ const badgeList = [
 	  iconIncomplete: require('../../../assets/badges/incomplete/FD100DayMVP.png'),
 	},
 	{
-	  id: '10XHost',
-	  title: '10X Host',
-	  description: 'Host 10 unique guests on your listings.',
+	  id: '5XSpacer',
+	  title: '5X Spacer',
+	  description: 'complete 5 successful bookings',
 	  isCompleted: false,
 	  iconCompleted: require('../../../assets/badges/complete/Reg5XSpacer.png'),
 	  iconIncomplete: require('../../../assets/badges/incomplete/FD5XSpacer.png'),

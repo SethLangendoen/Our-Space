@@ -24,11 +24,13 @@ import {
   serverTimestamp,
   getDoc,
   doc,
+  
 } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../Styles/theme';
+import { updateFirstResponseTime } from './UpdateFirstResponseTime';
 
 type RootStackParamList = {
   MessagesScreen: { chatId: string; otherUser: string };
@@ -93,9 +95,7 @@ export default function MessagesScreen({ route }: Props) {
     fetchOtherUserData();
   }, [otherUser]);
 
-  function updateFirstResponseTime(chatId: string, uid: string) {
-    throw new Error('Function not implemented.');
-  }
+
   
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
@@ -108,11 +108,24 @@ export default function MessagesScreen({ route }: Props) {
   const sendMessage = async () => {
     if (!input.trim()) return;
   
+    // await addDoc(collection(db, 'chats', chatId, 'messages'), {
+    //   text: input,
+    //   senderId: auth.currentUser?.uid ?? 'unknown',
+    //   createdAt: serverTimestamp(),
+    // });
     await addDoc(collection(db, 'chats', chatId, 'messages'), {
       text: input,
       senderId: auth.currentUser?.uid ?? 'unknown',
       createdAt: serverTimestamp(),
     });
+    
+    setInput('');
+    inputRef.current?.blur();
+    Keyboard.dismiss();
+    
+    setTimeout(() => {
+      updateFirstResponseTime(chatId, auth.currentUser!.uid);
+    }, 500);
   
     setInput('');
   
@@ -141,7 +154,6 @@ export default function MessagesScreen({ route }: Props) {
     // Reference / Reservation messages
     if (item.isReference && item.referenceData) {
       const isReservation = !!item.referenceData.reservationId;
-
 
 
 
@@ -254,17 +266,17 @@ export default function MessagesScreen({ route }: Props) {
         <View style={styles.container}>
 
 
-<FlatList
-  ref={flatListRef}
-  data={[...messages].reverse()} // ← clone and reverse
-  keyExtractor={(item) => item.id}
-  renderItem={renderItem}
-  contentContainerStyle={{ paddingVertical: 10 }}
-  keyboardShouldPersistTaps="handled"
-  keyboardDismissMode="on-drag"
-  showsVerticalScrollIndicator={false}
-  inverted // <-- Add this
-/>
+        <FlatList
+          ref={flatListRef}
+          data={[...messages].reverse()} // ← clone and reverse
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingVertical: 10 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          inverted // <-- Add this
+        />
 
 
 

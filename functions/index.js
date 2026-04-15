@@ -10,7 +10,7 @@ const { processRecurringPayments } = require('./payments/processRecurringPayment
 const { handleStripePaymentWebhook } = require("./stripe/stripePaymentWebhook");
 const { cancelReservationEarly } = require("./payments/cancelReservationEarly");
 const { getStripeEarningsLogic } = require("./stripe/getStripeEarningsLogic");
-
+const { createStripeLoginLinkLogic } = require("./stripe/createStripeLoginLink");
 
 const {
   ensureStripeCustomerLogic,
@@ -242,3 +242,29 @@ exports.getStripeEarnings = https.onRequest(
     }
   }
 );
+
+exports.createStripeLoginLink = https.onRequest(async (req, res) => {
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method Not Allowed" });
+    }
+
+    const idToken = req.headers.authorization?.split("Bearer ")[1];
+
+    if (!idToken) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = await admin.auth().verifyIdToken(idToken);
+
+    const result = await createStripeLoginLinkLogic(decoded.uid);
+
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error("Stripe login link error:", err);
+
+    return res.status(500).json({
+      error: err.message,
+    });
+  }
+});

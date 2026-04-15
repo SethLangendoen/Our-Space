@@ -30,7 +30,31 @@ export async function createStripeAccount({ email }) {
   return data;
 }
 
+export async function getStripeLoginLink() {
+  const user = auth.currentUser;
+  if (!user) throw new Error("User not signed in");
 
+  const idToken = await user.getIdToken(true);
+
+  const response = await fetch(
+    "https://us-central1-our-space-8b8cd.cloudfunctions.net/createStripeLoginLink",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to create Stripe login link");
+  }
+
+  return data.url;
+}
 
 // Gets an onboarding link from stripe. 
 export async function getStripeOnboardingLink() {
