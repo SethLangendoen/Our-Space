@@ -84,6 +84,8 @@ const handleConfirm = async () => {
         updatedAt: serverTimestamp(),
       };
 
+      
+
       // add in the reservedTime into the space. 
       const spaceRef = doc(db, 'spaces', reservation.spaceId);
       const reservedTime = {

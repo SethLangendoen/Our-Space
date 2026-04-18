@@ -268,3 +268,4 @@ exports.createStripeLoginLink = https.onRequest(async (req, res) => {
     });
   }
 });
+

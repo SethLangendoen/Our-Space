@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 // import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, TextInput, Platform, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, TextInput, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, limit, query, serverTimestamp, setDoc, Timestamp, updateDoc, where } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
 import { AuthError } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
@@ -16,7 +16,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { COLORS } from '../Styles/theme';
 import FeatureRow from 'src/components/FeatureRow';
 import ImageCarousel from './ImageCarousel';
-
+import { Ionicons } from '@expo/vector-icons';
 
 type RootStackParamList = {
   Spaces: undefined;
@@ -47,12 +47,16 @@ type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
   const [reservationDescription, setReservationDescription] = useState('');
   const mapProvider = Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined;
   const [storageDuration, setStorageDuration] = useState('');
-const [selectedPricePeriod, setSelectedPricePeriod] = useState<'daily' | 'weekly' | 'monthly' | null>(null);
-
+  const [selectedPricePeriod, setSelectedPricePeriod] = useState<'daily' | 'weekly' | 'monthly' | null>(null);
+  const [showRequestUI, setShowRequestUI] = useState(false);
+  const [reservationSuccess, setReservationSuccess] = useState(false);
+  const [hasRequested, setHasRequested] = useState(false);
+  const [reservationId, setReservationId] = useState(String)
   const [selectedRange, setSelectedRange] = useState<{ start: Date | null; end: Date | null }>({
     start: null,
     end: null,
   });
+  const [showMessageUI, setShowMessageUI] = useState(false);
 
   useEffect(() => {
     console.log('selectedRange changed:', selectedRange);
@@ -99,6 +103,40 @@ useEffect(() => {
   
 	fetchSpaceAndUser();
   }, [spaceId]);
+
+
+  // NOT DONE YET
+  useEffect(() => {
+    console.log('checking existing request')
+    const checkExistingRequest = async () => {
+      if (!currentUser || !space?.id) return;
+
+      const q = query(
+        collection(db, 'reservations'),
+        where('requesterId', '==', currentUser),
+        where('spaceId', '==', space.id),
+        where('status', 'in', [
+          'requested',
+          'awaiting_acceptance',
+          'confirmed'
+        ]),
+        limit(1)
+      );
+
+      const snap = await getDocs(q);
+
+      if (!snap.empty) {
+        console.log('found a request')
+        setHasRequested(true);
+        setReservationId(snap.docs[0].id);
+      } else {
+        setHasRequested(false);
+        console.log('did not find a request')
+      }
+    };
+  
+    checkExistingRequest();
+  }, [currentUser, space?.id, hasRequested]);
 
 
 
@@ -260,7 +298,6 @@ useEffect(() => {
           price: priceValue,
         });
     
-        Alert.alert('Reservation Requested', 'The space owner will review your request.');
         setReservationDescription('');
         setSelectedRange({ start: null, end: null });
     
@@ -299,7 +336,11 @@ useEffect(() => {
         });
     
         console.log('Reservation request message sent to chat.');
-    
+        setShowRequestUI(false)
+        setReservationSuccess(true);
+        setReservationId(reservationRef.id)
+        setHasRequested(true);
+
       } catch (err) {
         console.error('Reservation Error:', err);
         Alert.alert('Error', 'Could not submit reservation.');
@@ -550,6 +591,34 @@ const futureBlocked = startDate
 
 
 
+  <View >
+    
+    {/* <TouchableOpacity
+      style={styles.requestButton}
+      onPress={() => {
+        setShowRequestUI(true);
+        setShowMessageUI(false);
+      }}
+    >
+      <Text style={styles.requestButtonText}>
+        Request This Space
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={styles.messageHostButton}
+      onPress={() => {
+        setShowMessageUI(true);
+        setShowRequestUI(false);
+      }}
+    >
+      <Text style={styles.messageHostText}>
+        Message Host
+      </Text>
+    </TouchableOpacity>
+
+  </View> */}
+
 
 {!currentUser ? (
   <View style={styles.noticeBox}>
@@ -561,131 +630,186 @@ const futureBlocked = startDate
   <View style={styles.noticeBox}>
     <Text style={styles.noticeText}>You Posted This Space</Text>
   </View>
+
 ) : (
 
 
-  <>
+<>
 
-    {/* Reservation Section */}
-  <View style={styles.bookingContainer}>
-  <Text style={styles.bookingTitle}>Book Reservation</Text>
+{!showRequestUI && (
+  <TouchableOpacity
+    style={styles.requestButton}
+    onPress={() => {
+      if (hasRequested && reservationId) {
+        navigation
+          .getParent()
+          ?.navigate('MySpaces', {
+            screen: 'RequestDetailScreen',
+            params: {
+              reservationId,
+            },
+          });
+        return;
+      }
+
+      setShowRequestUI(true);
+    }}
+  >
+    <Text style={styles.requestButtonText}>
+      {hasRequested ? 'View Your Booking Request' : 'Request This Space'}
+    </Text>
+  </TouchableOpacity>
+)}
 
 
 
-  <BlockedCalendar
-    // blockedTimes={space.blockedTimes || []}
-    // reservedTimes={space.reservedTimes || []} 
-    onSelectRange={(range) => setSelectedRange(range)}
-    // editable={false}
-    singleSelect={true}
+{showRequestUI && (
 
-  />
+<>
+
+<View style={styles.bookingContainer}>
+<Text style={styles.bookingTitle}>Book Reservation</Text>
+
+
+
+<BlockedCalendar
+  // blockedTimes={space.blockedTimes || []}
+  // reservedTimes={space.reservedTimes || []} 
+  onSelectRange={(range) => setSelectedRange(range)}
+  // editable={false}
+  singleSelect={true}
+
+/>
 
 <View style={styles.dateSummary}>
-  {/* START */}
-  <View style={styles.dateRow}>
-    <Text style={styles.dateLabel}>Start</Text>
-    <Text style={styles.dateValue}>
-      {selectedRange.start
-        ? selectedRange.start.toDateString()
-        : 'Not selected'}
-    </Text>
-  </View>
+{/* START */}
+<View style={styles.dateRow}>
+  <Text style={styles.dateLabel}>Start</Text>
+  <Text style={styles.dateValue}>
+    {selectedRange.start
+      ? selectedRange.start.toDateString()
+      : 'Not selected'}
+  </Text>
+</View>
 
 
 
 </View>
 
 
-  {space.prices && (
-  <View style={{ marginVertical: 20, paddingBottom: 10 }}>
-    <Text style={styles.label}>Select Pricing Period</Text>
+{space.prices && (
+<View style={{ marginVertical: 20, paddingBottom: 10 }}>
+  <Text style={styles.label}>Select Pricing Period</Text>
 
-    <View
-      style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',     // ⬅️ allow buttons to wrap
-        gap: 10,              // spacing between buttons
-        marginTop: 8,
-      }}
-    >
-      {(['daily', 'weekly', 'monthly'] as const)
-        .filter(period => space.prices[period]?.enabled)
-        .map(period => {
-          const data = space.prices[period];
-          if (!data) return null;
+  <View
+    style={{
+      flexDirection: 'row',
+      flexWrap: 'wrap',     // ⬅️ allow buttons to wrap
+      gap: 10,              // spacing between buttons
+      marginTop: 8,
+    }}
+  >
+    {(['daily', 'weekly', 'monthly'] as const)
+      .filter(period => space.prices[period]?.enabled)
+      .map(period => {
+        const data = space.prices[period];
+        if (!data) return null;
 
-          const isSelected = selectedPricePeriod === period;
+        const isSelected = selectedPricePeriod === period;
 
-          return (
-            <TouchableOpacity
-              key={period}
-              style={{
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-                backgroundColor: isSelected ? '#FFBA00' : '#eee',
-                borderRadius: 6,
-              }}
-              onPress={() => setSelectedPricePeriod(period)}
-            >
-              <Text style={{ color: isSelected ? 'white' : 'black' }}>
-                {period.charAt(0).toUpperCase() + period.slice(1)} (${parseFloat(data.amount || '0').toFixed(2)})
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-    </View>
+        return (
+          <TouchableOpacity
+            key={period}
+            style={{
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              backgroundColor: isSelected ? '#FFBA00' : '#eee',
+              borderRadius: 6,
+            }}
+            onPress={() => setSelectedPricePeriod(period)}
+          >
+            <Text style={{ color: isSelected ? 'white' : 'black' }}>
+              {period.charAt(0).toUpperCase() + period.slice(1)} (${parseFloat(data.amount || '0').toFixed(2)})
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
   </View>
+</View>
 )}
 
-  <TextInput
-    style={styles.descriptionInput}
-    placeholder="Describe the items you are storing"
-    value={reservationDescription}
-    onChangeText={setReservationDescription}
-    multiline
-  />
-  <TextInput
-    style={styles.descriptionInput}
-    placeholder="Approximate storage duration (e.g., 2 weeks, 3 months)"
-    value={storageDuration}
-    onChangeText={setStorageDuration}
-    multiline={false}
-  />
+
+<TextInput
+  style={styles.descriptionInput}
+  placeholder="Describe the items you are storing"
+  value={reservationDescription}
+  onChangeText={setReservationDescription}
+  multiline
+/>
+<TextInput
+  style={styles.descriptionInput}
+  placeholder="Approximate storage duration (e.g., 2 weeks, 3 months)"
+  value={storageDuration}
+  onChangeText={setStorageDuration}
+  multiline={false}
+/>
 
 
 <TouchableOpacity
-  style={[
-    styles.confirmButton,
-    (
-      !selectedRange.start ||                   // start date
-      !reservationDescription.trim() ||        // description of items
-      !storageDuration.trim() ||               // ⬅️ approximate storage duration
-      !selectedPricePeriod ||                  // ⬅️ selected pricing period
-      booking ||
-      invalidOpenEndedBooking
-    ) && styles.disabledButton,
-  ]}
-  disabled={
-    !selectedRange.start ||
-    !reservationDescription.trim() ||
-    !storageDuration.trim() ||                 // ⬅️ disable if empty
-    !selectedPricePeriod ||                    // ⬅️ disable if not selected
+style={[
+  styles.confirmButton,
+  (
+    !selectedRange.start ||                   // start date
+    !reservationDescription.trim() ||        // description of items
+    !storageDuration.trim() ||               // ⬅️ approximate storage duration
+    !selectedPricePeriod ||                  // ⬅️ selected pricing period
     booking ||
     invalidOpenEndedBooking
-  }
-  onPress={handleReservation}
+  ) && styles.disabledButton,
+]}
+disabled={
+  !selectedRange.start ||
+  !reservationDescription.trim() ||
+  !storageDuration.trim() ||                 // ⬅️ disable if empty
+  !selectedPricePeriod ||                    // ⬅️ disable if not selected
+  booking ||
+  invalidOpenEndedBooking
+}
+onPress={handleReservation}
 >
-  <Text style={styles.confirmText}>
-    {booking ? 'Sending Request...' : 'Request Space Reservation'}
-  </Text>
+<Text style={styles.confirmText}>
+  {booking ? 'Sending Request...' : 'Request Space Reservation'}
+</Text>
+
+
 </TouchableOpacity>
 
 </View>
 
 
-    <Text style={styles.questionText}>Have a question before booking?</Text>
+</>
 
+  
+)}
+
+
+
+
+  <TouchableOpacity
+      style={styles.messageHostButton}
+      onPress={() => {
+        setShowMessageUI(true);
+        // setShowRequestUI(false);
+      }}
+    >
+      <Text style={styles.messageHostText}>
+        Message Host
+      </Text>
+  </TouchableOpacity>
+
+
+{showMessageUI && (
+  <>
 
     <View style={styles.messageBox}>
       <TextInput
@@ -704,21 +828,87 @@ const futureBlocked = startDate
           (!message.trim() || sending) && styles.disabledButton,
         ]}
       >
-        <Text style={styles.sendText}>{sending ? 'Sending...' : 'Send'}</Text>
+        <Text style={styles.sendText}>
+          {sending ? 'Sending...' : 'Send'}
+        </Text>
       </TouchableOpacity>
     </View>
-
-
   </>
 )}
 
+</>
 
+)}
+
+
+
+  </View>
 
 
 
 
     </ScrollView>
+
+    
+
+
     </TouchableWithoutFeedback>
+
+
+
+    {reservationSuccess && (
+  <View style={styles.overlay}>
+    <View style={styles.overlayCard}>
+
+      {/* X button */}
+      <TouchableOpacity
+        onPress={() => setReservationSuccess(false)}
+        style={styles.overlayCloseButton}
+      >
+        <Ionicons name="close" size={22} color="#333" />
+      </TouchableOpacity>
+
+      <Text style={styles.overlayTitle}>Request Sent 🎉</Text>
+
+      <Text style={styles.overlayText}>
+        Your reservation request has been sent to the host. You’ll be notified once it’s reviewed.
+      </Text>
+
+      <TouchableOpacity
+        style={styles.overlayButtonSecondary}
+        onPress={() => {
+          setReservationSuccess(false);
+          navigation.goBack();
+        }}
+      >
+        <Text style={styles.overlayButtonSecondaryText}>
+          Keep browsing spaces
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.overlayButtonPrimary}
+        onPress={() => {
+          setReservationSuccess(false);
+          navigation
+          .getParent()
+          ?.navigate('MySpaces', {
+            screen: 'RequestDetailScreen',
+            params: {
+              reservationId,
+            },
+          });        
+        }}
+      >
+        <Text style={styles.overlayButtonPrimaryText}>
+          Check booking request
+        </Text>
+      </TouchableOpacity>
+
+    </View>
+  </View>
+)}
+
 
     </KeyboardAvoidingView>
 
@@ -954,7 +1144,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 10,
-    paddingVertical: 26,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderColor: '#E5E5E5',
     backgroundColor: 'transparent', // no white outer background
@@ -1012,12 +1202,11 @@ const styles = StyleSheet.create({
   },
 
   bookingContainer: {
-    marginTop: 20,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: '#0F6B5B',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    marginTop: 10,
+    marginBottom: 10,
+    padding: 5,
+    backgroundColor: 'white',
+    borderRadius: 5,
   },
 
   bookingTitle: {
@@ -1072,5 +1261,91 @@ const styles = StyleSheet.create({
   },
   
   
+  requestButton: {
+    backgroundColor: '#FFBA00',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   
+  requestButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  
+  messageHostButton: {
+    backgroundColor: '#eee',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  
+  messageHostText: {
+    fontWeight: '600',
+  },
+
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  
+  overlayCard: {
+    width: '85%',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+  },
+  
+  overlayTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  
+  overlayText: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 20,
+  },
+  
+  overlayButtonPrimary: {
+    backgroundColor: '#FFBA00',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  
+  overlayButtonPrimaryText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  
+  overlayButtonSecondary: {
+    backgroundColor: '#eee',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  
+  overlayButtonSecondaryText: {
+    color: '#333',
+    fontWeight: '500',
+  },
+  overlayCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 6,
+    zIndex: 10,
+  },
 });
+

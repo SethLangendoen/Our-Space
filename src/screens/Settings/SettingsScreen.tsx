@@ -1,5 +1,4 @@
 
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -10,89 +9,107 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  Alert
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../../firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { COLORS } from '../Styles/theme';
 
-
 type Navigation = {
   navigate: (screen: string) => void;
 };
 
 // Enable layout animation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 export default function SettingsScreen() {
   const navigation = useNavigation<Navigation>();
-  // const [user, setUser] = useState<{ stripeOnboardingComplete: boolean } | null>(null);
 
-  const [user, setUser] = useState<{
-    stripe?: {
-      onboardingComplete?: boolean;
-    };
-  } | null>(null);
-  
-
-
-
-  // -------------------------------
-  // GROUPS WITH DROPDOWN SUBITEMS
-  // -------------------------------
-
-
-
-  const groupedSettings = [
-    {
-      groupTitle: "Payments & Payouts",
-      screens: [
-        { title: "Get Started as a Host", screen: "StripeOnboarding" },
-        { title: "Earnings (Host)", screen: "Earnings" },
-        { title: "Manage Payout Account (Host)", screen: "PayoutAccounts" },
-        { title: "Add / Remove Payment Methods (Renter)", screen: "PaymentMethods" },
-        { title: "Transaction History", screen: "TransactionHistory" },
-        { title: "Billing & Receipts", screen: "BillingReceipts" },
-        { title: "Tax Forms (Hosts)", screen: "TaxForms", requiresOnboarding: true },
-      ]
-    }
-  ];
-  
-
-
-  // -------------------------------
-  // FLAT, SINGLE-CLICK SETTINGS
-  // -------------------------------
-
-  const miscSettings = [
-    { title: 'Verify ID', screen: 'VerifyID' },
-    { title: 'Terms and Conditions', screen: 'TermsAndConditions' },
-    { title: 'Version (1.00)', screen: 'Version' },
-    { title: "What's New?", screen: 'WhatsNew' },
-    { title: 'Change Password', screen: 'ChangePassword' },
-
-  ];
-
-
-
-  // -------------------------------
-  // EXPAND STATE
-  // -------------------------------
-  
+  const [user, setUser] = useState<any>(null);
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
 
+  // -------------------------------
+  // SETTINGS STRUCTURE
+  // -------------------------------
+  const groupedSettings = [
+    {
+      groupTitle: 'Host Onboarding',
+      screens: [
+        { title: 'User Agreements', screen: 'HostUserAgreements' }, // DONE
+        { title: 'Stripe Account Setup', screen: 'StripeOnboarding' },
+        { title: 'Hosting Guide', screen: 'HostingGuide' }, // NEED PAGE
+      ],
+    },
+    {
+      groupTitle: 'Renter Onboarding',
+      screens: [
+        { title: 'User Agreements', screen: 'RenterUserAgreements' }, // DONE
+        { title: 'Payment Setup', screen: 'PaymentMethods' },
+        { title: 'Verify Identity', screen: 'VerifyID' },
+        { title: 'Renters Guide', screen: 'RentersGuide' }, // NEED PAGE
+      ],
+    },
+    {
+      groupTitle: 'Payments & Payouts',
+      screens: [
+        { title: 'Transaction History', screen: 'TransactionHistory' }, 
+        { title: 'Earnings', screen: 'Earnings' },
+        { title: 'Manage Payout Account (Hosts)', screen: 'PayoutAccounts' },
+        { title: 'Manage Payment Methods (Renters)', screen: 'PaymentMethods' },
+      ],
+    },
+    {
+      groupTitle: 'Manage Account',
+      screens: [
+        { title: 'Update Account Information', screen: 'UpdateAccount' }, // NEED PAGE
+        { title: 'Change Password', screen: 'ChangePassword' },
+        { title: 'Delete Account', screen: 'DeleteAccount' }, // NEED PAGE
+      ],
+    },
+    {
+      groupTitle: 'Support',
+      screens: [
+        { title: 'Help Centre', screen: 'HelpCentre' }, // NEED PAGE (link to site)
+        { title: 'Contact Us', screen: 'ContactUs' }, // NEED PAGE (link to site)
+        { title: 'Resolution Centre', screen: 'ResolutionCentre' }, // NEED PAGE (link to site)
+        { title: 'Feedback', screen: 'Feedback' }, // NEED PAGE (link to site) Same functionality as contact us. 
+      ],
+    },
+    {
+      groupTitle: 'Legal Documents',
+      screens: [
+        { title: 'Terms and Conditions', screen: 'TermsAndConditions' },
+        { title: 'Privacy Policy', screen: 'PrivacyPolicy' }, // NEED PAGE 
+      ],
+    },
+  ];
+
+  const miscSettings = [
+    { title: 'Notifications', screen: 'Notifications' },
+    { title: "What's New", screen: 'WhatsNew' },
+    { title: 'Version 1.0', screen: 'Version' },
+  ];
+
+  // -------------------------------
+  // ACCORDION TOGGLE
+  // -------------------------------
   const toggleGroup = (title: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpanded(prev => ({ ...prev, [title]: !prev[title] }));
+
+    setExpanded((prev) => ({
+      [title]: !prev[title],
+    }));
   };
 
   // -------------------------------
-  // ACCOUNT ACTION HANDLERS
+  // LOGOUT HANDLER
   // -------------------------------
-
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -101,26 +118,17 @@ export default function SettingsScreen() {
         onPress: async () => {
           try {
             await auth.signOut();
-          } catch (error) {
-            Alert.alert("Error", "Failed to log out.");
+          } catch {
+            Alert.alert('Error', 'Failed to log out.');
           }
-        }
-      }
+        },
+      },
     ]);
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you sure? This action is irreversible.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => {} },
-      ]
-    );
-  };
-
-
+  // -------------------------------
+  // FETCH USER DATA
+  // -------------------------------
   useEffect(() => {
     const fetchUserData = async () => {
       const userId = auth.currentUser?.uid;
@@ -130,26 +138,17 @@ export default function SettingsScreen() {
       if (userDoc.exists()) {
         setUser(userDoc.data());
       }
-      
-
-
     };
 
     fetchUserData();
   }, []);
 
-
-
-
   // -------------------------------
   // RENDER
   // -------------------------------
-
   return (
     <ScrollView style={styles.container}>
-
-      {/* GROUPED SETTINGS */}
-      {groupedSettings.map(group => (
+      {groupedSettings.map((group) => (
         <View key={group.groupTitle}>
           <TouchableOpacity
             style={styles.groupHeader}
@@ -157,54 +156,28 @@ export default function SettingsScreen() {
           >
             <Text style={styles.groupHeaderText}>{group.groupTitle}</Text>
             <Text style={styles.chevron}>
-              {expanded[group.groupTitle] ? "▲" : "▼"}
+              {expanded[group.groupTitle] ? '▲' : '▼'}
             </Text>
           </TouchableOpacity>
 
           {expanded[group.groupTitle] && (
-
-
             <View style={styles.subItemsContainer}>
-
-              {group.screens.map(({ title, screen, requiresOnboarding }) => {
-                const isDisabled = requiresOnboarding && !user?.stripe?.onboardingComplete;
-
-                return (
-                  <TouchableOpacity
-                    key={title}
-                    style={[styles.row, styles.subRow, isDisabled && styles.disabledRow]}
-                    onPress={() => {
-                      if (!isDisabled) navigation.navigate(screen);
-                      else Alert.alert(
-                        "Complete Onboarding First",
-                        "You must finish the Stripe onboarding setup before accessing this feature."
-                      );
-                    }}
-                    disabled={isDisabled}
-                  >
-                    <Text style={[styles.rowText, isDisabled && styles.disabledText]}>
-                      {title}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-
-
-
-
-
+              {group.screens.map(({ title, screen }) => (
+                <TouchableOpacity
+                  key={title}
+                  style={[styles.row, styles.subRow]}
+                  onPress={() => navigation.navigate(screen)}
+                >
+                  <Text style={styles.rowText}>{title}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-
-
           )}
-
         </View>
       ))}
 
       <View style={styles.sectionDivider} />
 
-
-      {/* MISC SETTINGS */}
       {miscSettings.map(({ title, screen }) => (
         <TouchableOpacity
           key={title}
@@ -215,31 +188,19 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       ))}
 
-      {/* LOGOUT */}
       <TouchableOpacity style={styles.row} onPress={handleLogout}>
         <Text style={styles.rowText}>Logout</Text>
-      </TouchableOpacity>
-
-      {/* DELETE ACCOUNT */}
-      <TouchableOpacity style={[styles.row, styles.deleteRow]} onPress={handleDeleteAccount}>
-        <Text style={[styles.rowText, styles.deleteText]}>Delete Account</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
-
-
-
-
-
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: COLORS.lighterGrey 
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.lighterGrey,
   },
 
-  /* GROUP HEADER */
   groupHeader: {
     paddingVertical: 18,
     paddingHorizontal: 20,
@@ -248,50 +209,49 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  groupHeaderText: { fontSize: 17, fontWeight: '600' },
-  chevron: { fontSize: 16 },
 
-  /* SUB-ITEMS */
-  subItemsContainer: { backgroundColor: '#fafafa' },
+  groupHeaderText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#111827',
+  },
 
-  /* ROW */
+  chevron: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+
+  subItemsContainer: {
+    backgroundColor: '#FAFAFA',
+  },
+
   row: {
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderColor: '#ddd',
-  },
-  rowText: {
-    fontSize: 15,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
   },
 
-  /* DELETE */
-  deleteRow: {
-    backgroundColor: '#ffe6e6',
+  subRow: {
+    paddingLeft: 40,
   },
-  deleteText: {
-    color: '#cc0000',
-    fontWeight: 'bold',
+
+  rowText: {
+    fontSize: 15,
+    color: '#374151',
   },
+
   sectionDivider: {
     height: 24,
-    backgroundColor: "#f2f2f7",
+    backgroundColor: '#f2f2f7',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#e2e2e2",
+    borderColor: '#E5E7EB',
   },
-  subRow: {
-    paddingLeft: 40,   // creates indentation
-    backgroundColor: "#fdfdfd",
-  },
-  disabledRow: {
-    backgroundColor: "#f5f5f5",
-  },
-  disabledText: {
-    color: "#999",
-  },
-  
-  
-  
 });
+
+
+
