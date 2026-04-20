@@ -2,9 +2,9 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 const STATUS_STEPS = [
-  { key: 'requested', label: 'Requested' },
-  { key: 'awaiting_acceptance', label: 'Awaiting Acceptance' },
-  { key: 'confirmed', label: 'Confirmed' },
+  { key: "requested", label: "Requested", color: "#F59E0B" },
+  { key: "awaiting_acceptance", label: "Awaiting Acceptance", color: "#3B82F6" },
+  { key: "confirmed", label: "Confirmed", color: "#10B981" },
 ];
 
 type Props = {
@@ -82,37 +82,26 @@ const ReservationStatusStepper = ({ status, userRole }: Props) => {
 
   return (
     <View style={styles.stepperAndText}>
-      {/* Stepper */}
-      <View style={styles.stepperContainer}>
+      {/* STATUS ROW */}
+      <View style={styles.statusRow}>
         {STATUS_STEPS.map((step, index) => {
-          const isCompleted = index < currentIndex;
-          const isActive = index === currentIndex;
-
+          const isActive = step.key === status;
+  
           return (
-            <View key={step.key} style={styles.stepWrapper}>
-              {index < STATUS_STEPS.length - 1 && (
-                <View
-                  style={[
-                    styles.stepLine,
-                    isCompleted && styles.stepLineCompleted,
-                  ]}
-                />
-              )}
-
-              <View
-                style={[
-                  styles.stepCircle,
-                  isCompleted && styles.stepCompleted,
-                  isActive && styles.stepActive,
-                ]}
-              >
-                <Text style={styles.stepNumber}>{index + 1}</Text>
-              </View>
-
+            <View
+              key={step.key}
+              style={[
+                styles.statusPill,
+                isActive && {
+                  backgroundColor: step.color + "20",
+                  borderColor: step.color,
+                },
+              ]}
+            >
               <Text
                 style={[
-                  styles.stepLabel,
-                  isActive && styles.stepLabelActive,
+                  styles.statusText,
+                  isActive && { color: step.color, fontWeight: "700" },
                 ]}
               >
                 {step.label}
@@ -121,8 +110,8 @@ const ReservationStatusStepper = ({ status, userRole }: Props) => {
           );
         })}
       </View>
-
-      {/* Description */}
+  
+      {/* DESCRIPTION */}
       <View style={styles.descriptionContainer}>
         <Text style={styles.descriptionText}>
           {getStatusDescription()}
@@ -130,6 +119,7 @@ const ReservationStatusStepper = ({ status, userRole }: Props) => {
       </View>
     </View>
   );
+
 };
 
 export default ReservationStatusStepper;
@@ -155,28 +145,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  stepCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 17,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
 
-  stepCompleted: {
-    backgroundColor: '#34D399',
-  },
 
-  stepActive: {
-    backgroundColor: '#111827',
-  },
-
-  stepNumber: {
-    color: '#fff',
-    fontWeight: '600',
-  },
 
   stepLabel: {
 	marginTop: 6,
@@ -218,7 +188,26 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     lineHeight: 20,
   },
+statusRow: {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: 8,
+  marginBottom: 12,
+},
 
+statusPill: {
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+  backgroundColor: "#F9FAFB",
+},
+
+statusText: {
+  fontSize: 12,
+  color: "#6B7280",
+},
   cancelledContainer: {
     backgroundColor: '#FEF2F2',
     padding: 16,

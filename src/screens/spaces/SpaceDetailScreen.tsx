@@ -45,6 +45,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
   const [showStart, setShowStart] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
   const [reservationDescription, setReservationDescription] = useState('');
+  const [frequencyDescription, setFrequencyDescription] = useState('');
+
   const mapProvider = Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined;
   const [storageDuration, setStorageDuration] = useState('');
   const [selectedPricePeriod, setSelectedPricePeriod] = useState<'daily' | 'weekly' | 'monthly' | null>(null);
@@ -270,6 +272,7 @@ useEffect(() => {
           endDate: null, // TBD until contract phase
           state: 'requested',
           description: reservationDescription,
+          frequency: frequencyDescription,
           storageDuration, 
           pricePeriod: selectedPricePeriod,
           price: priceValue,
@@ -290,7 +293,10 @@ useEffect(() => {
           startDate: Timestamp.fromDate(selectedRange.start),
           endDate: selectedRange.end
           ? Timestamp.fromDate(selectedRange.end)
-          : null,          description: reservationDescription,
+          : null,          
+          description: reservationDescription,
+          frequency: frequencyDescription,
+
           createdAt: serverTimestamp(),
           status: 'requested',
           storageDuration, 
@@ -299,6 +305,8 @@ useEffect(() => {
         });
     
         setReservationDescription('');
+        setFrequencyDescription('');
+
         setSelectedRange({ start: null, end: null });
     
         // ---------------------------
@@ -748,6 +756,13 @@ const futureBlocked = startDate
 />
 <TextInput
   style={styles.descriptionInput}
+  placeholder="Pick-up and Drop-off Frequecy"
+  value={frequencyDescription}
+  onChangeText={setFrequencyDescription}
+  multiline
+/>
+<TextInput
+  style={styles.descriptionInput}
   placeholder="Approximate storage duration (e.g., 2 weeks, 3 months)"
   value={storageDuration}
   onChangeText={setStorageDuration}
@@ -761,6 +776,7 @@ style={[
   (
     !selectedRange.start ||                   // start date
     !reservationDescription.trim() ||        // description of items
+    !frequencyDescription.trim() ||        // description of items
     !storageDuration.trim() ||               // ⬅️ approximate storage duration
     !selectedPricePeriod ||                  // ⬅️ selected pricing period
     booking ||
@@ -770,6 +786,7 @@ style={[
 disabled={
   !selectedRange.start ||
   !reservationDescription.trim() ||
+  !frequencyDescription.trim() ||
   !storageDuration.trim() ||                 // ⬅️ disable if empty
   !selectedPricePeriod ||                    // ⬅️ disable if not selected
   booking ||

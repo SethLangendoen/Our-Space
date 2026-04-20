@@ -3,7 +3,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import SettingsScreen from '../../screens/Settings/SettingsScreen';
 import BillingAccount from '../../screens/Settings/BillingAccount';
-import ChangePassword from '../../screens/Settings/ChangePassword';
 import VerifyID from '../../screens/Settings/VerifyID';
 import RequestForViews from '../../screens/Settings/RequestForViews';
 import Version from '../../screens/Settings/Version';
@@ -18,7 +17,6 @@ import BillingReceipts from '../../screens/Settings/PaymentsAndPayouts/BillingRe
 import TaxForms from '../../screens/Settings/PaymentsAndPayouts/TaxForms';
 import Earnings from '../../screens/Settings/PaymentsAndPayouts/Earnings';
 
-// UPDATED GROUPINGS: 
 
 // HOST ONBOARDING
 import StripeOnboarding from '../../screens/Settings/HostOnboarding/StripeOnboarding';
@@ -37,6 +35,9 @@ import ContactUs from '../../screens/Settings/Support/ContactUs';
 import ResolutionCentre from '../../screens/Settings/Support/ResolutionCentre';
 import Feedback from '../../screens/Settings/Support/Feedback';
 
+// MANAGE ACCOUNT
+import ChangePassword from '../../screens/Settings/ManageAccount/ChangePassword';
+import DeleteAccount from '../../screens/Settings/ManageAccount/DeleteAccount';
 
 
 const Stack = createNativeStackNavigator();
@@ -140,6 +141,8 @@ export default function SettingsStack() {
      
       <Stack.Screen name="BillingAccount" component={BillingAccount} options={{ title: 'Billing Account' }} />
       <Stack.Screen name="ChangePassword" component={ChangePassword} options={{ title: 'Change Password' }} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccount} options={{ title: 'Delete Account' }} />
+
       <Stack.Screen name="VerifyID" component={VerifyID} options={{ title: 'Verify ID' }} />
       <Stack.Screen name="Version" component={Version} options={{ title: 'Version' }} />
       <Stack.Screen name="Language" component={Language} options={{ title: 'Language' }} />

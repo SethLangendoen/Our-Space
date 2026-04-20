@@ -524,24 +524,21 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   };
   
 
-  
   const goToChat = () => {
     if (!reservation || !userId) return;
   
-    const otherUserId =
-      userId === reservation.requesterId ? reservation.ownerId : reservation.requesterId;
+    const otherUser =
+      userId === reservation.requesterId
+        ? reservation.ownerId
+        : reservation.requesterId;
   
-    const chatId = [userId, otherUserId].sort().join('_');
+    const chatId = [userId, otherUser].sort().join('_');
   
-    // Navigate to the MessagesScreen inside the Chats tab
     navigation.getParent()?.navigate('Chats', {
       screen: 'MessagesScreen',
-      params: { chatId, otherUserId },
+      params: { chatId, otherUser }, // ✅ FIXED
     });
-    
   };
-
-
   
   const handleSubmitEndDateChange = async () => {
     if (!editedEndDate || editedEndDate <= new Date()) {
@@ -636,7 +633,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      <ReservationStatusStepper status={reservation.status} userRole={role} />
 
 
 	  {reservation.space && (
@@ -648,6 +644,12 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 				<Text style={styles.postTitle}>{reservation.space.title || 'Untitled Space'}</Text>
 			</View>
 			)}
+
+      <View style={styles.card}>
+      <ReservationStatusStepper status={reservation.status} userRole={role} />
+
+      </View>
+
 
 
       <View style={styles.pricingBox}>
@@ -711,6 +713,15 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             </Text>
             <Text style={styles.detailDescription}>
               {reservation.description}
+            </Text>
+          </View>
+
+          <View style={styles.detailBlock}>
+            <Text style={styles.detailTitle}>
+              Pick-up and Drop-off Frequency
+            </Text>
+            <Text style={styles.detailDescription}>
+              {reservation.frequency}
             </Text>
           </View>
 
@@ -1337,7 +1348,7 @@ const styles = StyleSheet.create({
     // fontWeight, padding, etc. can go here
   },
   pricingBox: {
-    padding: 12,
+    padding: 0,
     borderRadius: 10,
     // backgroundColor: '#F9F9F9',
     marginVertical: 10,

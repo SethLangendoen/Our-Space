@@ -71,6 +71,7 @@ const getStorageStatusText = (reservation: any) => {
 };
 
 
+
 export default function ReservationCard({ reservation, isOwner, onPress }: ReservationCardProps) {
   const otherUser = isOwner ? reservation.requester : reservation.owner;
   const space = reservation.space;
@@ -118,6 +119,8 @@ export default function ReservationCard({ reservation, isOwner, onPress }: Reser
             {STATUS_DISPLAY_TEXT[reservation.status] || reservation.status.toUpperCase()}
           </Text>
         </View>
+
+
 
       </View>
 
@@ -200,6 +203,20 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  actionBadge: {
+    backgroundColor: '#F3AF1D', // strong CTA color (you already use this)
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginBottom: 6,
+    alignSelf: 'flex-start',
+  },
+  
+  actionText: {
+    color: '#0F6B5B',
     fontWeight: '700',
     fontSize: 12,
   },

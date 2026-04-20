@@ -136,6 +136,7 @@ export default function SpacesScreen() {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true); // Set to true initially for first load
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null); // Type for selectedSpace
+  const [selectedGroup, setSelectedGroup] = useState<Space[]>([]);
   const navigation = useNavigation<SpacesScreenNavigationProp>();
   const route = useRoute<SpacesScreenRouteProp>(); // Correctly type the useRoute hook
   const [searchInfo, setSearchInfo] = useState<{ address: string; radius: number; location: { lat: number; lng: number } } | null>(null); // **Updated searchInfo type**
@@ -220,7 +221,23 @@ export default function SpacesScreen() {
     return bStart <= uEnd && bEnd >= uStart;
   };
   
-
+  const groupSpacesByLocation = (spaces: Space[]) => {
+    const groups: Record<string, Space[]> = {};
+  
+    spaces.forEach((space) => {
+      if (!space.location) return;
+  
+      const key = `${space.location.lat.toFixed(5)}_${space.location.lng.toFixed(5)}`;
+  
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+  
+      groups[key].push(space);
+    });
+  
+    return Object.values(groups);
+  };
 
 
   const computeMatchScore = (space: Space, filters: FilterData) => {
@@ -378,16 +395,6 @@ if (filters.storageType?.length && space.storageType?.length) {
 
 
 
-  
-
-
-  // Fetch spaces on initial mount and when filters change
-
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     fetchAndFilterSpaces();
-  //   }, [fetchAndFilterSpaces])
-  // );
 
   useFocusEffect(
     useCallback(() => {
@@ -402,7 +409,10 @@ if (filters.storageType?.length && space.storageType?.length) {
     }, [filters, fetchAndFilterSpaces, spaces.length])
   );
   
-  // --- Render ---
+
+
+
+
   return (
     <View style={styles.container}>
       {/* Header Row */}
@@ -413,17 +423,17 @@ if (filters.storageType?.length && space.storageType?.length) {
         </TouchableOpacity>
 
         <TouchableOpacity
-  style={styles.locationButton}
-  onPress={() =>
-    navigation.navigate('Filters', { currentFilters: route.params?.filters })
-  }
-  activeOpacity={0.8}
->
-  <Ionicons name="search" size={20} color="#666" style={{ marginRight: 8 }} />
-  <Text style={styles.locationButtonText} numberOfLines={1}>
-    {searchInfo?.address || 'Search by location'}
-  </Text>
-</TouchableOpacity>
+          style={styles.locationButton}
+          onPress={() =>
+            navigation.navigate('Filters', { currentFilters: route.params?.filters })
+          }
+          activeOpacity={0.8}
+        >
+          <Ionicons name="search" size={20} color="#666" style={{ marginRight: 8 }} />
+          <Text style={styles.locationButtonText} numberOfLines={1}>
+            {searchInfo?.address || 'Search by location'}
+          </Text>
+        </TouchableOpacity>
 
         <View style={styles.savedAndFilter}>
           <TouchableOpacity
@@ -444,16 +454,7 @@ if (filters.storageType?.length && space.storageType?.length) {
             <Ionicons name="filter" size={30} color="#333" />
           </TouchableOpacity>
         </View>
-
-
-
       </View>
-
-
-
-
-
-
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -463,16 +464,17 @@ if (filters.storageType?.length && space.storageType?.length) {
       ) 
       
       
-      : isMapView ? (
-        // Map View
+  : isMapView ? (
 
-        <>
+    <>
 
   <MapView
     style={styles.mapView}
     provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined} // iOS defaults to Apple Maps
     showsUserLocation={true}
     showsMyLocationButton={true}
+    maxZoomLevel={13}   // 👈 zoomed IN limit
+
     initialRegion={
       searchInfo?.location
         ? {
@@ -522,7 +524,8 @@ if (filters.storageType?.length && space.storageType?.length) {
     )}
 
     {/* Space Markers */}
-    {displayedSpaces
+
+    {/* {displayedSpaces
       .filter((space): space is Space & { location: { lat: number; lng: number } } =>
         !!space.location?.lat && !!space.location?.lng
       )
@@ -541,7 +544,30 @@ if (filters.storageType?.length && space.storageType?.length) {
             style={styles.pinBackground}
           />
         </Marker>
-      ))}
+      ))} */}
+
+      {groupSpacesByLocation(displayedSpaces).map((group, index) => {
+        const first = group[0];
+
+        if (!first?.location) return null;
+
+        return (
+          <Marker
+            key={`${first.location.lat}-${first.location.lng}-${index}`}
+            coordinate={{
+              latitude: first.location.lat,
+              longitude: first.location.lng,
+            }}
+            // onPress={() => setSelectedSpace(group[0])}
+            onPress={() => setSelectedGroup(group)}
+          >
+            <Image
+              source={getPinBackground(group[0].postType)}
+              style={styles.pinBackground}
+            />
+          </Marker>
+        );
+      })}
 
     {/* Fallback marker if no spaces */}
     {!displayedSpaces.length && !searchInfo && (
@@ -553,7 +579,7 @@ if (filters.storageType?.length && space.storageType?.length) {
   </MapView>
 
   {/* Bottom Panel when Marker selected */}
-  {selectedSpace && (
+  {/* {selectedSpace && (
     <TouchableOpacity
       style={styles.bottomPanel}
       activeOpacity={0.9}
@@ -578,7 +604,44 @@ if (filters.storageType?.length && space.storageType?.length) {
         onPress={() => navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id })}
       />
     </TouchableOpacity>
-  )}
+  )} */}
+{selectedGroup.length > 0 && (
+  <View style={styles.bottomPanel}>
+
+    <View style={styles.resultsAndClose}>
+      <Text>
+        {selectedGroup.length} Space Results
+      </Text>
+      
+      <TouchableOpacity
+        onPress={() => setSelectedGroup([])}
+        style={styles.closeButton}
+      >
+        <Ionicons name="close" size={18} color="#333" />
+      </TouchableOpacity>
+    </View>
+
+    <FlatList
+      data={selectedGroup}
+      keyExtractor={(item) => item.id}
+      showsVerticalScrollIndicator={false}
+      style={{ maxHeight: 300 }}
+      renderItem={({ item }) => (
+        <SpaceCard
+          item={item}
+          matchScore={item.matchScore}
+          totalFilters={item.totalFilters}
+          isSaved={!!savedSpaces[item.id]}
+          onToggleSave={() => toggleSave(item.id)}
+          onPress={() =>
+            navigation.navigate("SpaceDetail", { spaceId: item.id })
+          }
+        />
+      )}
+    />
+  </View>
+)}
+
 </>
       ) : (
         // List View
@@ -611,6 +674,9 @@ if (filters.storageType?.length && space.storageType?.length) {
 
   );
 }
+
+
+
 
 
 const styles = StyleSheet.create({
@@ -695,8 +761,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: width,
-    backgroundColor: "transparent",
-    paddingHorizontal: 20,
+    backgroundColor: "white",
+    paddingHorizontal: 10,
+    paddingTop: 10,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     shadowColor: '#000',
@@ -708,12 +775,15 @@ const styles = StyleSheet.create({
 
   closeButton: {
     position: 'absolute',
-    right: 14,
-    top:0,
+    right: 10,
+    top: 0,
     zIndex: 10,
     backgroundColor: 'grey',
     borderRadius: '30%',
 
+  },
+  resultsAndClose: {
+    padding: 5
   },
 
   loadingContainer: {

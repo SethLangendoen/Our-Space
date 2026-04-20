@@ -40,16 +40,7 @@ const updates: Update[] = [
 export default function WhatsNew() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
-      <Text style={styles.header}>What's New</Text>
-      {updates.map((update) => (
-        <View key={update.version} style={styles.updateCard}>
-          <Text style={styles.version}>Version {update.version}</Text>
-          <Text style={styles.date}>{update.date}</Text>
-          {update.changes.map((change, idx) => (
-            <Text key={idx} style={styles.change}>• {change}</Text>
-          ))}
-        </View>
-      ))}
+      <Text>What's New?</Text>
     </ScrollView>
   );
 }

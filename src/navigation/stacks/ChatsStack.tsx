@@ -1,34 +1,3 @@
-// // src/navigation/ChatsStack.tsx
-// import React from 'react';
-
-// import { createNativeStackNavigator, NativeStackHeaderProps } from '@react-navigation/native-stack';
-// import ChatsScreen from 'src/screens/chats/ChatsScreen';
-// import MessagesScreen from 'src/screens/chats/MessagesScreen';
-// import AppHeader from 'src/components/AppHeader';
-
-// const Stack = createNativeStackNavigator();
-
-// // Type your navigation prop
-// type ChatsScreenNavigationProp = NativeStackNavigationProp<
-//   ChatsStackParamList,
-//   'ChatsMain'
-// >;
-
-// const navigation = useNavigation<ChatsScreenNavigationProp>();
-
-// export default function ChatsStack() {
-//   return (
-//     <Stack.Navigator
-//     screenOptions={{
-//       header: ({ navigation }: NativeStackHeaderProps) => <AppHeader navigation={navigation} />,
-//     }}
-//     >
-
-//       <Stack.Screen name="ChatsMain" component={ChatsScreen} options={{ title: 'Chats' }} />
-//       <Stack.Screen name="MessagesScreen" component={MessagesScreen} options={{ title: 'Conversation' }} />
-//     </Stack.Navigator>
-//   );
-// }
 
 // src/navigation/ChatsStack.tsx
 import React from 'react';
@@ -37,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import ChatsScreen from 'src/screens/chats/ChatsScreen';
 import MessagesScreen from 'src/screens/chats/MessagesScreen';
 import AppHeader from 'src/components/AppHeader';
+
 
 // 1️⃣ Define the param list for this stack
 export type ChatsStackParamList = {
@@ -48,7 +18,7 @@ export type ChatsStackParamList = {
 };
 
 // 2️⃣ Create the stack with types
-const Stack = createNativeStackNavigator<ChatsStackParamList>();
+const Stack = createNativeStackNavigator();
 
 export default function ChatsStack() {
   return (
