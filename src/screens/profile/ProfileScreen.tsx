@@ -267,6 +267,7 @@ export default function ProfileScreen() {
     <ScrollView 
     style={styles.scrollView} 
     contentContainerStyle={styles.scrollContent}
+    
     >
       <View style={styles.container}>
 
@@ -660,7 +661,7 @@ const styles = StyleSheet.create({
 
   scrollView: {
     flex: 1,
-    backgroundColor: '#FFFCF1', // wheat background covers scroll too
+    backgroundColor: '#FFFFFF', // wheat background covers scroll too
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -688,13 +689,14 @@ const styles = StyleSheet.create({
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EAF5F1', // light green background
-    paddingHorizontal: 6,
+    backgroundColor: '#E8F3EC',
     paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: 0,
-    marginTop: 20,
+    paddingHorizontal: 6,
+    borderRadius: 999,
+    marginTop: 8,
   },
+  
+
   
   verifiedIcon: {
     width: 16,
@@ -704,9 +706,12 @@ const styles = StyleSheet.create({
   
   verifiedText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#0F6B5B',
+    fontWeight: 700,
+    color: '#13ad58',
+    fontFamily: 'Poppins-Medium',
+    marginLeft: 4,
   },
+  
   reviewList: {
     flex: 1,          
     width: '100%',    

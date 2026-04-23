@@ -101,7 +101,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
 const styles = StyleSheet.create({
   image: {
     width: screenWidth,
-    height: 250,
+    height: 200,
     resizeMode: 'cover',
     paddingRight: 40
   },

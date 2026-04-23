@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
 	flexDirection: 'row',
 	alignItems: 'center',
 	width: '50%',          // 👈 THIS is the key
-	paddingVertical: 6,
+	paddingVertical: 0
   },
   
   icon: {

@@ -339,32 +339,32 @@ const renderContent = () => {
 
  
       {selectedTab === 'My Spaces' && (
-  <View style={{ padding: 12 }}>
-    <TouchableOpacity
-      style={[
-        styles.createButton,                   // normal active style
-        !isLoggedIn && styles.createButton,  // apply disabled style if not logged in
-      ]}
-      onPress={() => {
-        if (isLoggedIn) {
-          navigation.navigate('CreateSpaceScreen');
-        } else {
-          alert('Please log in to create a post.');
-        }
-      }}
-      disabled={!isLoggedIn} // disables press
-    >
-      <Text
-        style={[
-          styles.createButtonText,
-          !isLoggedIn && styles.inactiveButtonText, // disabled text style
-        ]}
-      >
-        Create Post
-      </Text>
-    </TouchableOpacity>
-  </View>
-)}
+        <View style={{ padding: 12 }}>
+          <TouchableOpacity
+            style={[
+              styles.createButton,                   // normal active style
+              !isLoggedIn && styles.createButton,  // apply disabled style if not logged in
+            ]}
+            onPress={() => {
+              if (isLoggedIn) {
+                navigation.navigate('CreateSpaceScreen');
+              } else {
+                alert('Please log in to create a post.');
+              }
+            }}
+            disabled={!isLoggedIn} // disables press
+          >
+            <Text
+              style={[
+                styles.createButtonText,
+                !isLoggedIn && styles.inactiveButtonText, // disabled text style
+              ]}
+            >
+              Create Post
+            </Text>
+          </TouchableOpacity>
+        </View>
+    )}
 
 {selectedTab === 'Bookings' && (
   <View style={{ flexDirection: 'row', padding: 8 }}>

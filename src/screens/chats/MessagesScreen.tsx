@@ -58,6 +58,7 @@ interface Message {
 
 export default function MessagesScreen({ route }: Props) {
   const { chatId, otherUser } = route.params;
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [otherUserData, setOtherUserData] = useState<any | null>(null);
@@ -108,11 +109,7 @@ export default function MessagesScreen({ route }: Props) {
   const sendMessage = async () => {
     if (!input.trim()) return;
   
-    // await addDoc(collection(db, 'chats', chatId, 'messages'), {
-    //   text: input,
-    //   senderId: auth.currentUser?.uid ?? 'unknown',
-    //   createdAt: serverTimestamp(),
-    // });
+ 
     await addDoc(collection(db, 'chats', chatId, 'messages'), {
       text: input,
       senderId: auth.currentUser?.uid ?? 'unknown',

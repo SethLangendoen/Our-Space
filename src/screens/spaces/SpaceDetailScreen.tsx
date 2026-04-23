@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 // import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, TextInput, Platform, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, TextInput, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { addDoc, collection, doc, getDoc, getDocs, limit, query, serverTimestamp, setDoc, Timestamp, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, query, serverTimestamp, setDoc, Timestamp, updateDoc, where } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
 import { AuthError } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
@@ -28,6 +28,10 @@ type RootStackParamList = {
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
 
+const saveIcons = {
+  saved: require('../../../assets/filter/bookmark.png'),
+  unsaved: require('../../../assets/filter/bookmark-outline.png'),
+};
 
 
 
@@ -46,6 +50,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
   const [showEnd, setShowEnd] = useState(false);
   const [reservationDescription, setReservationDescription] = useState('');
   const [frequencyDescription, setFrequencyDescription] = useState('');
+  const userId = auth.currentUser?.uid;
 
   const mapProvider = Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined;
   const [storageDuration, setStorageDuration] = useState('');
@@ -54,6 +59,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'SpaceDetail'>;
   const [reservationSuccess, setReservationSuccess] = useState(false);
   const [hasRequested, setHasRequested] = useState(false);
   const [reservationId, setReservationId] = useState(String)
+  const [savedSpaces, setSavedSpaces] = useState<{ [spaceId: string]: boolean }>({});
+  const [isSaved, setIsSaved] = useState(false);
   const [selectedRange, setSelectedRange] = useState<{ start: Date | null; end: Date | null }>({
     start: null,
     end: null,
@@ -75,6 +82,18 @@ useEffect(() => {
   return unsubscribe;
 }, []);
 
+useEffect(() => {
+  const checkSaved = async () => {
+    if (!userId || !spaceId) return;
+
+    const docRef = doc(db, `users/${userId}/SavedReservations`, spaceId);
+    const snap = await getDoc(docRef);
+
+    setIsSaved(snap.exists());
+  };
+
+  checkSaved();
+}, [userId, spaceId]);
 
 useEffect(() => {
 	const fetchSpaceAndUser = async () => {
@@ -384,7 +403,8 @@ const futureBlocked = startDate
   const isOpenEnded = !!selectedRange.start && !selectedRange.end;
   const invalidOpenEndedBooking = isOpenEnded && futureBlocked;
 
-
+  const preferredPeriod = ['daily', 'weekly', 'monthly']
+  .find(period => space.prices?.[period]?.isPublic);
 
   const formatTotalTimeBooked = (ms?: number) => {
     if (!ms || ms <= 0) return null;
@@ -402,6 +422,49 @@ const futureBlocked = startDate
   const totalTimeLabel = formatTotalTimeBooked(space.totalTimeBooked);
   
 
+  // const toggleSave = async (spaceId: string) => {
+  //   const userId = auth.currentUser?.uid;
+  //   if (!userId) return;
+  
+  //   const docRef = doc(db, `users/${userId}/SavedReservations`, spaceId);
+  //   const isCurrentlySaved = savedSpaces[spaceId];
+  
+  //   try {
+  //     if (isCurrentlySaved) {
+  //       await deleteDoc(docRef);
+  //       setSavedSpaces(prev => ({ ...prev, [spaceId]: false }));
+  //     } else {
+  //       await setDoc(docRef, {
+  //         reservationId: spaceId,
+  //         savedAt: Timestamp.now(),
+  //       });
+  //       setSavedSpaces(prev => ({ ...prev, [spaceId]: true }));
+  //     }
+  //   } catch (error) {
+  //     console.error('Error toggling saved space:', error);
+  //   }
+  // };
+  
+  const toggleSave = async () => {
+    if (!userId || !spaceId) return;
+  
+    const docRef = doc(db, `users/${userId}/SavedReservations`, spaceId);
+  
+    try {
+      if (isSaved) {
+        await deleteDoc(docRef);
+        setIsSaved(false);
+      } else {
+        await setDoc(docRef, {
+          reservationId: spaceId,
+          savedAt: Timestamp.now(),
+        });
+        setIsSaved(true);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   return (
 
@@ -410,22 +473,44 @@ const futureBlocked = startDate
     style={{ flex: 1 }}
     behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // iOS uses padding, Android height
     keyboardVerticalOffset={0} // tweak this so the box clears the header
-  >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    >
+    
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
 
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      {/* Images Carousel / Stack */}
+
+
+
+
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 20 }}>
+
+    <View style={styles.titleAndSave}>
+    <Text style={styles.title}>{space.title || 'No Title'}</Text>
+      <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation?.();
+            toggleSave();
+          }}
+          hitSlop={10}
+      >
+        <Image
+          source={isSaved ? saveIcons.saved : saveIcons.unsaved}
+          style={styles.saveIcon}
+        />
+      </TouchableOpacity>
+    </View>
+
+    <View style={styles.location}>
+      <Text style={styles.value}>
+        {space.location?.district ? `${space.location.district}, ` : ''}
+        {space.location?.city ? `${space.location.city}, ` : ''}
+        {space.location?.province || 'Unknown'}
+      </Text>
+    </View>
+
+
+
+
       {images.length > 0 && (
-        // <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageCarousel}>
-        //   {images.map((uri: string, index: number) => (
-        //     <Image
-        //       key={index}
-        //       source={{ uri }}
-        //       style={styles.image}
-        //       resizeMode="cover"
-        //     />
-        //   ))}
-        // </ScrollView>
         <ImageCarousel images={images} />
       )}
 
@@ -483,94 +568,35 @@ const futureBlocked = startDate
       style={styles.userImage}
     />
 
+    <View style={styles.nameAndVerified}>
     <Text style={styles.userName}>
       {userData
         ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
         : 'Unknown User'}
     </Text>
+    <View style={styles.verified}>
+    <Image
+        source={require('../../../assets/badges/complete/verifiedBadge.png')}
+        style={styles.verifiedIconSmall}
+      />
+      <Text style={styles.verifiedText}>Verified Host</Text>
+    </View>
+  </View>
+
   </View>
 </TouchableOpacity>
 
 
 
-      <Text style={styles.title}>{space.title || 'No Title'}</Text>
+      {/* <Text style={styles.title}>{space.title || 'No Title'}</Text> */}
 
 
+      <Text style={styles.spaceDescription}>Space Details</Text>
       {space.description && <Text style={styles.description}>{space.description}</Text>}
       
 
-{space.prices && (
-  <View style={styles.priceContainer}>
-    {(['daily', 'weekly', 'monthly'])
-      .filter((period) => space.prices[period]?.enabled)
-      .map((period) => {
-        const data = space.prices[period];
-        if (!data) return null;
-
-        const amount = parseFloat(data.amount || '0');
-        const formattedAmount = amount.toLocaleString('en-CA', {
-          style: 'currency',
-          currency: 'CAD',
-          minimumFractionDigits: 2,
-        });
-
-        return (
-          <View key={period} style={styles.priceRow}>
-            <Text style={styles.priceText}>{formattedAmount}</Text>
-            <Text style={styles.periodText}>
-              {' '}{period.charAt(0).toUpperCase() + period.slice(1)}
-            </Text>
-            {data.isPublic && (
-              <View style={styles.prioritizedBadge}>
-                <Text style={styles.prioritizedText}>Prioritized</Text>
-              </View>
-            )}
-          </View>
-        );
-      })}
-  </View>
-)}
-
-{totalTimeLabel && (
-  <View style={styles.infoRow}>
-    <Text style={styles.label}>Total Time Booked:</Text>
-    <Text style={styles.value}>{totalTimeLabel}</Text>
-  </View>
-)}
-
-<View style={styles.infoRow}>
-  <Text style={styles.label}>Location:</Text>
-  <Text style={styles.value}>
-    {space.location?.district ? `${space.location.district}, ` : ''}
-    {space.location?.city || 'Unknown'}
-  </Text>
-</View>
-
-<View style={styles.infoRow}>
-  <Text style={styles.label}>Space Size:</Text>
-  <Text style={styles.value}>
-    {space.dimensions?.width || '?'}ft (W) × {space.dimensions?.length || '?'}ft (L) × {space.dimensions?.height || '?'}ft (H)
-  </Text>
-</View>
-
-<View style={styles.infoRow}>
-  <Text style={styles.label}>Accessibility:</Text>
-  <View style={{ flexDirection: 'column' }}>
-    {space.accessibility?.includes('By Appointment') && (
-      <Text style={styles.value}>• Appointments are required for space visits</Text>
-    )}
-    {space.accessibility?.includes('24/7') && (
-      <Text style={styles.value}>• Visits can be made at any time</Text>
-    )}
-    {!space.accessibility?.length && (
-      <Text style={styles.value}>• Not specified</Text>
-    )}
-  </View>
-</View>
-
-
       <Text style={styles.featureTitle}>
-        Ideal Space For
+        Suitable for: 
       </Text>
 
       <View style={styles.featuresGrid}>
@@ -580,7 +606,7 @@ const futureBlocked = startDate
       </View>
 
       <Text style={styles.featureTitle}>
-        Space Features
+        Space features: 
       </Text>
         
       <View style={styles.featuresGrid}>
@@ -597,36 +623,111 @@ const futureBlocked = startDate
 
 
 
+      <Text style={styles.featureTitle}>
+        Pricing: 
+      </Text>
+
+
+      {space.prices && (
+        <View style={styles.priceContainer}>
+          {(['daily', 'weekly', 'monthly'])
+            .filter((period) => space.prices[period]?.enabled)
+            .map((period) => {
+              const data = space.prices[period];
+              if (!data) return null;
+
+              const amount = parseFloat(data.amount || '0');
+              const formattedAmount = amount.toLocaleString('en-CA', {
+                style: 'currency',
+                currency: 'CAD',
+                minimumFractionDigits: 0,
+              });
+
+              return (
+                <View key={period} style={styles.priceRow}>
+                  <Text style={styles.periodText}>
+                    {period.charAt(0).toUpperCase() + period.slice(1)}{': '}
+                  </Text>
+                  <Text style={styles.priceText}>{formattedAmount}</Text>
+                </View>
+              );
+            })}
+        </View>
+      )}
+
+      {preferredPeriod && (
+        <Text style={styles.preferenceText}>
+          This host prefers 
+          <Text style={styles.preferenceTextColor}> {preferredPeriod} </Text>
+          reservations
+        </Text>
+      )}
+
+
+
+
+      {totalTimeLabel && (
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Total Time Booked:</Text>
+          <Text style={styles.value}>{totalTimeLabel}</Text>
+        </View>
+      )}
+
+
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Space Size:</Text>
+        <Text style={styles.value}>
+          {space.dimensions?.width || '?'}ft (W) × {space.dimensions?.length || '?'}ft (L) × {space.dimensions?.height || '?'}ft (H)
+        </Text>
+      </View>
+
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Accessibility:</Text>
+        <View style={{ flexDirection: 'column' }}>
+          {space.accessibility?.includes('By Appointment') && (
+            <Text style={styles.value}>• Appointments are required for space visits</Text>
+          )}
+          {space.accessibility?.includes('24/7') && (
+            <Text style={styles.value}>• Visits can be made at any time</Text>
+          )}
+          {!space.accessibility?.length && (
+            <Text style={styles.value}>• Not specified</Text>
+          )}
+        </View>
+      </View>
+
+{/* 
+      <Text style={styles.featureTitle}>
+        Suitable for: 
+      </Text>
+
+      <View style={styles.featuresGrid}>
+        {space.usageType?.map((type: string) => (
+          <FeatureRow key={type} label={type} />
+        ))}
+      </View>
+
+      <Text style={styles.featureTitle}>
+        Space features: 
+      </Text>
+        
+      <View style={styles.featuresGrid}>
+        {space.storageType.map((item: string) => (
+          <FeatureRow key={item} label={item} />
+        ))}        
+        
+        <FeatureRow label={space.accessibility} />
+
+        {space.security.map((item: string) => (
+          <FeatureRow key={item} label={item} />
+        ))}
+      </View> */}
+
+
+
 
 
   <View >
-    
-    {/* <TouchableOpacity
-      style={styles.requestButton}
-      onPress={() => {
-        setShowRequestUI(true);
-        setShowMessageUI(false);
-      }}
-    >
-      <Text style={styles.requestButtonText}>
-        Request This Space
-      </Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity
-      style={styles.messageHostButton}
-      onPress={() => {
-        setShowMessageUI(true);
-        setShowRequestUI(false);
-      }}
-    >
-      <Text style={styles.messageHostText}>
-        Message Host
-      </Text>
-    </TouchableOpacity>
-
-  </View> */}
-
 
 {!currentUser ? (
   <View style={styles.noticeBox}>
@@ -745,6 +846,7 @@ const futureBlocked = startDate
   </View>
 </View>
 )}
+
 
 
 <TextInput
@@ -953,8 +1055,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   featureTitle: {
-    fontSize: 22,
-    marginTop: 20,
+    fontSize: 16,
+    marginTop: 10,
     fontWeight: '600'
   },
 
@@ -999,7 +1101,14 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   
-
+  topRightSaveButton: {
+    position: 'relative',
+    top: -4,
+    right: -4,
+    zIndex: 10,
+    padding: 6,
+    backgroundColor: 'transparent',
+  },
   image: {
     width: 320,
     height: 200,
@@ -1007,13 +1116,40 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
 
+  spaceDescription: {
+    fontSize: 18,
+    fontFamily: 'Poppins-Bold',
+    color: '#0F6B5B',
+    marginBottom: 0,
+    fontWeight: '800',
+  },
+
   title: {
     fontSize: 28,
     fontFamily: 'Poppins-Bold',
     color: '#0F6B5B',
-    marginBottom: 8,
-    fontWeight: '800'
+    marginBottom: 0,
+    fontWeight: '800',
   },
+  verified: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F3EC',
+    paddingVertical: 2,
+    marginTop: 2,
+    paddingHorizontal: 6,
+    borderRadius: 999,
+  },
+  
+  verifiedText: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: '#13ad58',
+    fontFamily: 'Poppins-Medium',
+    marginLeft: 4,
+  },
+  
+  
 
   tag: {
     alignSelf: 'flex-start',
@@ -1021,6 +1157,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 20,
     marginBottom: 12,
+  },
+
+  preferenceText: {
+    marginTop: 0,
+    marginLeft: 5,
+    fontSize: 13,
+    color: '#606060',
+    fontFamily: 'Poppins-Italic', 
+    transform: [{ skewX: '-15deg' }],
   },
 
   offeringTag: {
@@ -1041,7 +1186,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F1F1F',
     fontFamily: 'Poppins-Regular',
-    marginBottom: 12,
+    marginBottom: 0,
   },
 
   price: {
@@ -1051,10 +1196,28 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
+  saveIcon: {
+    width: 30,
+    height: 30,
+    // marginLeft: 'auto',
+  },
+
   infoRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginVertical: 6,
+    alignItems: 'flex-start',
+  },
+
+  preferenceTextColor: {
+    color: '#0F6B5B',
+    fontWeight: 800,
+  },
+
+  location: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 5,
     alignItems: 'flex-start',
   },
   
@@ -1093,24 +1256,27 @@ const styles = StyleSheet.create({
   },
   priceContainer: {
     marginVertical: 8,
+    display: 'flex',
+    flexDirection: 'row',
+    marginLeft: 5
   },
   
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 4,
-    flexWrap: 'wrap',
+    marginVertical: 0,
   },
   
   priceText: {
     fontFamily: 'Poppins-Bold',
     fontSize: 16,
-    color: '#005337', // Emerald Green for pricing
+    color: '#1F1F1F',
+    marginRight: 7
   },
   
   periodText: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 14,
+    fontSize: 16,
     color: '#333',
   },
   
@@ -1140,6 +1306,8 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
 
+
+
   inlineTag: {
     paddingVertical: 4,
     paddingHorizontal: 10,
@@ -1167,6 +1335,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent', // no white outer background
     gap: 8,
   },
+
+  titleAndSave: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   
   messageInput: {
     flex: 1,
@@ -1191,6 +1366,12 @@ const styles = StyleSheet.create({
 
   disabledButton: {
     backgroundColor: '#A0A0A0',
+  },
+
+  nameAndVerified: {
+    flexDirection: 'column',
+    flexShrink: 1,   // 👈 important
+    alignItems: 'flex-start',
   },
 
   sendText: {
@@ -1233,7 +1414,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
-
+  verifiedIconSmall: {
+    width: 14,
+    height: 14,
+  },
+  
   dateInput: {
     padding: 12,
     borderWidth: 1,

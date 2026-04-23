@@ -396,19 +396,43 @@ if (filters.storageType?.length && space.storageType?.length) {
 
 
 
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     // Compare current filters with previous filters
+  //     const filtersChanged =
+  //       JSON.stringify(filters) !== JSON.stringify(prevFiltersRef.current);
+  
+  //     if (filtersChanged || spaces.length === 0) {
+  //       fetchAndFilterSpaces();
+  //       prevFiltersRef.current = filters ? { ...filters } : null;
+  //     }
+  //   }, [filters, fetchAndFilterSpaces, spaces.length])
+  // );
+  
   useFocusEffect(
     useCallback(() => {
-      // Compare current filters with previous filters
-      const filtersChanged =
-        JSON.stringify(filters) !== JSON.stringify(prevFiltersRef.current);
+      if (!userId) return;
   
-      if (filtersChanged || spaces.length === 0) {
-        fetchAndFilterSpaces();
-        prevFiltersRef.current = filters ? { ...filters } : null;
-      }
-    }, [filters, fetchAndFilterSpaces, spaces.length])
+      const loadSaved = async () => {
+        try {
+          const snapshot = await getDocs(
+            collection(db, `users/${userId}/SavedReservations`)
+          );
+  
+          const saved: { [spaceId: string]: boolean } = {};
+          snapshot.forEach(doc => {
+            saved[doc.id] = true;
+          });
+  
+          setSavedSpaces(saved);
+        } catch (error) {
+          console.error('Error loading saved spaces:', error);
+        }
+      };
+  
+      loadSaved();
+    }, [userId])
   );
-  
 
 
 
@@ -523,28 +547,6 @@ if (filters.storageType?.length && space.storageType?.length) {
       </>
     )}
 
-    {/* Space Markers */}
-
-    {/* {displayedSpaces
-      .filter((space): space is Space & { location: { lat: number; lng: number } } =>
-        !!space.location?.lat && !!space.location?.lng
-      )
-      .map(space => (
-        <Marker
-          key={space.id}
-          coordinate={{
-            latitude: space.location.lat,
-            longitude: space.location.lng,
-          }}
-          title={space.title}
-          onPress={() => setSelectedSpace(space)}
-        >
-          <Image
-            source={getPinBackground(space.postType)}
-            style={styles.pinBackground}
-          />
-        </Marker>
-      ))} */}
 
       {groupSpacesByLocation(displayedSpaces).map((group, index) => {
         const first = group[0];
