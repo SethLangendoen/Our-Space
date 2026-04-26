@@ -28,6 +28,7 @@ const routeNameMap: Record<string, string> = {
   Login: 'Authentication',
   CreateSpaceScreen: 'Create Space',
   RulesScreen: 'Agreement',
+  SpaceDetail: 'Space'
 };
 
 export default function AppHeader({ navigation, showSettings }: AppHeaderProps) {

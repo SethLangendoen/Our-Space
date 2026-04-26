@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../../firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { COLORS } from '../Styles/theme';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Navigation = {
   navigate: (screen: string) => void;
@@ -96,6 +97,68 @@ export default function SettingsScreen() {
     { title: 'Version 1.0', screen: 'Version' },
   ];
 
+  const getHostOnboardingStatus = (user: any) => {
+    const legalDone = user?.legal?.host?.userAgreementSigned === true;
+  
+    const stripeDone =
+      user?.stripe?.host?.onboardingComplete === true &&
+      user?.stripe?.host?.chargesEnabled === true &&
+      user?.stripe?.host?.payoutsEnabled === true;
+  
+    const guideDone = user?.onboarding?.host?.guideComplete === true;
+  
+    const completed =
+      Number(legalDone) + Number(stripeDone) + Number(guideDone);
+  
+    return {
+      legalDone,
+      stripeDone,
+      guideDone,
+      completed,
+      total: 3,
+    };
+  };
+
+  const getRenterOnboardingStatus = (user: any) => {
+    const legalDone = user?.legal?.renter?.userAgreementSigned === true;
+  
+    const paymentDone = !!user?.stripe?.customer?.defaultPaymentMethod;
+  
+    const guideDone = user?.onboarding?.renter?.guideComplete === true;
+  
+    const completed =
+      Number(legalDone) + Number(paymentDone) + Number(guideDone);
+  
+    return {
+      legalDone,
+      paymentDone,
+      guideDone,
+      completed,
+      total: 3,
+    };
+  };
+
+
+  const isCompleted = (groupTitle: string, title: string) => {
+    if (!user) return false;
+  
+    if (groupTitle === 'Host Onboarding') {
+      if (title === 'User Agreements') return hostProgress?.legalDone;
+      if (title === 'Stripe Account Setup') return hostProgress?.stripeDone;
+      if (title === 'Hosting Guide') return hostProgress?.guideDone;
+    }
+  
+    if (groupTitle === 'Renter Onboarding') {
+      if (title === 'User Agreements') return renterProgress?.legalDone;
+      if (title === 'Payment Setup') return renterProgress?.paymentDone;
+      if (title === 'Renters Guide') return renterProgress?.guideDone;
+    }
+  
+    return false;
+  };
+
+
+
   // -------------------------------
   // ACCORDION TOGGLE
   // -------------------------------
@@ -129,23 +192,42 @@ export default function SettingsScreen() {
   // -------------------------------
   // FETCH USER DATA
   // -------------------------------
-  useEffect(() => {
+  // useEffect(() => {
+
+  // const fetchUserData = async () => {
+  //   const userId = auth.currentUser?.uid;
+  //   if (!userId) return;
+
+  //   const userDoc = await getDoc(doc(db, 'users', userId));
+  //   if (userDoc.exists()) {
+  //     setUser(userDoc.data());
+  //   }
+  // };
+
+  //   fetchUserData();
+  // }, []);
+
     const fetchUserData = async () => {
       const userId = auth.currentUser?.uid;
       if (!userId) return;
-
+  
       const userDoc = await getDoc(doc(db, 'users', userId));
       if (userDoc.exists()) {
         setUser(userDoc.data());
       }
     };
 
-    fetchUserData();
-  }, []);
 
-  // -------------------------------
-  // RENDER
-  // -------------------------------
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData();
+    }, [])
+  );
+
+  const hostProgress = user ? getHostOnboardingStatus(user) : null;
+  const renterProgress = user ? getRenterOnboardingStatus(user) : null;
+
+  
   return (
     <ScrollView style={styles.container}>
       {groupedSettings.map((group) => (
@@ -154,11 +236,29 @@ export default function SettingsScreen() {
             style={styles.groupHeader}
             onPress={() => toggleGroup(group.groupTitle)}
           >
-            <Text style={styles.groupHeaderText}>{group.groupTitle}</Text>
+          <View>
+            <Text style={styles.groupHeaderText}>
+              {group.groupTitle}
+            </Text>
+
+            {group.groupTitle === 'Host Onboarding' && hostProgress && (
+              <Text style={styles.progressText}>
+                Actions required ({hostProgress.completed}/3)
+              </Text>
+            )}
+
+            {group.groupTitle === 'Renter Onboarding' && renterProgress && (
+              <Text style={styles.progressText}>
+                Actions required ({renterProgress.completed}/3)
+              </Text>
+            )}
+          </View>
+
             <Text style={styles.chevron}>
               {expanded[group.groupTitle] ? '▲' : '▼'}
             </Text>
           </TouchableOpacity>
+
 
           {expanded[group.groupTitle] && (
             <View style={styles.subItemsContainer}>
@@ -168,7 +268,30 @@ export default function SettingsScreen() {
                   style={[styles.row, styles.subRow]}
                   onPress={() => navigation.navigate(screen)}
                 >
-                  <Text style={styles.rowText}>{title}</Text>
+
+              <View style={styles.rowContent}>
+                <Text style={styles.rowText}>
+                  {title}
+                </Text>
+
+                {(group.groupTitle === 'Host Onboarding' ||
+                  group.groupTitle === 'Renter Onboarding') && (
+                  <Text
+                    style={[
+                      styles.statusText,
+                      isCompleted(group.groupTitle, title)
+                        ? styles.statusComplete
+                        : styles.statusPending,
+                    ]}
+                  >
+                    {isCompleted(group.groupTitle, title)
+                      ? 'Complete'
+                      : 'Action required'}
+                  </Text>
+                )}
+              </View>
+
+
                 </TouchableOpacity>
               ))}
             </View>
@@ -250,6 +373,32 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  completedText: {
+    color: '#16A34A',
+  },
+  rowContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  
+  statusComplete: {
+    color: '#16A34A', // green
+  },
+  
+  statusPending: {
+    color: '#DC2626', // red
   },
 });
 

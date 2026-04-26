@@ -11,6 +11,8 @@ const { handleStripePaymentWebhook } = require("./stripe/stripePaymentWebhook");
 const { cancelReservationEarly } = require("./payments/cancelReservationEarly");
 const { getStripeEarningsLogic } = require("./stripe/getStripeEarningsLogic");
 const { createStripeLoginLinkLogic } = require("./stripe/createStripeLoginLink");
+// const { sendPushNotificationLogic } = require("./notifications/sendPushNotifications");
+// const { onNewMessage } = require("./notifications/onNewMessage");
 
 const {
   ensureStripeCustomerLogic,
@@ -269,3 +271,8 @@ exports.createStripeLoginLink = https.onRequest(async (req, res) => {
   }
 });
 
+
+
+
+
+exports.onNewMessage = require("./notifications/onNewMessage").onNewMessage;

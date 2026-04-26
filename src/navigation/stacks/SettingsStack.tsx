@@ -21,9 +21,11 @@ import Earnings from '../../screens/Settings/PaymentsAndPayouts/Earnings';
 // HOST ONBOARDING
 import StripeOnboarding from '../../screens/Settings/HostOnboarding/StripeOnboarding';
 import HostUserAgreements from '../../screens/Settings/HostOnboarding/HostUserAgreements';
+import HostingGuide from '../../screens/Settings/HostOnboarding/HostingGuide';
 
 // RENTER ONBOARDING
 import RenterUserAgreements from '../../screens/Settings/RenterOnboarding/RenterUserAgreements';
+import RentersGuide from '../../screens/Settings/RenterOnboarding/RentersGuide';
 
 // LEGAL 
 import TermsAndConditions from '../../screens/Settings/LegalDocuments/TermsAndConditions';
@@ -95,6 +97,18 @@ export default function SettingsStack() {
         name="RenterUserAgreements"
         component={RenterUserAgreements}
         options={{ title: 'Renter User Agreements' }}
+      />
+
+      <Stack.Screen
+        name="RentersGuide"
+        component={RentersGuide}
+        options={{ title: 'Renter Guide' }}
+      />
+
+      <Stack.Screen
+        name="HostingGuide"
+        component={HostingGuide}
+        options={{ title: 'Hosting Guide' }}
       />
 
       <Stack.Screen

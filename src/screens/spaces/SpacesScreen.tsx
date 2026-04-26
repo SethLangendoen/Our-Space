@@ -394,45 +394,45 @@ if (filters.storageType?.length && space.storageType?.length) {
 
 
 
+// COME BACK TO THIS SPACES DON'T LOAD UPON INITIAL LAUNCH
 
-
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     // Compare current filters with previous filters
-  //     const filtersChanged =
-  //       JSON.stringify(filters) !== JSON.stringify(prevFiltersRef.current);
-  
-  //     if (filtersChanged || spaces.length === 0) {
-  //       fetchAndFilterSpaces();
-  //       prevFiltersRef.current = filters ? { ...filters } : null;
-  //     }
-  //   }, [filters, fetchAndFilterSpaces, spaces.length])
-  // );
-  
   useFocusEffect(
     useCallback(() => {
-      if (!userId) return;
+      // Compare current filters with previous filters
+      const filtersChanged =
+        JSON.stringify(filters) !== JSON.stringify(prevFiltersRef.current);
   
-      const loadSaved = async () => {
-        try {
-          const snapshot = await getDocs(
-            collection(db, `users/${userId}/SavedReservations`)
-          );
-  
-          const saved: { [spaceId: string]: boolean } = {};
-          snapshot.forEach(doc => {
-            saved[doc.id] = true;
-          });
-  
-          setSavedSpaces(saved);
-        } catch (error) {
-          console.error('Error loading saved spaces:', error);
-        }
-      };
-  
-      loadSaved();
-    }, [userId])
+      if (filtersChanged || spaces.length === 0) {
+        fetchAndFilterSpaces();
+        prevFiltersRef.current = filters ? { ...filters } : null;
+      }
+    }, [filters, fetchAndFilterSpaces, spaces.length])
   );
+  
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     if (!userId) return;
+  
+  //     const loadSaved = async () => {
+  //       try {
+  //         const snapshot = await getDocs(
+  //           collection(db, `users/${userId}/SavedReservations`)
+  //         );
+  
+  //         const saved: { [spaceId: string]: boolean } = {};
+  //         snapshot.forEach(doc => {
+  //           saved[doc.id] = true;
+  //         });
+  
+  //         setSavedSpaces(saved);
+  //       } catch (error) {
+  //         console.error('Error loading saved spaces:', error);
+  //       }
+  //     };
+  
+  //     loadSaved();
+  //   }, [userId])
+  // );
 
 
 
@@ -571,50 +571,16 @@ if (filters.storageType?.length && space.storageType?.length) {
         );
       })}
 
-    {/* Fallback marker if no spaces */}
-    {!displayedSpaces.length && !searchInfo && (
-      <Marker
-        coordinate={{ latitude: 37.7749, longitude: -122.4194 }}
-        title="No spaces nearby"
-      />
-    )}
   </MapView>
 
-  {/* Bottom Panel when Marker selected */}
-  {/* {selectedSpace && (
-    <TouchableOpacity
-      style={styles.bottomPanel}
-      activeOpacity={0.9}
-      onPress={() => {
-        navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id });
-        setSelectedSpace(null);
-      }}
-    >
-      <TouchableOpacity
-        onPress={() => setSelectedSpace(null)}
-        style={styles.closeButton}
-      >
-        <Ionicons name="close" size={24} color="#333" />
-      </TouchableOpacity>
 
-      <SpaceCard
-        item={selectedSpace}
-        matchScore={selectedSpace?.matchScore}
-        totalFilters={selectedSpace?.totalFilters}
-        isSaved={!!savedSpaces[selectedSpace.id]}
-        onToggleSave={() => toggleSave(selectedSpace.id)}
-        onPress={() => navigation.navigate('SpaceDetail', { spaceId: selectedSpace.id })}
-      />
-    </TouchableOpacity>
-  )} */}
 {selectedGroup.length > 0 && (
   <View style={styles.bottomPanel}>
 
     <View style={styles.resultsAndClose}>
       <Text>
-        {selectedGroup.length} Space Results
+        {selectedGroup.length} Space Result{selectedGroup.length === 1 ? '' : 's'}
       </Text>
-      
       <TouchableOpacity
         onPress={() => setSelectedGroup([])}
         style={styles.closeButton}
@@ -763,7 +729,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: width,
-    backgroundColor: "white",
+    backgroundColor: COLORS.lighterGrey,
     paddingHorizontal: 10,
     paddingTop: 10,
     borderTopLeftRadius: 16,
@@ -780,7 +746,7 @@ const styles = StyleSheet.create({
     right: 10,
     top: 0,
     zIndex: 10,
-    backgroundColor: 'grey',
+    // backgroundColor: 'grey',
     borderRadius: '30%',
 
   },

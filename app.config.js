@@ -77,7 +77,7 @@ export default {
           enableGooglePay: true
         }
       ],
-
+      "expo-notifications",
       "expo-web-browser",
       "expo-font",
       "expo-asset"

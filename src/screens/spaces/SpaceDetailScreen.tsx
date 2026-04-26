@@ -655,6 +655,7 @@ const futureBlocked = startDate
         </View>
       )}
 
+
       {preferredPeriod && (
         <Text style={styles.preferenceText}>
           This host prefers 
@@ -667,31 +668,39 @@ const futureBlocked = startDate
 
 
       {totalTimeLabel && (
+
+
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Total Time Booked:</Text>
+          <Text style={styles.featureTitle}>
+            Total Time Booked: 
+          </Text>
           <Text style={styles.value}>{totalTimeLabel}</Text>
         </View>
       )}
 
 
       <View style={styles.infoRow}>
-        <Text style={styles.label}>Space Size:</Text>
+        <Text style={styles.featureTitle}>
+          Space Size: 
+        </Text>        
         <Text style={styles.value}>
           {space.dimensions?.width || '?'}ft (W) × {space.dimensions?.length || '?'}ft (L) × {space.dimensions?.height || '?'}ft (H)
         </Text>
       </View>
 
       <View style={styles.infoRow}>
-        <Text style={styles.label}>Accessibility:</Text>
-        <View style={{ flexDirection: 'column' }}>
+          <Text style={styles.featureTitle}>
+            Accessibility: 
+          </Text>        
+          <View style={{ flexDirection: 'column' }}>
           {space.accessibility?.includes('By Appointment') && (
-            <Text style={styles.value}>• Appointments are required for space visits</Text>
+            <Text style={styles.value}>Appointments with the host are required for space visits</Text>
           )}
           {space.accessibility?.includes('24/7') && (
-            <Text style={styles.value}>• Visits can be made at any time</Text>
+            <Text style={styles.value}>Appointments are not required to visit your items</Text>
           )}
           {!space.accessibility?.length && (
-            <Text style={styles.value}>• Not specified</Text>
+            <Text style={styles.value}>Not specified</Text>
           )}
         </View>
       </View>
@@ -777,9 +786,23 @@ const futureBlocked = startDate
 <>
 
 <View style={styles.bookingContainer}>
-<Text style={styles.bookingTitle}>Book Reservation</Text>
+<Text style={styles.bookingTitle}>Book Your Reservation</Text>
 
-
+<View style={styles.dateSummary}>
+{!selectedRange.start ? (
+    <Text style={styles.featureTitle}>
+      Select your storage booking start date
+    </Text> 
+) : (
+  <View style={styles.dateRow}>
+    <Text style={styles.featureTitle}>
+      Start Date: 
+    </Text> 
+    <Text style={styles.featureTitle}>
+      {' '}{selectedRange.start.toDateString()}
+    </Text>
+  </View>
+)}
 
 <BlockedCalendar
   // blockedTimes={space.blockedTimes || []}
@@ -790,29 +813,19 @@ const futureBlocked = startDate
 
 />
 
-<View style={styles.dateSummary}>
-{/* START */}
-<View style={styles.dateRow}>
-  <Text style={styles.dateLabel}>Start</Text>
-  <Text style={styles.dateValue}>
-    {selectedRange.start
-      ? selectedRange.start.toDateString()
-      : 'Not selected'}
-  </Text>
-</View>
-
-
 
 </View>
 
 
 {space.prices && (
-<View style={{ marginVertical: 20, paddingBottom: 10 }}>
-  <Text style={styles.label}>Select Pricing Period</Text>
-
+<View style={{ marginVertical: 0, paddingBottom: 10 }}>
+  
+    <Text style={styles.featureTitle}>
+      Select Pricing Period: 
+    </Text> 
   <View
     style={{
-      flexDirection: 'row',
+      flexDirection: 'column',
       flexWrap: 'wrap',     // ⬅️ allow buttons to wrap
       gap: 10,              // spacing between buttons
       marginTop: 8,
@@ -838,7 +851,7 @@ const futureBlocked = startDate
             onPress={() => setSelectedPricePeriod(period)}
           >
             <Text style={{ color: isSelected ? 'white' : 'black' }}>
-              {period.charAt(0).toUpperCase() + period.slice(1)} (${parseFloat(data.amount || '0').toFixed(2)})
+              {period.charAt(0).toUpperCase() + period.slice(1)} ${parseFloat(data.amount || '0').toFixed(2)}
             </Text>
           </TouchableOpacity>
         );
@@ -849,28 +862,38 @@ const futureBlocked = startDate
 
 
 
+<Text style={styles.featureTitle}>
+  What are you storing?
+</Text>
 <TextInput
   style={styles.descriptionInput}
-  placeholder="Describe the items you are storing"
+  placeholder="e.g. boxes of clothes, skis, small furniture"
   value={reservationDescription}
   onChangeText={setReservationDescription}
   multiline
 />
+
+<Text style={styles.featureTitle}>
+  Pick-up & drop-off frequency
+</Text>
 <TextInput
   style={styles.descriptionInput}
-  placeholder="Pick-up and Drop-off Frequecy"
+  placeholder="e.g. once a month, occasionally, rarely"
   value={frequencyDescription}
   onChangeText={setFrequencyDescription}
   multiline
 />
+
+<Text style={styles.featureTitle}>
+  Storage duration
+</Text>
 <TextInput
   style={styles.descriptionInput}
-  placeholder="Approximate storage duration (e.g., 2 weeks, 3 months)"
+  placeholder="e.g. 2 weeks, 3 months, long-term"
   value={storageDuration}
   onChangeText={setStorageDuration}
-  multiline={false}
+  multiline
 />
-
 
 <TouchableOpacity
 style={[
@@ -1065,7 +1088,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   dateSummary: {
-    marginTop: 12,
   },
   smallGreyText: {
     fontSize: 14,
@@ -1074,9 +1096,9 @@ const styles = StyleSheet.create({
   
   dateRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginVertical: 6,
+    justifyContent: 'space-between', 
+    marginVertical: 0,
   },
 
   featuresGrid: {
@@ -1203,7 +1225,7 @@ const styles = StyleSheet.create({
   },
 
   infoRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     flexWrap: 'wrap',
     marginVertical: 6,
     alignItems: 'flex-start',
@@ -1412,6 +1434,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
     color: '#0F6B5B',
     marginBottom: 10,
+    fontWeight: 800,
     textAlign: 'center',
   },
   verifiedIconSmall: {

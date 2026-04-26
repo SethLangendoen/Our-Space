@@ -11,7 +11,7 @@ import useUserProfileStatus from '../hooks/UseUserProfileStatus';
 import AuthStack from './stacks/AuthStack';
 import { Image, View, Text } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase/config';
+import { auth, db } from '../firebase/config';
 
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { ParamListBase } from '@react-navigation/native';
@@ -22,9 +22,13 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 import AppHeader from '../components/AppHeader';
 import { NONAME } from 'dns';
+import { registerForPushNotifications } from 'src/Helpers/notifications';
 
+import { doc, setDoc, arrayUnion, getDoc } from 'firebase/firestore';
 
 const Tab = createBottomTabNavigator();
+
+
 
 
 export default function MainTabs() {
@@ -42,7 +46,40 @@ export default function MainTabs() {
   }, []);
 
 
+  useEffect(() => {
+    const setupPush = async () => {
+      const user = auth.currentUser;
 
+      if (!user) {
+        console.log('no user')
+        return
+      };
+  
+      const token = await registerForPushNotifications();
+      if (!token) {
+        console.log('no token')
+        return
+      };
+  
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+  
+      const existingTokens = userSnap.data()?.expoPushTokens || [];
+      
+      // prevent duplicates
+      if (!existingTokens.includes(token)) {
+        await setDoc(
+          userRef,
+          {
+            expoPushTokens: arrayUnion(token),
+          },
+          { merge: true }
+        );
+      }
+    };
+  
+    setupPush();
+  }, []);
   return (
 
 
