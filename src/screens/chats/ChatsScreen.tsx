@@ -28,11 +28,18 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
 
+
 interface Chat {
   id: string;
   users: string[];
   lastMessage?: string;
   updatedAt?: any;
+  lastRead?: {
+    [userId: string]: any;
+  };
+  unreadCount?: {
+    [userId: string]: number;
+  };
 }
 
 interface User {
@@ -83,6 +90,7 @@ export default function ChatsScreen() {
         );
 
         const unsubscribeChats = onSnapshot(q, (snapshot) => {
+          
           const chatsData: Chat[] = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...(doc.data() as Omit<Chat, 'id'>),
@@ -112,6 +120,15 @@ export default function ChatsScreen() {
   const renderChat = ({ item }: { item: Chat }) => {
     const otherUserId = item.users.find((u) => u !== currentUser) || '';
     const user = userDataMap[otherUserId];
+    const me = currentUser;
+
+    const lastReadTime = item.lastRead?.[me!]?.toMillis?.() ?? 0;
+    const updatedTime =
+      item.updatedAt?.toMillis?.() ??
+      item.updatedAt?.seconds * 1000 ??
+      0;
+
+    const unreadCount = item.unreadCount?.[me!] ?? 0;
 
     return (
         <TouchableOpacity
@@ -133,18 +150,25 @@ export default function ChatsScreen() {
             style={styles.userImage}
           />
           <View style={styles.userTextContainer}>
+            
             <Text style={styles.userName}>
               {user
                 ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
                 : 'Loading...'}
             </Text>
+
+            <View style={styles.unreadCounts}>
             <Text
-              style={styles.lastMessage}
-              numberOfLines={1}
-              ellipsizeMode="tail"
+              style={[
+                styles.lastMessage,
+                unreadCount > 0 && styles.unreadMessage
+              ]}
             >
               {item.lastMessage || 'No messages yet.'}
             </Text>
+
+            </View>
+
           </View>
         </View>
       </TouchableOpacity>
@@ -244,5 +268,26 @@ const styles = StyleSheet.create({
     maxHeight: height * 0.4, // Make it slightly smaller
     aspectRatio: 1.5, // optional, keep the image proportioned
     opacity: 0.9,
+  },
+  unreadDot: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  unreadText: {
+    color: '#F3AF1D',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+
+  
+  unreadMessage: {
+    fontWeight: '700',
+    color: '#0F6B5B',
+  },
+  unreadCounts: {
+    display: 'flex',
+    flexDirection: 'row'
   }
 });

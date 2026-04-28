@@ -83,7 +83,7 @@ export default function SettingsScreen() {
       ],
     },
     {
-      groupTitle: 'Legal Documents',
+      groupTitle: 'Legal',
       screens: [
         { title: 'Terms and Conditions', screen: 'TermsAndConditions' },
         { title: 'Privacy Policy', screen: 'PrivacyPolicy' }, // NEED PAGE 

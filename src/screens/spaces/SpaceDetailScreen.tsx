@@ -614,17 +614,45 @@ const futureBlocked = startDate
           <FeatureRow key={item} label={item} />
         ))}        
         
-        <FeatureRow label={space.accessibility} />
+      </View>
 
+      <Text style={styles.featureTitle}>
+        Security: 
+      </Text>
+
+      <View style={styles.featuresGrid}>
         {space.security.map((item: string) => (
           <FeatureRow key={item} label={item} />
         ))}
       </View>
 
+      <Text style={styles.featureTitle}>
+        Accessbility: 
+      </Text>
+
+      <View style={styles.featuresGrid}>     
+        <FeatureRow label={space.accessibility} />
+        <View style={styles.infoRow}>
+            <View style={{ flexDirection: 'column' }}>
+            {space.accessibility?.includes('By Appointment') && (
+              <Text style={styles.value}>Appointments with the host are required for space visits</Text>
+            )}
+            {space.accessibility?.includes('24/7') && (
+              <Text style={styles.value}>Appointments are not required to visit your items</Text>
+            )}
+            {!space.accessibility?.length && (
+              <Text style={styles.value}>Not specified</Text>
+            )}
+          </View>
+        </View>
+      </View>
+
+
+
 
 
       <Text style={styles.featureTitle}>
-        Pricing: 
+        Price Period Options: 
       </Text>
 
 
@@ -681,29 +709,14 @@ const futureBlocked = startDate
 
       <View style={styles.infoRow}>
         <Text style={styles.featureTitle}>
-          Space Size: 
+          Space Dimensions: 
         </Text>        
-        <Text style={styles.value}>
+        <Text style={styles.periodText}>
           {space.dimensions?.width || '?'}ft (W) × {space.dimensions?.length || '?'}ft (L) × {space.dimensions?.height || '?'}ft (H)
         </Text>
       </View>
 
-      <View style={styles.infoRow}>
-          <Text style={styles.featureTitle}>
-            Accessibility: 
-          </Text>        
-          <View style={{ flexDirection: 'column' }}>
-          {space.accessibility?.includes('By Appointment') && (
-            <Text style={styles.value}>Appointments with the host are required for space visits</Text>
-          )}
-          {space.accessibility?.includes('24/7') && (
-            <Text style={styles.value}>Appointments are not required to visit your items</Text>
-          )}
-          {!space.accessibility?.length && (
-            <Text style={styles.value}>Not specified</Text>
-          )}
-        </View>
-      </View>
+
 
 {/* 
       <Text style={styles.featureTitle}>
@@ -1183,7 +1196,7 @@ const styles = StyleSheet.create({
 
   preferenceText: {
     marginTop: 0,
-    marginLeft: 5,
+    marginLeft: 0,
     fontSize: 13,
     color: '#606060',
     fontFamily: 'Poppins-Italic', 
@@ -1277,10 +1290,10 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   priceContainer: {
-    marginVertical: 8,
+    marginVertical: 0,
     display: 'flex',
     flexDirection: 'row',
-    marginLeft: 5
+    marginLeft: 0
   },
   
   priceRow: {
@@ -1424,9 +1437,9 @@ const styles = StyleSheet.create({
   bookingContainer: {
     marginTop: 10,
     marginBottom: 10,
-    padding: 5,
+    padding: 10,
     backgroundColor: 'white',
-    borderRadius: 5,
+    borderRadius: 20,
   },
 
   bookingTitle: {

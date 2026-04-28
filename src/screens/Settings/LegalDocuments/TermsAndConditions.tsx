@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   View,
@@ -8,12 +8,45 @@ import {
   Alert,
 } from "react-native";
 import { auth, db } from "../../../firebase/config";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { appTerms, LegalBlock } from "./AppTerms";
 
 export default function TermsAndConditions() {
   const [accepted, setAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+  const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+
+  useEffect(() => {
+    const checkTermsStatus = async () => {
+      try {
+        const uid = auth.currentUser?.uid;
+        if (!uid) {
+          setCheckingStatus(false);
+          return;
+        }
+
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+
+          if (userData?.acceptedTerms === true) {
+            setAlreadyAccepted(true);
+            setAccepted(true);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check terms status:", error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkTermsStatus();
+  }, []);
+
 
   const handleAgree = async () => {
     if (!accepted) {

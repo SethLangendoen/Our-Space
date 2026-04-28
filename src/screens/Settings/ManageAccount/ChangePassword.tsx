@@ -1,9 +1,18 @@
-
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+} from 'react-native';
 import { auth } from '../../../firebase/config';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import {
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+} from 'firebase/auth';
 
 export default function ChangePassword() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -11,29 +20,59 @@ export default function ChangePassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
+  const [passwordStrength, setPasswordStrength] = useState<
+    'weak' | 'medium' | 'strong'
+  >('weak');
+
+  // Requirement tracking
+  const [requirements, setRequirements] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false,
+  });
 
   // Check if passwords match
   useEffect(() => {
     setPasswordsMatch(newPassword === confirmPassword);
   }, [newPassword, confirmPassword]);
 
-  // Check password strength
+  // Check password strength + requirements
   useEffect(() => {
     const strength = calculateStrength(newPassword);
     setPasswordStrength(strength);
+
+    setRequirements({
+      length: newPassword.length >= 8,
+      uppercase: /[A-Z]/.test(newPassword),
+      lowercase: /[a-z]/.test(newPassword),
+      number: /[0-9]/.test(newPassword),
+      special: /[!@#$%^&*]/.test(newPassword),
+    });
   }, [newPassword]);
 
-  const calculateStrength = (password: string): 'weak' | 'medium' | 'strong' => {
-    if (password.length < 6) return 'weak';
+  const calculateStrength = (
+    password: string
+  ): 'weak' | 'medium' | 'strong' => {
+    if (!password) return 'weak';
+
     const hasUpper = /[A-Z]/.test(password);
     const hasLower = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
     const hasSpecial = /[!@#$%^&*]/.test(password);
-    const conditionsMet = [hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+    const hasLength = password.length >= 8;
+
+    const conditionsMet = [
+      hasUpper,
+      hasLower,
+      hasNumber,
+      hasSpecial,
+      hasLength,
+    ].filter(Boolean).length;
 
     if (conditionsMet <= 2) return 'weak';
-    if (conditionsMet === 3) return 'medium';
+    if (conditionsMet <= 4) return 'medium';
     return 'strong';
   };
 
@@ -42,39 +81,59 @@ export default function ChangePassword() {
     if (!user || !user.email) return;
 
     if (!passwordsMatch) {
-      Alert.alert("Error", "New passwords do not match.");
+      Alert.alert('Error', 'New passwords do not match.');
       return;
     }
 
     if (passwordStrength === 'weak') {
-      Alert.alert("Error", "Password is too weak. Include uppercase, number, and special character.");
+      Alert.alert(
+        'Error',
+        'Password is too weak. Please improve it before continuing.'
+      );
       return;
     }
 
     setLoading(true);
 
     try {
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword
+      );
       await reauthenticateWithCredential(user, credential);
 
       await updatePassword(user, newPassword);
-      Alert.alert("Success", "Password updated successfully!");
+
+      Alert.alert('Success', 'Password updated successfully!');
+
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
       console.error(error);
+
       if (error.code === 'auth/wrong-password') {
-        Alert.alert("Error", "Current password is incorrect.");
+        Alert.alert('Error', 'Current password is incorrect.');
       } else if (error.code === 'auth/requires-recent-login') {
-        Alert.alert("Error", "Please log in again and try.");
+        Alert.alert('Error', 'Please log in again and try.');
       } else {
-        Alert.alert("Error", error.message);
+        Alert.alert('Error', error.message);
       }
     } finally {
       setLoading(false);
     }
   };
+
+  const renderRequirement = (label: string, met: boolean) => (
+    <Text
+      style={[
+        styles.requirementText,
+        { color: met ? '#0F6B5B' : '#999' },
+      ]}
+    >
+      {met ? '✓' : '•'} {label}
+    </Text>
+  );
 
   return (
     <View style={styles.container}>
@@ -93,11 +152,39 @@ export default function ChangePassword() {
         secureTextEntry
         style={styles.input}
       />
-      <Text style={[styles.feedback, passwordStrength === 'weak' && { color: 'red' },
-                                  passwordStrength === 'medium' && { color: 'orange' },
-                                  passwordStrength === 'strong' && { color: 'green' }]}>
-        Password strength: {passwordStrength}
-      </Text>
+
+      {/* Only show once user starts typing */}
+      {newPassword.length > 0 && (
+        <View style={styles.passwordFeedbackBox}>
+          <Text
+            style={[
+              styles.feedback,
+              passwordStrength === 'weak' && styles.weak,
+              passwordStrength === 'medium' && styles.medium,
+              passwordStrength === 'strong' && styles.strong,
+            ]}
+          >
+            Password strength: {passwordStrength}
+          </Text>
+
+          <View style={styles.requirementsContainer}>
+            {renderRequirement('At least 8 characters', requirements.length)}
+            {renderRequirement(
+              'One uppercase letter',
+              requirements.uppercase
+            )}
+            {renderRequirement(
+              'One lowercase letter',
+              requirements.lowercase
+            )}
+            {renderRequirement('One number', requirements.number)}
+            {renderRequirement(
+              'One special character (!@#$%^&*)',
+              requirements.special
+            )}
+          </View>
+        </View>
+      )}
 
       <TextInput
         placeholder="Confirm New Password"
@@ -106,8 +193,11 @@ export default function ChangePassword() {
         secureTextEntry
         style={styles.input}
       />
+
       {!passwordsMatch && confirmPassword.length > 0 && (
-        <Text style={[styles.feedback, { color: 'red' }]}>Passwords do not match</Text>
+        <Text style={[styles.feedback, styles.errorText]}>
+          Passwords do not match
+        </Text>
       )}
 
       <TouchableOpacity
@@ -124,19 +214,60 @@ export default function ChangePassword() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20 },
+  container: {
+    padding: 20,
+  },
+
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    marginBottom: 8,
+    marginBottom: 10,
     paddingHorizontal: 12,
     height: 48,
+    backgroundColor: '#fff',
   },
+
+  passwordFeedbackBox: {
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+
   feedback: {
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: '600',
     marginBottom: 8,
   },
+
+  weak: {
+    color: 'red',
+  },
+
+  medium: {
+    color: 'orange',
+  },
+
+  strong: {
+    color: 'green',
+  },
+
+  requirementsContainer: {
+    gap: 4,
+  },
+
+  requirementText: {
+    fontSize: 13,
+  },
+
+  errorText: {
+    color: 'red',
+    marginBottom: 8,
+  },
+
   button: {
     backgroundColor: '#0F6B5B',
     borderRadius: 8,
@@ -144,5 +275,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
 });

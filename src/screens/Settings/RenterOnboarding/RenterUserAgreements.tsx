@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   View,
@@ -9,15 +9,46 @@ import {
   Alert,
 } from "react-native";
 import { auth, db } from "../../../firebase/config";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
 
 export default function RenterUserAgreements() {
   const [accepted, setAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showFullAgreement, setShowFullAgreement] = useState(false);
-  
+  const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
 
+  useEffect(() => {
+    const checkAgreementStatus = async () => {
+      try {
+        const uid = auth.currentUser?.uid;
+        if (!uid) {
+          setCheckingStatus(false);
+          return;
+        }
 
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          const signed =
+            userData?.legal?.renter?.userAgreementSigned === true;
+
+          if (signed) {
+            setAlreadyAccepted(true);
+            setAccepted(true);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check agreement status:", error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkAgreementStatus();
+  }, []);
 
   const handleAgree = async () => {
     if (!accepted) {

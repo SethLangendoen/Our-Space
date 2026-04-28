@@ -16,7 +16,7 @@ const iconsMap: { [key: string]: any } = {
   RV: require('../../assets/postIcons/rv.png'),
   Boats: require('../../assets/postIcons/boat.png'),
   Personal: require('../../assets/postIcons/personal.png'),
-  Business: require('../../assets/postIcons/business.png'),
+  LargerItems: require('../../assets/postIcons/largerItems.png'),
 };
 
 // Save / unsave icons
@@ -25,17 +25,7 @@ const saveIcons = {
   unsaved: require('assets/filter/bookmark-outline.png'),
 };
 
-// interface SpaceCardProps {
-//   item: any;
-//   onPress: () => void;
 
-//   isSaved?: boolean;
-//   onToggleSave?: () => void;
-
-//   matchScore?: number;
-//   totalFilters?: number;
-//   showPublicPrivateBadge?: boolean;
-// }
 interface SpaceCardProps {
   item: any;
   onPress?: () => void;             // navigate to detail view

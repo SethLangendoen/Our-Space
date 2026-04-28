@@ -24,6 +24,9 @@ import {
   serverTimestamp,
   getDoc,
   doc,
+  updateDoc,
+  setDoc,
+  increment,
   
 } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
@@ -105,37 +108,63 @@ export default function MessagesScreen({ route }: Props) {
     return () => unsubscribeAuth();
   }, []);
   
+  useEffect(() => {
+    const markAsRead = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+  
+      const chatRef = doc(db, 'chats', chatId);
+  
+      await updateDoc(chatRef, {
+        [`lastRead.${user.uid}`]: serverTimestamp(),
+        [`unreadCount.${user.uid}`]: 0,
+      });
+    };
+  
+    markAsRead();
+  }, [chatId]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
   
- 
-    await addDoc(collection(db, 'chats', chatId, 'messages'), {
-      text: input,
-      senderId: auth.currentUser?.uid ?? 'unknown',
-      createdAt: serverTimestamp(),
-    });
-    
-    setInput('');
-    inputRef.current?.blur();
-    Keyboard.dismiss();
-    
-    setTimeout(() => {
-      updateFirstResponseTime(chatId, auth.currentUser!.uid);
-    }, 500);
+    const user = auth.currentUser;
+    if (!user) return;
   
-    setInput('');
+    const messageText = input;
+    const chatRef = doc(db, 'chats', chatId);
   
-    // Blur the input to remove focus
-    inputRef.current?.blur();
+    try {
+      // 1. Always ensure chat exists + update preview in ONE safe write
+      await setDoc(chatRef, {
+        lastMessage: messageText,
+        updatedAt: serverTimestamp(),
+      
+        unreadCount: {
+          [user.uid]: 0,          // sender has 0 unread
+          [otherUser]: increment(1) // receiver gains +1
+        }
+      }, { merge: true });
   
-    // Just in case, dismiss keyboard
-    Keyboard.dismiss();
-    await updateFirstResponseTime(chatId, auth.currentUser!.uid);
-
+      // 2. Add message
+      await addDoc(collection(chatRef, 'messages'), {
+        text: messageText,
+        senderId: user.uid,
+        createdAt: serverTimestamp(),
+      });
+  
+      // 3. UI cleanup
+      setInput('');
+      inputRef.current?.blur();
+      Keyboard.dismiss();
+  
+      // 4. tracking
+      setTimeout(() => {
+        updateFirstResponseTime(chatId, user.uid);
+      }, 500);
+    } catch (e) {
+      console.error('sendMessage failed:', e);
+    }
   };
-  
-
 
   const renderItem = ({ item }: { item: Message }) => {
     const isCurrentUser = item.senderId === auth.currentUser?.uid;

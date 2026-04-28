@@ -12,6 +12,8 @@ import { storage } from '../../firebase/config';
 import { Alert } from 'react-native'; // Add this import if not already present
 import BlockedCalendar from '../../components/BlockedCalendar';
 import { Dimensions } from 'react-native';
+import { FEATURE_ICONS } from 'constants/featureIcons'; // adjust path as needed
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SIDE_MARGIN = 16; // gap on left & right of carousel
 const IMAGE_GAP = 12; // gap between images
@@ -36,6 +38,7 @@ import { COLORS } from '../Styles/theme';
 import { GooglePlacesAutocomplete } from 'node_modules/react-native-google-places-autocomplete/GooglePlacesAutocomplete';
 import Constants from 'node_modules/expo-constants/build/Constants';
 import { KeyboardAwareScrollView } from 'node_modules/react-native-keyboard-aware-scroll-view';
+import { useFilterContext } from 'src/context/FilterContext';
 
 const MAX_IMAGES = 5;
 
@@ -82,7 +85,8 @@ const [locationAddress, setLocationAddress] = useState(address || '');
 const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 const HERE_APP_ID = 'pFKaPvfjrv5rKal9FLUM';
 const HERE_API_KEY = 'tUaFheXRcT-OB0IJJnXIHemVIYMOHALHYXDYV32XG4E';
-  
+const [priority, setPriority] = useState<PricePeriod>();
+
 const periods: PricePeriod[] = ['daily', 'weekly', 'monthly'];
 
 const initialPrices: Record<PricePeriod, PriceData> = periods.reduce((acc, period) => {
@@ -262,31 +266,50 @@ const uploadImageAsync = async (uri: string, userId: string): Promise<string> =>
 
 const MAX_IMAGES = 5;
 
+
 const pickImage = async () => {
   if (images.length >= MAX_IMAGES) return;
 
   const remainingSlots = MAX_IMAGES - images.length;
 
-  let result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  const permissionResult =
+    await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permissionResult.granted) {
+    Alert.alert(
+      'Permission Required',
+      'Please allow access to your photo library to upload images.'
+    );
+    return;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'], // updated Expo syntax
     allowsMultipleSelection: true,
-    selectionLimit: remainingSlots, // 👈 prevents over-picking
+    selectionLimit: remainingSlots,
     quality: 1,
   });
 
   if (!result.canceled && result.assets?.length > 0) {
-    const newUris = result.assets.map(asset => asset.uri);
+    const newUris = result.assets.map((asset) => asset.uri);
 
-    // Extra safety (in case some devices ignore selectionLimit)
+    // Prevent overflow even if selectionLimit is ignored
     const updatedImages = [...images, ...newUris].slice(0, MAX_IMAGES);
 
     setImages(updatedImages);
 
+    // First image becomes main automatically
     if (!mainImage && updatedImages.length > 0) {
       setMainImage(updatedImages[0]);
     }
   }
 };
+
+
+
+
+
+
 
   const removeImage = (uri: string) => {
     const updated = images.filter((img) => img !== uri);
@@ -295,201 +318,6 @@ const pickImage = async () => {
   };
   
 
-
-// const handleSubmit = async () => {
-//   if (!userId) {
-//     alert('You must be logged in.');
-//     return;
-//   }
-
-//   try {
-//     setSubmitting(true); // start submitting
-
-//     let locationData;
-
-//     if (selectedLocation && locationAddress) {
-//       // If the user picked an autocomplete suggestion, try to use details
-//       try {
-//         locationData = await geocodeAddress(locationAddress); // ensures structured fields
-//       } catch (err) {
-//         console.warn('Failed to geocode autocomplete address, falling back to lat/lng only');
-//         locationData = {
-//           lat: selectedLocation.lat,
-//           lng: selectedLocation.lng,
-//           postalCode: null,
-//           address: locationAddress,
-//           city: null,
-//           province: null,
-//           country: null,
-//           district: null,
-//         };
-//       }
-//     } else {
-//       // Fallback: manually entered address
-//       const fullAddress = `${address}, ${postalCode}`;
-//       locationData = await geocodeAddress(fullAddress);
-//     }
-
-//     const uploadedImageURLs: string[] = [];
-
-//     for (const uri of images) {
-//       if (uri.startsWith('http')) {
-//         uploadedImageURLs.push(uri);
-//       } else {
-//         const url = await uploadImageAsync(uri, userId);
-//         uploadedImageURLs.push(url);
-//       }
-//     }
-
-//     const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
-
-//     const postData = {
-//       title,
-//       description,
-//       dimensions: { width, length, height },
-//       storageType,
-//       usageType,
-//       mainImage: mainImageURL,
-//       images: uploadedImageURLs,
-//       userId,
-//       postType,
-//       isPublic,
-//       prices,
-//       address: locationData.address,
-//       accessibility,
-//       security,
-//       blockedTimes,
-//       reservedTimes,
-//       location: {
-//         address: locationData.address,
-//         city: locationData.city,
-//         province: locationData.province,
-//         country: locationData.country,
-//         district: locationData.district,
-//         lat: locationData.lat,
-//         lng: locationData.lng,
-//         postalCode: locationData.postalCode,
-//       },
-//     };
-
-//     await onSubmit(postData);
-//   } catch (error: any) {
-//     console.error('Form submission error:', error);
-//     alert(`Error: ${error.message}`);
-//   } finally {
-//     setSubmitting(false);
-//   }
-// };
-
-
-// const handleSubmit = async () => {
-//   if (!userId) {
-//     alert('You must be logged in.');
-//     return;
-//   }
-
-//   // --- Validation ---
-//   const missingFields: string[] = [];
-
-//   if (!title?.trim()) missingFields.push('Title');
-//   if (!description?.trim()) missingFields.push('Description');
-//   if (!locationAddress?.trim()) missingFields.push('Address');
-//   if (!width || !length || !height) missingFields.push('Dimensions');
-  
-//   // Prices: check that at least one period is enabled and has an amount
-//   const hasValidPrice = (Object.values(prices) as any[]).some(
-//     (p) => p.enabled && p.amount && p.amount.trim() !== ''
-//   );
-//   if (!hasValidPrice) missingFields.push('Price');
-
-//   if (!accessibility?.length) missingFields.push('Accessibility');
-//   // storageType and usageType could be optional depending on your app logic
-//   if (!storageType?.length) missingFields.push('Storage Type');
-
-//   if (missingFields.length > 0) {
-//     alert(
-//       `Please fill in the following required fields:\n- ${missingFields.join('\n- ')}`
-//     );
-//     return; // stop submission
-//   }
-
-//   // --- Continue submission ---
-//   try {
-//     setSubmitting(true);
-
-//     let locationData;
-
-//     if (selectedLocation && locationAddress) {
-//       try {
-//         locationData = await geocodeAddress(locationAddress);
-//       } catch (err) {
-//         console.warn('Failed to geocode autocomplete address, falling back to lat/lng only');
-//         locationData = {
-//           lat: selectedLocation.lat,
-//           lng: selectedLocation.lng,
-//           postalCode: null,
-//           address: locationAddress,
-//           city: null,
-//           province: null,
-//           country: null,
-//           district: null,
-//         };
-//       }
-//     } else {
-//       const fullAddress = `${address}, ${postalCode}`;
-//       locationData = await geocodeAddress(fullAddress);
-//     }
-
-//     const uploadedImageURLs: string[] = [];
-
-//     for (const uri of images) {
-//       if (uri.startsWith('http')) {
-//         uploadedImageURLs.push(uri);
-//       } else {
-//         const url = await uploadImageAsync(uri, userId);
-//         uploadedImageURLs.push(url);
-//       }
-//     }
-
-//     const mainImageURL = uploadedImageURLs[images.indexOf(mainImage!)];
-
-//     const postData = {
-//       title,
-//       description,
-//       dimensions: { width, length, height },
-//       storageType,
-//       usageType,
-//       mainImage: mainImageURL,
-//       images: uploadedImageURLs,
-//       userId,
-//       postType,
-//       isPublic,
-//       prices,
-//       address: locationData.address,
-//       accessibility,
-//       security,
-//       blockedTimes,
-//       reservedTimes,
-//       location: {
-//         address: locationData.address,
-//         city: locationData.city,
-//         province: locationData.province,
-//         country: locationData.country,
-//         district: locationData.district,
-//         lat: locationData.lat,
-//         lng: locationData.lng,
-//         postalCode: locationData.postalCode,
-//       },
-//     };
-
-//     await onSubmit(postData);
-//   } catch (error: any) {
-//     console.error('Form submission error:', error);
-//     alert(`Error: ${error.message}`);
-//   } finally {
-//     setSubmitting(false);
-//   }
-// };
 
 
 const handleSubmit = async () => {
@@ -508,8 +336,9 @@ const handleSubmit = async () => {
 
   // Prices: at least one enabled with amount
   const hasValidPrice = (Object.values(prices) as any[]).some(
-    (p) => p.enabled && p.amount && p.amount.trim() !== ''
+    (p) => p.amount && p.amount.trim() !== ''
   );
+  
   if (!hasValidPrice) missingFields.push('Price');
 
   if (!accessibility?.length) missingFields.push('Accessibility');
@@ -655,22 +484,38 @@ const handleSubmit = async () => {
   keyboardShouldPersistTaps="handled"
 >
 
-      <TouchableOpacity style={styles.addPhotoButton} onPress={pickImage}>
-        <Text style={styles.addPhotoText}>Add Photo ({images.length}/{MAX_IMAGES})</Text>
-      </TouchableOpacity>
 
-<View style={styles.carouselContainer}>
+
+{/* Section Label */}
+<Text style={styles.selectLabel}>Photos</Text>
+<Text style={styles.dimensionLabel}>Add and accurate photos for your space</Text>
+
 <ScrollView
     horizontal
-    pagingEnabled={false} // we’ll use snapToInterval
     showsHorizontalScrollIndicator={false}
-    contentContainerStyle={{ paddingHorizontal: SIDE_MARGIN }}
-    snapToInterval={IMAGE_WIDTH + IMAGE_GAP} // width + gap
-    snapToAlignment="center" // ensures item centers
+    contentContainerStyle={styles.photoScrollContent}
+    snapToInterval={IMAGE_WIDTH + IMAGE_GAP}
+    snapToAlignment="start"
     decelerationRate="fast"
   >
 
-    {images.map((uri, index) => (
+
+<View style={styles.photoRow}>
+  {/* Add Photo Square */}
+  {images.length < MAX_IMAGES && (
+    <TouchableOpacity
+      style={styles.addPhotoSquare}
+      onPress={pickImage}
+    >
+      <Text style={styles.addPhotoIcon}>＋</Text>
+      <Text style={styles.addPhotoSquareText}>
+        Add Photo
+      </Text>
+    </TouchableOpacity>
+  )}
+
+
+    {images.map((uri) => (
       <View key={uri} style={styles.imageSlide}>
         <Image source={{ uri }} style={styles.carouselImage} />
 
@@ -690,85 +535,43 @@ const handleSubmit = async () => {
         )}
       </View>
     ))}
-  </ScrollView>
 </View>
+</ScrollView>
 
 
-
-{/* 
-<TextInput
-  style={styles.input}
-  placeholder="Title"
-  value={title}
-  onChangeText={setTitle}
-/>
-<TextInput
-  style={[styles.input, { height: 100 }]}
-  placeholder="Description"
-  multiline
-  value={description}
-  onChangeText={setDescription}
-/>
-
-<View style={{ zIndex: 1000, marginBottom: 16 }}>
-  <GooglePlacesAutocomplete
-    placeholder="Start typing address..."
-    fetchDetails={true}
-    disableScroll={true}
-
-    query={{
-      key: GOOGLE_PLACES_KEY,
-      language: 'en',
-      components: 'country:ca', // restrict to Canada
-      types: 'geocode',         // optional: only addresses
-    }}
-    onPress={(data, details = null) => {
-      console.log("Selected prediction:", data);
-      console.log("Selected place details:", details);
-
-      if (!details) return;
-
-      setLocationAddress(data.description);
-      setSelectedLocation({
-        lat: details.geometry.location.lat,
-        lng: details.geometry.location.lng,
-      });
-    }}
-    textInputProps={{
-      value: locationAddress,
-      onChangeText: (text) => {
-        setLocationAddress(text);
-        setAddress(text.split(',')[0]); // optional: sync address for form submission
-      },
-    }}
-    enablePoweredByContainer={false}
-  />
-</View> */}
 
 {/* Title */}
-<Text style={styles.label}>Title</Text>
+<Text style={styles.selectLabel}>Title</Text>
+<Text style={styles.dimensionLabel}>Create a short and descriptive title for your space</Text>
+
 <TextInput
   style={styles.input}
-  placeholder="e.g. Storage space in downtown Calgary"
+  placeholder="Private Heated Garage"
   value={title}
   onChangeText={setTitle}
 />
 
 {/* Description */}
-<Text style={styles.label}>Description</Text>
+<Text style={styles.selectLabel}>Description</Text>
+<Text style={styles.dimensionLabel}>Create a short and accurate description for your space</Text>
+
 <TextInput
   style={[styles.input, { height: 100 }]}
-  placeholder="e.g. Secure indoor storage space available. Fits boxes, bikes, or small furniture."
+  placeholder="Single-car garage in a quiet neighborhood. Fits SUV or small truck. 24/7 
+  access with keypad..."
   multiline
   value={description}
   onChangeText={setDescription}
 />
 
 {/* Address */}
-<Text style={styles.label}>Address</Text>
-<View style={{ zIndex: 1000, marginBottom: 16 }}>
+<Text style={styles.selectLabel}>Address</Text>
+<Text style={styles.dimensionLabel}> Approximate location displayed until the booking is confirmed</Text>
+
+
+<View style={styles.googleInputContainer}>
   <GooglePlacesAutocomplete
-    placeholder="e.g. 123 Main St NW"
+    placeholder="123 Main St NW"
     fetchDetails={true}
     disableScroll={true}
     query={{
@@ -793,47 +596,65 @@ const handleSubmit = async () => {
         setAddress(text.split(',')[0]);
       },
     }}
+    styles={{
+      container: {
+        flex: 0,
+      },
+      textInputContainer: {
+        paddingTop: 0,
+        paddingBottom: 0,
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 0,
+        borderBottomWidth: 0,
+      },
+      textInput: {
+        height: 52,
+        marginTop: 0,
+        marginBottom: 0,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        fontSize: 15,
+        fontFamily: 'Poppins-Regular',
+        color: '#1F1F1F',
+        textAlignVertical: 'top', // keeps text aligned like normal inputs
+        backgroundColor: '#FFFFFF',
+      },
+      listView: {
+        marginTop: 4,
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#D8DEE4',
+      },
+      row: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+      },
+      description: {
+        fontSize: 14,
+        color: '#1F1F1F',
+        fontFamily: 'Poppins-Regular',
+      },
+    }}
     enablePoweredByContainer={false}
   />
 </View>
 
 
-{/* <View style={styles.sizeContainer}>
-  <TextInput
-    style={styles.sizeInput}
-    placeholder="Width (ft)"
-    value={width}
-    onChangeText={setWidth}
-    keyboardType="numeric"
-  />
-  <TextInput
-    style={styles.sizeInput}
-    placeholder="Length (ft)"
-    value={length}
-    onChangeText={setLength}
-    keyboardType="numeric"
-  />
-  <TextInput
-    style={styles.sizeInput}
-    placeholder="Height (ft)"
-    value={height}
-    onChangeText={setHeight}
-    keyboardType="numeric"
-  />
-</View>
- */}
 
 
 {/* Dimensions */}
-<Text style={styles.label}>Dimensions</Text>
+<Text style={styles.selectLabel}>Dimensions </Text>
+<Text style={styles.dimensionLabel}> All measurements in feet </Text>
+
 
 <View style={styles.sizeContainer}>
   {/* Width */}
   <View style={styles.dimensionBox}>
-    <Text style={styles.dimensionLabel}>Width</Text>
+    {/* <Text style={styles.dimensionLabel}>Width</Text> */}
     <TextInput
-      style={styles.sizeInput}
-      placeholder="e.g. 5 ft"
+      style={styles.input}
+      placeholder="width"
       value={width}
       onChangeText={setWidth}
       keyboardType="numeric"
@@ -842,10 +663,9 @@ const handleSubmit = async () => {
 
   {/* Length */}
   <View style={styles.dimensionBox}>
-    <Text style={styles.dimensionLabel}>Length</Text>
     <TextInput
-      style={styles.sizeInput}
-      placeholder="e.g. 10 ft"
+      style={styles.input}
+      placeholder="length"
       value={length}
       onChangeText={setLength}
       keyboardType="numeric"
@@ -854,10 +674,9 @@ const handleSubmit = async () => {
 
   {/* Height */}
   <View style={styles.dimensionBox}>
-    <Text style={styles.dimensionLabel}>Height</Text>
     <TextInput
-      style={styles.sizeInput}
-      placeholder="e.g. 8 ft"
+      style={styles.input}
+      placeholder="height"
       value={height}
       onChangeText={setHeight}
       keyboardType="numeric"
@@ -867,206 +686,56 @@ const handleSubmit = async () => {
 
 
 
-{/* <Text style={styles.sectionTitle}>Price</Text>
-
-<View style={styles.priceSection}>
-  {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
-    const data = prices[period];
-    const isEnabled = data.enabled; // <-- new flag
-
-    return (
-      <View
-        key={period}
-        style={[
-          styles.priceRow,
-          !isEnabled && { opacity: 0.5 }, // grey out if disabled
-        ]}
-      >
-
-
-        <Text style={styles.priceLabel}>
-          {period.charAt(0).toUpperCase() + period.slice(1)}
-        </Text>
-
-        <TextInput
-          style={[styles.sizeInput, { flex: 1 }]}
-          placeholder="Price"
-          value={data.amount}
-          onChangeText={(val) =>
-            setPrices((prev) => ({
-              ...prev,
-              [period]: { ...prev[period], amount: val },
-            }))
-          }
-          keyboardType="numeric"
-          editable={isEnabled} // only editable if enabled
-        />
-
-        <TouchableOpacity
-          style={[
-            styles.frequencyButton,
-            data.isPublic && styles.frequencyButtonSelected,
-          ]}
-          onPress={() =>
-            setPrices((prev) => {
-              const updated = { ...prev };
-              (Object.keys(updated) as PricePeriod[]).forEach((p) => {
-                updated[p].isPublic = p === period;
-              });
-              return updated;
-            })
-          }
-          disabled={!isEnabled} // only allow prioritizing if enabled
-        >
-          <Text
-            style={[
-              styles.frequencyText,
-              data.isPublic && styles.frequencyTextSelected,
-            ]}
-          >
-            Prioritized
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.frequencyButton,
-            isEnabled && styles.frequencyButtonSelected,
-          ]}
-
-            onPress={() => toggleEnabled(period)}
-
-        >
-          <Text
-            style={[
-              styles.frequencyText,
-              isEnabled && styles.frequencyTextSelected,
-            ]}
-          >
-            {isEnabled ? 'Enabled' : 'Disabled'}
-          </Text>
-        </TouchableOpacity>
-
-
-      </View>
-    );
-  })}
-</View> */}
-
-<Text style={styles.sectionTitle}>Price</Text>
+<Text style={styles.selectLabel}>Suitable For</Text>
 <Text style={styles.sectionDescription}>
-  Set how much you want to charge for your space. You can specify daily, weekly, and monthly rates.
+  Select what your space is suitable for storing.
 </Text>
 
-<View style={styles.priceSection}>
-  {/* Top Labels */}
-  <View style={styles.priceHeaderRow}>
-    {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => (
-      <Text key={period} style={styles.priceHeaderText}>
-        {period.charAt(0).toUpperCase() + period.slice(1)}
-      </Text>
-    ))}
-  </View>
 
-  {/* Price Inputs Row */}
-  <View style={styles.priceRow}>
-    {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
-      const data = prices[period];
-      return (
-        <TextInput
-          key={period}
+<View style={styles.optionRow}>
+  {['Cars/Trucks', 'RV', 'Boats', 'Personal', 'Larger Items'].map((type) => {
+    const selected = usageType.includes(type);
+
+    return (
+      <TouchableOpacity
+        key={type}
+        style={[styles.optionButton, selected && styles.optionSelected]}
+        onPress={() =>
+          setUsageType(prev =>
+            selected ? prev.filter(t => t !== type) : [...prev, type]
+          )
+        }
+      >
+        <Image
+          source={FEATURE_ICONS[type]}
           style={[
-            styles.sizeInput,
-            styles.priceCell,
-            !data.enabled && { opacity: 0.5 },
+            styles.optionIcon,
           ]}
-          placeholder="$0"
-          value={data.amount}
-          onChangeText={(val) =>
-            setPrices((prev) => ({
-              ...prev,
-              [period]: { ...prev[period], amount: val },
-            }))
-          }
-          keyboardType="numeric"
-          editable={data.enabled}
+          resizeMode="contain"
         />
-      );
-    })}
-  </View>
-  
 
-  {/* Prioritized Row */}
-  <View style={styles.priceRow}>
-    {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
-      const data = prices[period];
-      return (
-        <TouchableOpacity
-          key={period}
+        <Text
           style={[
-            styles.frequencyButton,
-            styles.priceCell,
-            data.isPublic && styles.frequencyButtonSelected,
-            !data.enabled && { opacity: 0.5 },
+            styles.optionText,
+            selected && styles.optionSelectedText
           ]}
-          onPress={() =>
-            setPrices((prev) => {
-              const updated = { ...prev };
-              (Object.keys(updated) as PricePeriod[]).forEach((p) => {
-                updated[p].isPublic = p === period;
-              });
-              return updated;
-            })
-          }
-          disabled={!data.enabled}
         >
-          <Text
-            style={[
-              styles.frequencyText,
-              data.isPublic && styles.frequencyTextSelected,
-            ]}
-          >
-            Prioritized
-          </Text>
-        </TouchableOpacity>
-      );
-    })}
-  </View>
+          {type}
+        </Text>
 
-  {/* Enabled Row */}
-  <View style={styles.priceRow}>
-    {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
-      const data = prices[period];
-      return (
-        <TouchableOpacity
-          key={period}
-          style={[
-            styles.frequencyButton,
-            styles.priceCell,
-            data.enabled && styles.frequencyButtonSelected,
-          ]}
-          onPress={() => toggleEnabled(period)}
-        >
-          <Text
-            style={[
-              styles.frequencyText,
-              data.enabled && styles.frequencyTextSelected,
-            ]}
-          >
-            {data.enabled ? 'Enabled' : 'Disabled'}
-          </Text>
-        </TouchableOpacity>
-      );
-    })}
-  </View>
+      </TouchableOpacity>
+    );
+  })}
 </View>
 
 
 
 
-<Text style={styles.sectionTitle}>Visibility</Text>
+
+{/* 
+<Text style={styles.selectLabel}>Visibility</Text>
 <Text style={styles.sectionDescription}>
-  Choose whether your space is visible to others or kept private.
+  Choose whether your space is publicly visible
 </Text>
 <View style={styles.optionRow}>
   {['Public', 'Private'].map(option => {
@@ -1086,8 +755,7 @@ const handleSubmit = async () => {
 </View>
 
 
-{/* Accessibility (Radio Buttons) */}
-<Text style={styles.sectionTitle}>Accessibility:</Text>
+<Text style={styles.selectLabel}>Accessibility:</Text>
 <Text style={styles.sectionDescription}>
   Choose how and when renters can access your space.
 </Text>
@@ -1109,8 +777,7 @@ const handleSubmit = async () => {
 </View>
 
 
-{/* Security (Checkboxes) */}
-<Text style={styles.sectionTitle}>Security:</Text>
+<Text style={styles.selectLabel}>Security:</Text>
 <Text style={styles.sectionDescription}>
   Select the safety features available at your space.
 </Text>
@@ -1137,7 +804,7 @@ const handleSubmit = async () => {
 </View>
 
 
-<Text style={styles.sectionTitle}>Storage Type</Text>
+<Text style={styles.selectLabel}>Storage Type</Text>
 <Text style={styles.sectionDescription}>
   Select the features and characteristics that best describe your space.
 </Text>
@@ -1183,67 +850,260 @@ const handleSubmit = async () => {
       </TouchableOpacity>
     );
   })}
-</View>
+</View> */}
 
 
-
-<Text style={styles.sectionTitle}>Usage Type</Text>
+{/* Accessibility */}
+<Text style={styles.selectLabel}>Accessibility:</Text>
 <Text style={styles.sectionDescription}>
-  Select what your space is suitable for storing.
+  Choose how and when renters can access your space.
 </Text>
 
 <View style={styles.optionRow}>
+  {['By Appointment', '24/7'].map(option => {
+    const selected = accessibility === option;
 
-{['Cars/Trucks', 'RV', 'Boats', 'Personal', 'Business'].map((type) => {
-  const selected = usageType.includes(type);
-  return (
+    return (
+      <TouchableOpacity
+        key={option}
+        onPress={() => setAccessibility(option as any)}
+        style={[styles.optionButton, selected && styles.optionSelected]}
+      >
+        <Image
+          source={FEATURE_ICONS[option]}
+          style={styles.optionIcon}
+          resizeMode="contain"
+        />
+
+        <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
+          {option}
+        </Text>
+      </TouchableOpacity>
+    );
+  })}
+</View>
+
+
+{/* Security */}
+<Text style={styles.selectLabel}>Security:</Text>
+<Text style={styles.sectionDescription}>
+  Select the safety features available at your space.
+</Text>
+
+<View style={styles.optionRow}>
+  {[
+    'Video Surveillance',
+    'Pinpad/Keys',
+    'Gated Area',
+    'Smoke Detectors',
+    'Alarm System',
+    'On-Site Presence',
+  ].map(option => {
+    const selected = security.includes(option);
+
+    return (
+      <TouchableOpacity
+        key={option}
+        onPress={() =>
+          setSecurity((prev: any[]) =>
+            selected ? prev.filter(o => o !== option) : [...prev, option]
+          )
+        }
+        style={[styles.optionButton, selected && styles.optionSelected]}
+      >
+        <Image
+          source={FEATURE_ICONS[option]}
+          style={styles.optionIcon}
+          resizeMode="contain"
+        />
+
+        <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
+          {option}
+        </Text>
+      </TouchableOpacity>
+    );
+  })}
+</View>
+
+
+{/* Storage Type */}
+<Text style={styles.selectLabel}>Storage Type</Text>
+<Text style={styles.sectionDescription}>
+  Select the features and characteristics that best describe your space.
+</Text>
+
+<View style={styles.optionRow}>
+  {[
+    'Indoor',
+    'Outdoor',
+    'Climate-Controlled',
+    'Drive-Up Access',
+    'Ramp Access',
+    'Electricity',
+    'Well-Lit Area',
+    'Short Term',
+    'Long Term',
+    'Private Space',
+    'Weather Protected',
+  ].map(type => {
+    const selected = storageType.includes(type);
+
+    return (
+      <TouchableOpacity
+        key={type}
+        onPress={() =>
+          setStorageType(prev =>
+            selected
+              ? prev.filter(t => t !== type)
+              : [...prev, type]
+          )
+        }
+        style={[styles.optionButton, selected && styles.optionSelected]}
+      >
+        <Image
+          source={FEATURE_ICONS[type]}
+          style={styles.optionIcon}
+          resizeMode="contain"
+        />
+
+        <Text
+          style={[
+            styles.optionText,
+            selected && styles.optionSelectedText,
+          ]}
+        >
+          {type}
+        </Text>
+      </TouchableOpacity>
+    );
+  })}
+</View>
+
+
+
+
+{/* Visibility */}
+<Text style={styles.selectLabel}>Visibility</Text>
+<Text style={styles.sectionDescription}>
+  Choose whether your space is publicly visible
+</Text>
+
+<View style={styles.optionRow}>
+  {['Public', 'Private'].map(option => {
+    const selected = (option === 'Public') === isPublic;
+
+    return (
+      <TouchableOpacity
+        key={option}
+        style={[styles.optionButton, selected && styles.optionSelected]}
+        onPress={() => setIsPublic(option === 'Public')}
+      >
+
+
+        <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
+          {option}
+        </Text>
+      </TouchableOpacity>
+    );
+  })}
+</View>
+
+
+
+<Text style={styles.selectLabel}>Price</Text>
+<Text style={styles.sectionDescription}>
+  Set how much you want to charge for your space. You can specify daily, weekly, and monthly rates.
+</Text>
+
+
+<View style={styles.priceSection}>
+  <View style={styles.priceHeaderRow}>
+    {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => (
+      <Text key={period} style={styles.priceHeaderText}>
+        {period.charAt(0).toUpperCase() + period.slice(1)}
+      </Text>
+    ))}
+  </View>
+
+  <View style={styles.priceRow}>
+  {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => {
+    const data = prices[period];
+    const enabled = !!data.amount?.trim();
+
+    return (
+      <TextInput
+        key={period}
+        style={[
+          styles.input,
+          styles.priceCell,
+          !enabled && { opacity: 0.4 },
+        ]}
+        placeholder="$0"
+        value={data.amount}
+        onChangeText={(val) =>
+          setPrices((prev) => ({
+            ...prev,
+            [period]: { ...prev[period], amount: val },
+          }))
+        }
+        keyboardType="numeric"
+      />
+    );
+  })}
+</View>
+  
+{/* Shae */}
+
+<Text style={styles.priorityLabel}>
+  Prioritize one pricing option:
+</Text>
+
+<View style={styles.priorityRow}>
+  {(['daily', 'weekly', 'monthly'] as PricePeriod[]).map((period) => (
     <TouchableOpacity
-      key={type}
-      style={[styles.optionButton, selected && styles.optionSelected]}
-      onPress={() =>
-        setUsageType(prev =>
-          selected ? prev.filter(t => t !== type) : [...prev, type]
-        )
-      }
+      key={period}
+      style={[
+        styles.priorityOption,
+        priority === period && styles.priorityOptionSelected,
+        !prices[period].amount?.trim() && { opacity: 0.3 },
+      ]}
+      onPress={() => {
+        if (!prices[period].amount?.trim()) return;
+      
+        setPriority(period);
+      
+        setPrices(prev => {
+          const updated = { ...prev };
+      
+          // Only one priority/public period at a time
+          (Object.keys(updated) as PricePeriod[]).forEach(p => {
+            updated[p] = {
+              ...updated[p],
+              isPublic: p === period,
+            };
+          });
+      
+          return updated;
+        });
+      }}
+      disabled={!prices[period].amount?.trim()}
     >
-      <Text style={[styles.optionText, selected && styles.optionSelectedText]}>
-        {type}
+      <Text
+        style={[
+          styles.priorityText,
+          priority === period && styles.priorityTextSelected,
+        ]}
+      >
+        {period.charAt(0).toUpperCase() + period.slice(1)}
       </Text>
     </TouchableOpacity>
-  );
-})}
+  ))}
+</View>
+
 
 </View>
 
 
-{/* <TouchableOpacity
-  style={[styles.submitButton, submitting && { opacity: 0.6 }]}
-  onPress={handleSubmit}
-  disabled={submitting} // ⬅️ disables button
->
-
-  <Text style={styles.submitText}>
-    {submitting ? (mode === 'edit' ? 'Updating post...' : 'Creating post...') 
-                : (mode === 'edit' ? 'Update Space' : 'Create Space')}
-  </Text>
-
-</TouchableOpacity>
-
-{mode === 'edit' && initialData?.postId && (
-  <TouchableOpacity
-    style={[
-      styles.submitButton,
-      { backgroundColor: 'red', marginTop: 10 },
-      submitting && { opacity: 0.6 }, // visually show disabled
-    ]}
-    onPress={handleDeletePost}
-    disabled={submitting} // ⬅️ disables button
-  >
-    <Text style={[styles.submitText, { color: 'white' }]}>
-      {submitting ? 'Deleting post...' : 'Delete Post'}
-    </Text>
-  </TouchableOpacity>
-)} */}
 
 
 <TouchableOpacity
@@ -1304,16 +1164,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
   },
     priceSection: {
-    marginVertical: 16,
-    paddingHorizontal: 8,
+    marginVertical: 0,
+    paddingHorizontal: 0,
   },
 
-  // Each row: period label + input + public toggle
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: 0,
   },
+
   priceHeaderRow: {
     flexDirection: 'row',
     marginBottom: 8,
@@ -1321,7 +1182,7 @@ const styles = StyleSheet.create({
   
   priceHeaderText: {
     flex: 1,
-    textAlign: 'center',
+    textAlign: 'left',
     fontSize: 13,
     fontWeight: '600',
     color: '#666',
@@ -1330,7 +1191,6 @@ const styles = StyleSheet.create({
   
   priceCell: {
     flex: 1,
-    marginHorizontal: 4, // 👈 spacing between columns
   },
 
   // Label for each period (Daily, Weekly, Monthly)
@@ -1357,47 +1217,36 @@ const styles = StyleSheet.create({
   mainImage: {
     borderColor: '#0F6B5B', // Emerald Green highlight for selected image
   },
+
   input: {
     borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: '#FFF',
+    borderColor: '#D8DEE4',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
     fontFamily: 'Poppins-Regular',
-    fontSize: 16,
+    fontSize: 15,
     color: '#1F1F1F',
+  
+    // subtle depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  // sizeContainer: {
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   marginBottom: 10,
-  // },
-  // sizeInput: {
-  //   flex: 1,
-  //   borderWidth: 1,
-  //   borderColor: '#DDD',
-  //   borderRadius: 6,
-  //   padding: 10,
-  //   marginHorizontal: 0,
-  //   backgroundColor: '#FFF',
-  //   fontFamily: 'Poppins-Regular',
-  //   fontSize: 16,
-  //   color: '#1F1F1F',
-  // },
 
   sizeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
   },
   
   dimensionBox: {
     flex: 1,
   },
-  dimensionBoxMiddle: {
-    marginHorizontal: 8,
-  },
+
   
   dimensionLabel: {
     fontSize: 12,
@@ -1472,31 +1321,49 @@ const styles = StyleSheet.create({
   optionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 2,
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
+  
   optionButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 8,
+    width: '48%',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#DDD',
-    marginRight: 8,
-    marginBottom: 2,
-    backgroundColor: 'transparent',
+    borderColor: '#D8DEE4',
+    marginBottom: 10,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
+  
   optionText: {
-    fontWeight: '600',
-    color: '#1F1F1F',
-    fontFamily: 'Poppins-SemiBold',
+    fontWeight: '500',
+    color: '#2F3A45',
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
   },
+  
   optionSelected: {
-    backgroundColor: '#0F6B5B', // Emerald Green selected background
-    borderColor: '#0F6B5B',
+    backgroundColor: '#EAF4F1', // soft muted green
+    borderColor: '#7BAA95',     // subtle green border
   },
+  optionIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 4,
+  },
+  
   optionSelectedText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontFamily: 'Poppins-Bold',
+    color: '#0F6B5B',
+    fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
   },
   blockedTimeItem: {
     flexDirection: 'row',
@@ -1563,60 +1430,197 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   
-  imageSlide: {
-    width: IMAGE_WIDTH * .5 ,
-    height: 150,
-    marginHorizontal: 8, // 👈 spacing between images
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
-  },
+  // imageSlide: {
+  //   width: IMAGE_WIDTH * .5 ,
+  //   height: 150,
+  //   marginHorizontal: 8, // 👈 spacing between images
+  //   borderRadius: 12,
+  //   overflow: 'hidden',
+  //   position: 'relative',
+  // },
   
-  carouselImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
+  // carouselImage: {
+  //   width: '100%',
+  //   height: '100%',
+  //   resizeMode: 'cover',
+  // },
   
   
-  deleteButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 16,
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // deleteButton: {
+  //   position: 'absolute',
+  //   top: 12,
+  //   right: 12,
+  //   backgroundColor: 'rgba(0,0,0,0.6)',
+  //   borderRadius: 16,
+  //   width: 32,
+  //   height: 32,
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  // },
   
-  deleteText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
+  // deleteText: {
+  //   color: '#fff',
+  //   fontSize: 18,
+  //   fontWeight: '700',
+  // },
   sectionDescription: {
     fontSize: 13,
     color: '#666',
     marginBottom: 12,
   },
+  priorityLabel: {
+    marginTop: 0,
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
   
+  priorityRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 20
+  },
+  
+  priorityOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  
+  priorityOptionSelected: {
+    backgroundColor: '#0F6B5B',
+    borderColor: '#0F6B5B',
+  },
+  
+  priorityText: {
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '500',
+  },
+  
+  priorityTextSelected: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+ 
+  selectLabel: {
+    fontSize: 18,
+    fontFamily: 'Poppins-Bold',
+    color: '#0F6B5B',
+    marginBottom: 0,
+    fontWeight: '800',
+  },
+
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20
+
+  },
+
+  addPhotoSquare: {
+    width: 110,
+    height: 110,
+    borderWidth: 2,
+    borderColor: '#0F6B5B',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    backgroundColor: '#F8F8F8',
+  },
+
+  addPhotoIcon: {
+    fontSize: 32,
+    color: '#0F6B5B',
+    lineHeight: 36,
+    fontWeight: '300',
+  },
+
+  addPhotoSquareText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#0F6B5B',
+    fontWeight: '600',
+    textAlign: 'center',
+    fontFamily: 'Poppins-Regular',
+  },
+
+  photoScrollContent: {
+    alignItems: 'center',
+    paddingRight: 20,
+  },
+
+  imageSlide: {
+    width: 110,
+    height: 110,
+    marginRight: IMAGE_GAP,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+
+  carouselImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+
+  deleteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  deleteText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
   mainBadge: {
     position: 'absolute',
-    bottom: 12,
-    left: 12,
-    backgroundColor: '#0F6B5B',
-    paddingHorizontal: 10,
+    bottom: 8,
+    left: 8,
+    backgroundColor: '#F3AF1D',
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
-  
+
   mainBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontFamily: 'Poppins-Bold',
+    color: '#0F6B5B',
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: 'Poppins-Regular',
   },
+  googleInputContainer: {
+    borderWidth: 1,
+    borderColor: '#D8DEE4',
+    borderRadius: 12,
+    marginBottom: 14,
+    backgroundColor: '#FFFFFF',
   
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  
+    overflow: 'hidden',
+  },
   
 });

@@ -58,6 +58,9 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   const [editedStart, setEditedStart] = useState<Date | null>(null);
   const [editedEnd, setEditedEnd] = useState<Date | null>(null);
   const [editedDescription, setEditedDescription] = useState('');
+  const [editedFrequency, setEditedFrequency] = useState('');
+  const [editedDuration, setEditedDuration] = useState('');
+
   const role = userId === reservation?.ownerId ? 'host' : 'renter';
   const [editedEndDate, setEditedEndDate] = useState<Date | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -206,6 +209,10 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           setEditedEnd(resData.endDate ? resData.endDate.toDate() : null);
           
           setEditedDescription(resData.description || '');
+          setEditedFrequency(resData.frequency || '');
+          setEditedDuration(resData.storageDuration || '');
+
+
     
           // 2️⃣ Fetch users
           const [requesterSnap, ownerSnap] = await Promise.all([
@@ -501,6 +508,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         startDate: editedStart,
         endDate: editedEnd,
         description: editedDescription,
+        frequency: editedFrequency,
+        storageDuration: editedDuration,
         status: 'requested',        // 🔑 reset status
         updatedAt: serverTimestamp(),
       });
@@ -511,6 +520,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
         startDate: editedStart,
         endDate: editedEnd,
         description: editedDescription,
+        frequency: editedFrequency,
+        storageDuration: editedDuration,
         status: 'requested',        // 🔑 sync local state
       });
   
@@ -540,6 +551,13 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     });
   };
   
+  const getFirstPaymentDate = () => {
+    if (!reservation.startDate) return null;
+  
+    const start = toJSDate(reservation.startDate);
+    return new Date(start.getTime() - 48 * 60 * 60 * 1000);
+  };
+
   const handleSubmitEndDateChange = async () => {
     if (!editedEndDate || editedEndDate <= new Date()) {
       Alert.alert('Invalid date', 'End date must be in the future.');
@@ -655,13 +673,13 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
       <View style={styles.pricingBox}>
 
         
-        {!isEditing ? (
+        {/* {!isEditing ? ( */}
           <View>
 
+{/* 
         <View style={styles.card}>
 
           <View style={styles.horizontalDates}>
-            {/* START DATE */}
             <View style={styles.dateBlock}>
               <Text style={styles.dateMonth}>
                 {toJSDate(reservation.startDate).toLocaleString('default', { month: 'short' })}
@@ -674,10 +692,8 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               </Text>
             </View>
 
-            {/* Separator */}
             <Text style={styles.dateSeparator}>   →   </Text>
 
-            {/* END DATE */}
             <View style={styles.dateBlock}>
               {reservation?.endDate ? (
                 <>
@@ -700,39 +716,127 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               )}
             </View>
           </View>
+          </View> */}
+
+          <View style={styles.card}>
+            <View style={styles.horizontalDates}>
+              {isEditing ? (
+                <BlockedCalendar
+                singleSelect={true}
+                  onSelectRange={({ start, end }) => {
+                    setEditedStart(start);
+                    setEditedEnd(end);
+                  }}
+                />
+              ) : (
+                <>
+                  {/* START DATE */}
+                  <View style={styles.dateBlock}>
+                    <Text style={styles.dateMonth}>
+                      {toJSDate(reservation.startDate).toLocaleString('default', { month: 'short' })}
+                    </Text>
+                    <Text style={styles.dateDay}>
+                      {toJSDate(reservation.startDate).getDate()}
+                    </Text>
+                    <Text style={styles.dateYear}>
+                      {toJSDate(reservation.startDate).getFullYear()}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.dateSeparator}>→</Text>
+
+                  {/* END DATE */}
+                  <View style={styles.dateBlock}>
+                    {reservation?.endDate ? (
+                      <>
+                        <Text style={styles.dateMonth}>
+                          {toJSDate(reservation.endDate).toLocaleString('default', { month: 'short' })}
+                        </Text>
+                        <Text style={styles.dateDay}>
+                          {toJSDate(reservation.endDate).getDate()}
+                        </Text>
+                        <Text style={styles.dateYear}>
+                          {toJSDate(reservation.endDate).getFullYear()}
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.dateMonth}>—</Text>
+                        <Text style={styles.dateDay}>TBD</Text>
+                        <Text style={styles.dateYear}>—</Text>
+                      </>
+                    )}
+                  </View>
+                </>
+              )}
+            </View>
           </View>
 
 
           
 
           <View style={styles.card}>
-
           <View style={styles.detailBlock}>
             <Text style={styles.detailTitle}>
               {requesterInfo?.firstName}'s request
             </Text>
-            <Text style={styles.detailDescription}>
-              {reservation.description}
-            </Text>
+
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={editedDescription}
+                onChangeText={setEditedDescription}
+                multiline
+              />
+            ) : (
+              <Text style={styles.detailDescription}>
+                {reservation.description}
+              </Text>
+            )}
           </View>
 
+
+          {/* FREQUENCY */}
           <View style={styles.detailBlock}>
             <Text style={styles.detailTitle}>
               Pick-up and Drop-off Frequency
             </Text>
-            <Text style={styles.detailDescription}>
-              {reservation.frequency}
-            </Text>
+
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={editedFrequency}
+                onChangeText={setEditedFrequency}
+              />
+            ) : (
+              <Text style={styles.detailDescription}>
+                {reservation.frequency}
+              </Text>
+            )}
           </View>
 
+
+          {/* DURATION */}
           <View style={styles.detailBlock}>
             <Text style={styles.detailTitle}>
               Approximate Duration
             </Text>
-            <Text style={styles.detailDescription}>
-              {reservation.storageDuration}
-            </Text>
+
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={editedDuration}
+                onChangeText={setEditedDuration}
+              />
+            ) : (
+              <Text style={styles.detailDescription}>
+                {reservation.storageDuration}
+              </Text>
+            )}
           </View>
+
+
+
 
           <View style={styles.detailBlock}>
             <Text style={styles.detailTitle}>
@@ -748,42 +852,25 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           </View>
           </View>
 
-          {canEdit && (
+
+          {isEditing ? (
+            <>
+              <Button title="Save Changes" onPress={handleSaveEdit} />
+              <Button title="Cancel Editing" onPress={() => setIsEditing(false)} />
+            </>
+          ) : canEdit ? (
             <TouchableOpacity
               onPress={() => setIsEditing(true)}
-              style={styles.editButton} // subtle styling
+              style={styles.editButton}
             >
               <Text style={styles.editButtonText}>Edit Request</Text>
             </TouchableOpacity>
-          )}
-
-          </View>
+          ) : null}
 
 
-        ) : (
+        </View>
 
-          <>
-            <BlockedCalendar
-              // blockedTimes={[]}          
-              // reservedTimes={reservedTimes}       
-              onSelectRange={({ start, end }) => {
-                setEditedStart(start);
-                setEditedEnd(end);
-              }}
-            />
-
-            <Text style={styles.bold}>Description</Text>
-            <TextInput
-              style={styles.input}
-              value={editedDescription}
-              onChangeText={setEditedDescription}
-              multiline
-            />
-
-            <Button title="Save Changes" onPress={handleSaveEdit} />
-            <Button title="Cancel Editing" onPress={() => setIsEditing(false)} />
-          </>
-        )}
+        
 
       {space && (
         <View style={styles.card}>
@@ -799,10 +886,25 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             </View>
           )}
 
-
-          {/* Weekly Price */}
           <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>{reservation.pricePeriod} price:</Text>
+            <Text style={styles.pricingLabel}>Rental Cycle:</Text>
+            <Text style={styles.pricingValue}>{reservation.pricePeriod}</Text>
+          </View>
+
+          <View style={styles.pricingRow}>
+            <Text style={styles.pricingLabel}>First Payment Date:</Text>
+
+            <Text style={styles.pricingValue}>
+              {getFirstPaymentDate()
+                ? getFirstPaymentDate()!.toLocaleDateString()
+                : '—'}
+            </Text>
+          </View>
+
+          <Text>*48 hours before booking begins </Text>
+
+          <View style={styles.pricingRow}>
+            <Text style={styles.pricingLabel}>Price:</Text>
             <Text style={styles.pricingValue}>${Number(reservation.price).toFixed(2)}</Text>
           </View>
 
@@ -814,7 +916,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             return (
               <>
                 <View style={styles.pricingRow}>
-                  <Text style={styles.pricingLabel}>Platform Fee</Text>
+                  <Text style={styles.pricingLabel}>Service Fee</Text>
                   <Text style={styles.pricingValue}>${platformFee.toFixed(2)}</Text>
                 </View>
 
@@ -837,7 +939,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
             return (
               <>
                 <View style={styles.pricingRow}>
-                  <Text style={styles.pricingLabel}>Platform Fee</Text>
+                  <Text style={styles.pricingLabel}>Service Fee</Text>
                   <Text style={styles.pricingValue}>{platformFee.toFixed(2)}</Text>
                 </View>
 
@@ -1003,60 +1105,6 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
     )}
 
 
-
-
-      {/* {userId === reservation.ownerId && reservation.status === 'requested' && (
-          <View style={{ marginTop: 12 }}>
-            <Button
-              title="Deny Request"
-              color="red"
-              onPress={handleDenyRequest}
-            />
-          </View>
-      )} */}
-
-
-      {/* {userId === reservation.requesterId &&
-        (reservation.status === 'requested' ||
-          reservation.status === 'awaiting_acceptance') && (
-          <View style={styles.cancelRequest}>
-            <TouchableOpacity onPress={handleCancelRequest}>
-              <Text style={styles.cancelRequestText}>Cancel Request</Text>
-            </TouchableOpacity>
-          </View>
-      )} */}
-
-
-
-
-      {/* {canConfirm && (
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() =>
-            navigation.navigate('RulesScreen', {
-              reservationId: reservationId,
-              role: 'owner',
-            })
-          }
-        >
-          <Text style={styles.actionButtonText}>Confirm Request</Text>
-        </TouchableOpacity>
-      )}
-
-      {canAccept && (
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() =>
-            navigation.navigate('RulesScreen', {
-              reservationId: reservationId,
-              role: 'requester',
-            })
-          }
-        >
-          <Text style={styles.actionButtonText}>Confirm Booking</Text>
-        </TouchableOpacity>
-      )} */}
-
       {canConfirm && (
         <TouchableOpacity
           style={[
@@ -1200,7 +1248,7 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
                 </Text>
 
                 <Text style={styles.warningText}>
-                  • Platform fee (9.5%): ${(preview.renterFee / 100).toFixed(2)}
+                  • Service fee (9.5%): ${(preview.renterFee / 100).toFixed(2)}
                 </Text>
 
                 <Text style={styles.warningTotal}>

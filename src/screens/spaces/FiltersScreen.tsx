@@ -51,7 +51,6 @@ type FiltersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList,
 
 const GOOGLE_PLACES_KEY =
   Constants.expoConfig?.extra?.GOOGLE_PLACES_KEY;
-console.log(GOOGLE_PLACES_KEY)
 
 
 export default function FiltersScreen() {
@@ -338,32 +337,8 @@ export default function FiltersScreen() {
 <View style={{ maxHeight: 250, zIndex: 1000 }}>
 
 
-{/* <GooglePlacesAutocomplete
-  placeholder="Start typing address or city..."
-  fetchDetails={true}
-  disableScroll={true}
-  onPress={(data, details = null) => {
-    if (!details) return;
-    setLocationAddress(data.description);
-    setSelectedLocation({
-      lat: details.geometry.location.lat,
-      lng: details.geometry.location.lng,
-    });
-  }}
-  query={{
-    key: GOOGLE_PLACES_KEY,
-    language: 'en',
-    components: 'country:ca|country:us',
-  }}
-  textInputProps={{
-    value: locationAddress,
-    onChangeText: (text) => {
-      setLocationAddress(text);
-    },
-  }}
-  enablePoweredByContainer={false}
-/> */}
 
+{/* THIS SHOULD BE A FIX TO THE AUTOFILL ON REAL DEVICE THE REQUESTURL PART */}
 <GooglePlacesAutocomplete
   styles={{
     container: { flex: 0 },
@@ -371,6 +346,11 @@ export default function FiltersScreen() {
     textInput: { height: 40, fontSize: 16 },
     listView: { zIndex: 1000 }, // <-- very important
   }}
+  requestUrl={{
+    useOnPlatform: 'all',
+    url: 'https://maps.googleapis.com/maps/api',
+  }}
+  debounce={300} // semi-conservative on the api calls. 
   placeholder="Start typing address or city..."
   fetchDetails={true}
   disableScroll={true}

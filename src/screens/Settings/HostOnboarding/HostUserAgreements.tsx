@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   View,
@@ -9,16 +9,50 @@ import {
   Alert,
 } from "react-native";
 import { auth, db } from "../../../firebase/config";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
 
 export default function HostUserAgreements() {
+
   const [accepted, setAccepted] = useState(false);
+  const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showFullAgreement, setShowFullAgreement] = useState(false);
+
+  useEffect(() => {
+    const checkAgreementStatus = async () => {
+      try {
+        const uid = auth.currentUser?.uid;
+        if (!uid) {
+          setCheckingStatus(false);
+          return;
+        }
+
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          const signed =
+            userData?.legal?.host?.userAgreementSigned === true;
+
+          if (signed) {
+            setAlreadyAccepted(true);
+            setAccepted(true);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check agreement status:", error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkAgreementStatus();
+  }, []);
+
+
   
-
-
-
   const handleAgree = async () => {
     if (!accepted) {
       Alert.alert(
@@ -68,6 +102,8 @@ export default function HostUserAgreements() {
 	  </View>
 	);
   }
+
+
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

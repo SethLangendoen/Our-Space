@@ -7,24 +7,16 @@ import SpacesStack from './stacks/SpacesStack';
 import ProfileStack from './stacks/ProfileStack';
 import ChatsStack from './stacks/ChatsStack';
 import MySpacesStack from './stacks/MySpacesStack';
-import useUserProfileStatus from '../hooks/UseUserProfileStatus';
 import AuthStack from './stacks/AuthStack';
-import { Image, View, Text } from 'react-native';
+import { Image, View, Text, StyleSheet } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
-
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { ParamListBase } from '@react-navigation/native';
-
 import { TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-
-import AppHeader from '../components/AppHeader';
-import { NONAME } from 'dns';
 import { registerForPushNotifications } from 'src/Helpers/notifications';
-
 import { doc, setDoc, arrayUnion, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 const Tab = createBottomTabNavigator();
 
@@ -32,10 +24,9 @@ const Tab = createBottomTabNavigator();
 
 
 export default function MainTabs() {
-  // const profileComplete = useUserProfileStatus();
-  // const profileComplete = null;
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [totalUnread, setTotalUnread] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -45,6 +36,30 @@ export default function MainTabs() {
     return unsubscribe; // Cleanup listener on unmount
   }, []);
 
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'chats'),
+      where('users', 'array-contains', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let total = 0;
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        total += data.unreadCount?.[user.uid] ?? 0;
+      });
+
+      setTotalUnread(total);
+    });
+
+    return () => unsubscribe();
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const setupPush = async () => {
@@ -80,6 +95,8 @@ export default function MainTabs() {
   
     setupPush();
   }, []);
+
+
   return (
 
 
@@ -147,23 +164,34 @@ export default function MainTabs() {
           tabBarLabel: 'My Spaces',
         }}
       />
+
       <Tab.Screen
         name="Chats"
         component={ChatsStack}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <Image
-              source={
-                focused
-                  ? require('../../assets/bottomNavIcons/chatFill.png')
-                  : require('../../assets/bottomNavIcons/chat.png')
-              }
-              style={{
-                width: 28,
-                height: 28,
-                tintColor: focused ? undefined : '#000',
-              }}
-            />
+            <View style={{ width: 28, height: 28 }}>
+              <Image
+                source={
+                  focused
+                    ? require('../../assets/bottomNavIcons/chatFill.png')
+                    : require('../../assets/bottomNavIcons/chat.png')
+                }
+                style={{
+                  width: 28,
+                  height: 28,
+                  tintColor: focused ? undefined : '#000',
+                }}
+              />
+
+              {totalUnread > 0 && (
+                <View style={styles.chatBadgeContainer}>
+                <Text style={styles.chatBadgeText}>
+                    {totalUnread > 99 ? '99+' : totalUnread}
+                  </Text>
+                </View>
+              )}
+            </View>
           ),
           tabBarLabel: 'Chats',
         }}
@@ -212,4 +240,31 @@ export default function MainTabs() {
 
     </Tab.Navigator>
   );
+
+
+
+
+
 }
+
+
+const styles = StyleSheet.create({
+  chatBadgeContainer: {
+    position: 'absolute',
+    top: -4,
+    right: -10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#F3AF1D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+
+  chatBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F6B5B',
+  },
+});

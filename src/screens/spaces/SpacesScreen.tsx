@@ -151,11 +151,14 @@ export default function SpacesScreen() {
   // --- Image Handling for Map Markers ---
 
 
-  const getPinBackground = useCallback((postType?: 'Offering' | 'Requesting') => {
-    return postType === 'Requesting'
-      ? require('../../../assets/pins/yellowPin.png')
-      : require('../../../assets/pins/greenPin.png');
-  }, []);
+  const getPinBackground = useCallback(
+    (isActive: boolean) => {
+      return isActive
+        ? require('../../../assets/pins/yellowPin.png')
+        : require('../../../assets/pins/greenPin.png');
+    },
+    []
+  );
 
   const displayedSpaces = showSavedOnly
   ? spaces.filter(space => savedSpaces[space.id])
@@ -238,6 +241,8 @@ export default function SpacesScreen() {
   
     return Object.values(groups);
   };
+
+
 
 
   const computeMatchScore = (space: Space, filters: FilterData) => {
@@ -408,32 +413,6 @@ if (filters.storageType?.length && space.storageType?.length) {
       }
     }, [filters, fetchAndFilterSpaces, spaces.length])
   );
-  
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     if (!userId) return;
-  
-  //     const loadSaved = async () => {
-  //       try {
-  //         const snapshot = await getDocs(
-  //           collection(db, `users/${userId}/SavedReservations`)
-  //         );
-  
-  //         const saved: { [spaceId: string]: boolean } = {};
-  //         snapshot.forEach(doc => {
-  //           saved[doc.id] = true;
-  //         });
-  
-  //         setSavedSpaces(saved);
-  //       } catch (error) {
-  //         console.error('Error loading saved spaces:', error);
-  //       }
-  //     };
-  
-  //     loadSaved();
-  //   }, [userId])
-  // );
-
 
 
 
@@ -548,28 +527,85 @@ if (filters.storageType?.length && space.storageType?.length) {
     )}
 
 
-      {groupSpacesByLocation(displayedSpaces).map((group, index) => {
+      {/* {groupSpacesByLocation(displayedSpaces).map((group, index) => {
         const first = group[0];
 
         if (!first?.location) return null;
 
         return (
+
+          // <Marker
+          //   key={`${first.location.lat}-${first.location.lng}-${index}`}
+          //   coordinate={{
+          //     latitude: first.location.lat,
+          //     longitude: first.location.lng,
+          //   }}
+          //   // onPress={() => setSelectedSpace(group[0])}
+          //   onPress={() => setSelectedGroup(group)}
+            
+          // >
+          //   <Image
+          //     source={getPinBackground(group[0].postType)}
+          //     style={styles.pinBackground}
+          //   />
+          // </Marker>
+
+
           <Marker
             key={`${first.location.lat}-${first.location.lng}-${index}`}
             coordinate={{
               latitude: first.location.lat,
               longitude: first.location.lng,
             }}
-            // onPress={() => setSelectedSpace(group[0])}
             onPress={() => setSelectedGroup(group)}
           >
             <Image
-              source={getPinBackground(group[0].postType)}
+              source={getPinBackground(isActive)}
               style={styles.pinBackground}
             />
           </Marker>
+
         );
-      })}
+      })} */}
+
+{groupSpacesByLocation(displayedSpaces).map((group, index) => {
+  const first = group[0];
+  if (!first?.location) return null;
+
+  const getGroupKey = (group: Space[]) => {
+    const first = group[0];
+    if (!first?.location) return '';
+    return `${first.location.lat.toFixed(5)}_${first.location.lng.toFixed(5)}`;
+  };
+
+  const isActive =
+  getGroupKey(selectedGroup) === getGroupKey(group);
+
+    
+
+  const pinScale = isActive ? 1.2 : 1;
+
+  return (
+    <Marker
+      key={`${first.location.lat}-${first.location.lng}-${index}`}
+      coordinate={{
+        latitude: first.location.lat,
+        longitude: first.location.lng,
+      }}
+      onPress={() => setSelectedGroup(group)}
+    >
+      <Image
+        source={getPinBackground(isActive)}
+        style={[
+          styles.pinBackground,
+          { transform: [{ scale: pinScale }] }
+        ]}
+      />
+    </Marker>
+  );
+})}
+
+
 
   </MapView>
 
