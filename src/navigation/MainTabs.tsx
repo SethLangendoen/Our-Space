@@ -14,7 +14,7 @@ import { auth, db } from '../firebase/config';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { ParamListBase } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
-import { doc, setDoc, arrayUnion, getDoc } from 'firebase/firestore';
+import { doc, setDoc, arrayUnion, getDoc, addDoc } from 'firebase/firestore';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 import * as Notifications from 'expo-notifications';
@@ -23,7 +23,187 @@ import Constants from 'expo-constants';
 
 const Tab = createBottomTabNavigator();
 
-// Optional: foreground behavior
+// // Optional: foreground behavior
+// Notifications.setNotificationHandler({
+//   handleNotification: async () => ({
+//     shouldShowAlert: true,
+//     shouldPlaySound: true,
+//     shouldSetBadge: false,
+//     shouldShowBanner: true,
+//     shouldShowList: true,
+//   }),
+// });
+
+
+
+// export default function MainTabs() {
+
+//   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+//   const [totalUnread, setTotalUnread] = useState(0);
+
+//   useEffect(() => {
+//     const unsubscribe = onAuthStateChanged(auth, (user) => {
+//       setIsLoggedIn(!!user);
+//     });
+
+//     return unsubscribe;
+//   }, []);
+
+//   useEffect(() => {
+//     if (!isLoggedIn) return;
+
+//     const user = auth.currentUser;
+//     if (!user) return;
+
+//     const q = query(
+//       collection(db, 'chats'),
+//       where('users', 'array-contains', user.uid)
+//     );
+
+//     const unsubscribe = onSnapshot(q, (snapshot) => {
+//       let total = 0;
+
+//       snapshot.docs.forEach((chatDoc) => {
+//         const data = chatDoc.data();
+//         total += data.unreadCount?.[user.uid] ?? 0;
+//       });
+
+//       setTotalUnread(total);
+//     });
+
+//     return () => unsubscribe();
+//   }, [isLoggedIn]);
+
+//   useEffect(() => {
+//     const registerForPushNotifications = async () => {
+//       const user = auth.currentUser;
+
+//       if (!user) {
+//         console.log('No authenticated user');
+//         return;
+//       }
+
+//       if (!Device.isDevice) {
+//         console.log('Must use physical device for push notifications');
+//         return;
+//       }
+
+//       try {
+//         // Android notification channel
+//         if (Platform.OS === 'android') {
+//           await Notifications.setNotificationChannelAsync('default', {
+//             name: 'default',
+//             importance: Notifications.AndroidImportance.MAX,
+//             vibrationPattern: [0, 250, 250, 250],
+//             lightColor: '#FF231F7C',
+//           });
+//         }
+
+//         // Check existing permissions
+//         const { status: existingStatus } =
+//           await Notifications.getPermissionsAsync();
+
+//         let finalStatus = existingStatus;
+
+//         // Ask user if needed
+//         if (existingStatus !== 'granted') {
+//           const { status } = await Notifications.requestPermissionsAsync();
+//           finalStatus = status;
+//         }
+
+//         if (finalStatus !== 'granted') {
+//           console.log('Push notification permission denied');
+//           return;
+//         }
+
+//         // Get Expo push token
+//         const projectId =
+//           Constants.expoConfig?.extra?.eas?.projectId ||
+//           Constants.easConfig?.projectId;
+
+//         if (!projectId) {
+//           console.log('Missing Expo projectId');
+//           return;
+//         }
+
+//         const tokenData = await Notifications.getExpoPushTokenAsync({
+//           projectId,
+//         });
+
+//         const expoPushToken = tokenData.data;
+
+//         console.log('Expo Push Token:', expoPushToken);
+
+//         if (!expoPushToken) return;
+
+//         // Save token to Firestore
+//         const userRef = doc(db, 'users', user.uid);
+//         const userSnap = await getDoc(userRef);
+
+//         const existingTokens = userSnap.data()?.expoPushTokens || [];
+
+//         if (!existingTokens.includes(expoPushToken)) {
+//           await setDoc(
+//             userRef,
+//             {
+//               expoPushTokens: arrayUnion(expoPushToken),
+//             },
+//             { merge: true }
+//           );
+//         }
+//       } catch (err) {
+//         console.error('Expo notification setup error:', err);
+//       }
+//     };
+
+//     if (isLoggedIn) {
+//       registerForPushNotifications();
+//     }
+//   }, [isLoggedIn]);
+
+
+
+
+
+
+
+
+// import React, { useEffect, useState } from 'react';
+// import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+// import SpacesStack from './stacks/SpacesStack';
+// import ProfileStack from './stacks/ProfileStack';
+// import ChatsStack from './stacks/ChatsStack';
+// import MySpacesStack from './stacks/MySpacesStack';
+// import AuthStack from './stacks/AuthStack';
+// import { Image, View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+// import { onAuthStateChanged } from 'firebase/auth';
+// import { auth, db } from '../firebase/config';
+// import { doc, setDoc, arrayUnion, getDoc, addDoc, collection } from 'firebase/firestore';
+// import { query, where, onSnapshot } from 'firebase/firestore';
+
+// import * as Notifications from 'expo-notifications';
+// import * as Device from 'expo-device';
+// import Constants from 'expo-constants';
+
+// const Tab = createBottomTabNavigator();
+
+/**
+ * Firestore logger (TestFlight debugging)
+ */
+const logToFirestore = async (message: string, meta?: any) => {
+  try {
+    await addDoc(collection(db, 'logs'), {
+      message,
+      meta: meta || null,
+      userId: auth.currentUser?.uid || null,
+      timestamp: new Date(),
+    });
+  } catch (e) {
+    console.log('logToFirestore failed', e);
+  }
+};
+
+// Notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -34,26 +214,44 @@ Notifications.setNotificationHandler({
   }),
 });
 
-
-
 export default function MainTabs() {
-
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [totalUnread, setTotalUnread] = useState(0);
 
+  /**
+   * AUTH STATE
+   */
   useEffect(() => {
+    logToFirestore('MainTabs mounted - listening for auth state');
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user);
+
+      logToFirestore('Auth state changed', {
+        loggedIn: !!user,
+        userId: user?.uid,
+      });
     });
 
     return unsubscribe;
   }, []);
 
+  /**
+   * UNREAD MESSAGES LISTENER
+   */
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) {
+      logToFirestore('Skipping unread listener - not logged in');
+      return;
+    }
 
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+      logToFirestore('No auth.currentUser in unread listener');
+      return;
+    }
+
+    logToFirestore('Starting unread listener', { userId: user.uid });
 
     const q = query(
       collection(db, 'chats'),
@@ -69,78 +267,104 @@ export default function MainTabs() {
       });
 
       setTotalUnread(total);
+
+      logToFirestore('Unread count updated', {
+        totalUnread: total,
+        chatCount: snapshot.docs.length,
+      });
     });
 
     return () => unsubscribe();
   }, [isLoggedIn]);
 
+  /**
+   * PUSH NOTIFICATION REGISTRATION
+   */
   useEffect(() => {
     const registerForPushNotifications = async () => {
       const user = auth.currentUser;
 
       if (!user) {
-        console.log('No authenticated user');
+        logToFirestore('Push setup aborted - no user');
         return;
       }
 
+      logToFirestore('Starting push setup', { userId: user.uid });
+
       if (!Device.isDevice) {
-        console.log('Must use physical device for push notifications');
+        logToFirestore('Push setup failed - not physical device');
         return;
       }
 
       try {
-        // Android notification channel
-        if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('default', {
-            name: 'default',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#FF231F7C',
-          });
-        }
-
-        // Check existing permissions
+        /**
+         * STEP 1: Permissions
+         */
         const { status: existingStatus } =
           await Notifications.getPermissionsAsync();
 
+        logToFirestore('Existing notification permission', {
+          status: existingStatus,
+        });
+
         let finalStatus = existingStatus;
 
-        // Ask user if needed
         if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
+          const { status } =
+            await Notifications.requestPermissionsAsync();
+
           finalStatus = status;
+
+          logToFirestore('Permission requested', {
+            newStatus: finalStatus,
+          });
         }
 
         if (finalStatus !== 'granted') {
-          console.log('Push notification permission denied');
+          logToFirestore('Permission denied');
           return;
         }
 
-        // Get Expo push token
+        /**
+         * STEP 2: Project ID
+         */
         const projectId =
           Constants.expoConfig?.extra?.eas?.projectId ||
           Constants.easConfig?.projectId;
 
+        logToFirestore('Project ID resolved', { projectId });
+
         if (!projectId) {
-          console.log('Missing Expo projectId');
+          logToFirestore('Missing projectId');
           return;
         }
 
-        const tokenData = await Notifications.getExpoPushTokenAsync({
-          projectId,
-        });
+        /**
+         * STEP 3: Get Expo push token
+         */
+        const tokenData =
+          await Notifications.getExpoPushTokenAsync({ projectId });
 
         const expoPushToken = tokenData.data;
 
-        console.log('Expo Push Token:', expoPushToken);
+        logToFirestore('Expo token generated', {
+          token: expoPushToken,
+        });
 
         if (!expoPushToken) return;
 
-        // Save token to Firestore
+        /**
+         * STEP 4: Save to Firestore
+         */
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
 
-        const existingTokens = userSnap.data()?.expoPushTokens || [];
+        const existingTokens =
+          userSnap.data()?.expoPushTokens || [];
+
+        logToFirestore('Existing tokens loaded', {
+          count: existingTokens.length,
+        });
 
         if (!existingTokens.includes(expoPushToken)) {
           await setDoc(
@@ -150,9 +374,15 @@ export default function MainTabs() {
             },
             { merge: true }
           );
+
+          logToFirestore('Token saved to Firestore');
+        } else {
+          logToFirestore('Token already exists - skipping save');
         }
       } catch (err) {
-        console.error('Expo notification setup error:', err);
+        logToFirestore('Push setup error', {
+          error: String(err),
+        });
       }
     };
 
@@ -160,6 +390,9 @@ export default function MainTabs() {
       registerForPushNotifications();
     }
   }, [isLoggedIn]);
+
+
+
 
 
 

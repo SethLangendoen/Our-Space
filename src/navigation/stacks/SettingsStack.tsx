@@ -8,6 +8,8 @@ import RequestForViews from '../../screens/Settings/RequestForViews';
 import Version from '../../screens/Settings/Version';
 import Language from '../../screens/Settings/Language';
 import WhatsNew from '../../screens/Settings/WhatsNew';
+import Notifications from '../../screens/Settings/Notifications';
+
 
 // Payments group in settings
 import PaymentMethods from '../../screens/Settings/PaymentsAndPayouts/PaymentMethods';
@@ -161,6 +163,8 @@ export default function SettingsStack() {
       <Stack.Screen name="Version" component={Version} options={{ title: 'Version' }} />
       <Stack.Screen name="Language" component={Language} options={{ title: 'Language' }} />
       <Stack.Screen name="WhatsNew" component={WhatsNew} options={{ title: "What's New?" }} />
+      <Stack.Screen name="Notifications" component={Notifications} options={{ title: "Notifications" }} />
+
     </Stack.Navigator>
   );
 }
