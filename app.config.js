@@ -9,7 +9,7 @@ export default {
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
-    newArchEnabled: true, // Disable New Architecture for stability
+    newArchEnabled: false, // Disable New Architecture for stability
     splash: {
       image: "./assets/splash-icon.png",
       resizeMode: "contain",
@@ -22,6 +22,7 @@ export default {
       config: {
         googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY || "YOUR_FALLBACK_KEY"
       },
+
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSLocationWhenInUseUsageDescription:
@@ -53,17 +54,13 @@ export default {
         {
           ios: {
             deploymentTarget: "15.1",
-            useFrameworks: "static"
+            useFrameworks: "static",
+            modularHeaders: true,
           }
         }
       ],
 
-      // ✅ THIS is what actually installs Google Maps natively
       [
-        // "react-native-maps",
-        // {
-        //   iosGoogleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
-        // }
         "react-native-maps",
         {
           iosGoogleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY || "YOUR_FALLBACK_KEY"
@@ -80,7 +77,7 @@ export default {
       "expo-notifications",
       "expo-web-browser",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
     ],
     extra: {
       GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "YOUR_FALLBACK_KEY",
