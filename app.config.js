@@ -54,8 +54,8 @@ export default {
         {
           ios: {
             deploymentTarget: "15.1",
-            useFrameworks: "static",
-            modularHeaders: true,
+            // useFrameworks: "static",
+            // modularHeaders: true,
           }
         }
       ],
