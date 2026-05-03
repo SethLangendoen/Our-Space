@@ -276,3 +276,9 @@ exports.createStripeLoginLink = https.onRequest(async (req, res) => {
 
 
 exports.onNewMessage = require("./notifications/onNewMessage").onNewMessage;
+
+exports.onSpaceRequestCreated =
+  require("./notifications/onSpaceRequest").onSpaceRequestCreated;
+
+exports.onSpaceRequestUpdated =
+  require("./notifications/onSpaceRequest").onSpaceRequestUpdated;
