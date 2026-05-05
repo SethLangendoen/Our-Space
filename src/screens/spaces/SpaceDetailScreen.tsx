@@ -71,6 +71,19 @@ const saveIcons = {
     console.log('selectedRange changed:', selectedRange);
   }, [selectedRange]);
 
+  useEffect(() => {
+    if (!space?.prices) return;
+  
+    const availablePeriods = (['daily', 'weekly', 'monthly'] as const).filter(
+      (period) => space.prices[period]?.enabled
+    );
+  
+    // Auto-select if only one option
+    if (availablePeriods.length === 1) {
+      setSelectedPricePeriod(availablePeriods[0]);
+    }
+  }, [space]);
+
 
 
  const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -259,6 +272,7 @@ useEffect(() => {
         setSending(false);
       }
     };
+
 
 
 
@@ -591,7 +605,7 @@ const futureBlocked = startDate
       {/* <Text style={styles.title}>{space.title || 'No Title'}</Text> */}
 
 
-      <Text style={styles.spaceDescription}>Space Details</Text>
+      <Text style={styles.featureTitle}>Space Details</Text>
       {space.description && <Text style={styles.description}>{space.description}</Text>}
       
 
@@ -652,8 +666,16 @@ const futureBlocked = startDate
 
 
       <Text style={styles.featureTitle}>
-        Price Period Options: 
+        Price Options: 
       </Text>
+
+      {preferredPeriod && (
+        <Text style={styles.preferenceText}>
+          This host prefers 
+          <Text style={styles.preferenceTextColor}> {preferredPeriod} </Text>
+          reservations
+        </Text>
+      )}
 
 
       {space.prices && (
@@ -684,13 +706,7 @@ const futureBlocked = startDate
       )}
 
 
-      {preferredPeriod && (
-        <Text style={styles.preferenceText}>
-          This host prefers 
-          <Text style={styles.preferenceTextColor}> {preferredPeriod} </Text>
-          reservations
-        </Text>
-      )}
+
 
 
 
@@ -803,18 +819,30 @@ const futureBlocked = startDate
 
 <View style={styles.dateSummary}>
 {!selectedRange.start ? (
-    <Text style={styles.featureTitle}>
-      Select your storage booking start date
+  <View>
+    <Text style={styles.BookingTitle2}>
+      Select your start date 
     </Text> 
+    <Text style={styles.preferenceText}>
+    End date is selected after your booking is confirmed
+  </Text>
+  </View>
+    
 ) : (
+  <View>
   <View style={styles.dateRow}>
-    <Text style={styles.featureTitle}>
-      Start Date: 
+    <Text style={styles.BookingTitle2}>
+      Start date: 
     </Text> 
-    <Text style={styles.featureTitle}>
+    <Text style={styles.BookingTitle2}>
       {' '}{selectedRange.start.toDateString()}
     </Text>
+
   </View>
+      <Text style={styles.preferenceText}>
+      End date is selected after your booking is confirmed
+    </Text>
+    </View>
 )}
 
 <BlockedCalendar
@@ -833,8 +861,8 @@ const futureBlocked = startDate
 {space.prices && (
 <View style={{ marginVertical: 0, paddingBottom: 10 }}>
   
-    <Text style={styles.featureTitle}>
-      Select Pricing Period: 
+    <Text style={styles.BookingTitle2}>
+      Select pricing period: 
     </Text> 
   <View
     style={{
@@ -875,9 +903,12 @@ const futureBlocked = startDate
 
 
 
-<Text style={styles.featureTitle}>
+<Text style={styles.BookingTitle2}>
   What are you storing?
 </Text>
+<Text style={styles.preferenceText}>
+    Accurately describe the items you are storing
+  </Text>
 <TextInput
   style={styles.descriptionInput}
   placeholder="e.g. boxes of clothes, skis, small furniture"
@@ -886,9 +917,12 @@ const futureBlocked = startDate
   multiline
 />
 
-<Text style={styles.featureTitle}>
-  Pick-up & drop-off frequency
+<Text style={styles.BookingTitle2}>
+  Pick-up & drop-off frequency:
 </Text>
+<Text style={styles.preferenceText}>
+    How frequenty will you be coming to visit your items?
+  </Text>
 <TextInput
   style={styles.descriptionInput}
   placeholder="e.g. once a month, occasionally, rarely"
@@ -897,9 +931,12 @@ const futureBlocked = startDate
   multiline
 />
 
-<Text style={styles.featureTitle}>
-  Storage duration
+<Text style={styles.BookingTitle2}>
+  Storage duration:
 </Text>
+<Text style={styles.preferenceText}>
+    Describe the approximate amount of time you will store your items
+  </Text>
 <TextInput
   style={styles.descriptionInput}
   placeholder="e.g. 2 weeks, 3 months, long-term"
@@ -1091,9 +1128,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   featureTitle: {
-    fontSize: 16,
-    marginTop: 10,
-    fontWeight: '600'
+    marginTop: 20,
+    marginBottom: 5,
+    fontSize: 18,
+    fontFamily: 'Poppins-Bold',
+    color: '#0F6B5B',
+    fontWeight: '800',
+  },
+
+  BookingTitle2: {
+    marginTop: 20,
+    marginBottom: 5,
+    fontSize: 18,
+    fontFamily: 'Poppins-Bold',
+    color: '#606060',
+    fontWeight: '800',
   },
 
   imageCarousel: {
@@ -1197,6 +1246,7 @@ const styles = StyleSheet.create({
   preferenceText: {
     marginTop: 0,
     marginLeft: 0,
+    marginBottom: 5,
     fontSize: 13,
     color: '#606060',
     fontFamily: 'Poppins-Italic', 
@@ -1292,7 +1342,7 @@ const styles = StyleSheet.create({
   priceContainer: {
     marginVertical: 0,
     display: 'flex',
-    flexDirection: 'row',
+    flexDirection: 'column',
     marginLeft: 0
   },
   
@@ -1330,15 +1380,23 @@ const styles = StyleSheet.create({
   },
   descriptionInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
+    borderColor: '#D8DEE4',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
     fontFamily: 'Poppins-Regular',
-    backgroundColor: '#fff',
-    minHeight: 80,
-    marginBottom: 16,
-    textAlignVertical: 'top',
+    fontSize: 15,
+    color: '#1F1F1F',
+    height: 80,
+  
+    // subtle depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
 
@@ -1437,19 +1495,26 @@ const styles = StyleSheet.create({
   bookingContainer: {
     marginTop: 10,
     marginBottom: 10,
-    padding: 10,
-    backgroundColor: 'white',
+    padding: 20,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
+  
+    borderWidth: 3,
+    borderColor: '#F3AF1D',
   },
+
 
   bookingTitle: {
     fontSize: 24,
     fontFamily: 'Poppins-Bold',
-    color: '#0F6B5B',
+    color: 'black',
     marginBottom: 10,
     fontWeight: 800,
     textAlign: 'center',
+    
   },
+
+  
   verifiedIconSmall: {
     width: 14,
     height: 14,

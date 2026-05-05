@@ -25,6 +25,7 @@ import { db } from '../../firebase/config';
 import SpaceCard from '../../components/SpaceCard'; // ✅ Reusable component
 import { FilterData, useFilterContext } from '../../context/FilterContext';
 import { getAuth } from 'firebase/auth';
+import SpaceCardSkeleton from './helpers/spaceCardSkeleton';
 
 const { width } = Dimensions.get('window');
 
@@ -393,6 +394,7 @@ if (filters.storageType?.length && space.storageType?.length) {
       console.error('Error fetching spaces:', error);
       setSpaces([]);
     } finally {
+      await new Promise(resolve => setTimeout(resolve, 200));
       setLoading(false);
     }
   }, [filters]); // ✅ depends on context filters now
@@ -460,10 +462,12 @@ if (filters.storageType?.length && space.storageType?.length) {
       </View>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" /> 
-          <Text>Loading spaces...</Text>
-        </View>
+          <FlatList
+          data={[1, 2, 3, 4, 5]}
+          keyExtractor={(item) => item.toString()}
+          renderItem={() => <SpaceCardSkeleton />}
+          contentContainerStyle={{ padding: 0 }}
+        />
       ) 
       
       
@@ -527,46 +531,6 @@ if (filters.storageType?.length && space.storageType?.length) {
     )}
 
 
-      {/* {groupSpacesByLocation(displayedSpaces).map((group, index) => {
-        const first = group[0];
-
-        if (!first?.location) return null;
-
-        return (
-
-          // <Marker
-          //   key={`${first.location.lat}-${first.location.lng}-${index}`}
-          //   coordinate={{
-          //     latitude: first.location.lat,
-          //     longitude: first.location.lng,
-          //   }}
-          //   // onPress={() => setSelectedSpace(group[0])}
-          //   onPress={() => setSelectedGroup(group)}
-            
-          // >
-          //   <Image
-          //     source={getPinBackground(group[0].postType)}
-          //     style={styles.pinBackground}
-          //   />
-          // </Marker>
-
-
-          <Marker
-            key={`${first.location.lat}-${first.location.lng}-${index}`}
-            coordinate={{
-              latitude: first.location.lat,
-              longitude: first.location.lng,
-            }}
-            onPress={() => setSelectedGroup(group)}
-          >
-            <Image
-              source={getPinBackground(isActive)}
-              style={styles.pinBackground}
-            />
-          </Marker>
-
-        );
-      })} */}
 
 {groupSpacesByLocation(displayedSpaces).map((group, index) => {
   const first = group[0];
@@ -796,4 +760,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFCF1',
   },
+
 });

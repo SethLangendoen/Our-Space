@@ -488,7 +488,7 @@ const handleSubmit = async () => {
 
 {/* Section Label */}
 <Text style={styles.selectLabel}>Photos</Text>
-<Text style={styles.dimensionLabel}>Add and accurate photos for your space</Text>
+<Text style={styles.dimensionLabel}>Add clear and accurate photos for your space</Text>
 
 <ScrollView
     horizontal
@@ -1305,17 +1305,34 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
   },
 
+  // submitButton: {
+  //   backgroundColor: '#0F6B5B', // Emerald Green primary button
+  //   paddingVertical: 15,
+  //   borderRadius: 6,
+  //   alignItems: 'center',
+  //   marginTop: 10,
+  // },
+  // submitText: {
+  //   color: '#fff',
+  //   fontWeight: '700',
+  //   fontFamily: 'Poppins-Bold',
+  // },
+
   submitButton: {
-    backgroundColor: '#0F6B5B', // Emerald Green primary button
-    paddingVertical: 15,
-    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#0F6B5B',
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
+    justifyContent: 'center',
   },
+  
   submitText: {
-    color: '#fff',
-    fontWeight: '700',
+    color: '#0F6B5B',
+    fontSize: 16,
     fontFamily: 'Poppins-Bold',
+    fontWeight: '800',
   },
 
   optionRow: {
@@ -1574,21 +1591,21 @@ const styles = StyleSheet.create({
   },
 
   deleteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#D32F2F',
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
   },
 
   deleteText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
+    color: '#D32F2F',
+    fontSize: 16,
+    fontFamily: 'Poppins-Bold',
+    fontWeight: '800',
   },
 
   mainBadge: {

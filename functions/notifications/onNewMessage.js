@@ -13,7 +13,7 @@ exports.onNewMessage = onDocumentCreated(
   async (event) => {
     try {
       const message = event.data?.data();
-      if (!message) return;
+      if (!message) return;x
 
       const { senderId, text } = message;
       if (!senderId || !text) return;

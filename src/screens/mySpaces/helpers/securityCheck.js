@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../firebase/config';
 import ReviewCard from './ReviewCard';
+import { useFilterContext } from 'src/context/FilterContext';
 
 export default function SecurityCheck({ reservation, reservationId, userId, type, role }) {
   const [enteredCode, setEnteredCode] = useState('');
@@ -295,16 +296,18 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
           {!localSecurity.codeVerified && (
             <>
               <Text style={styles.infoText}>Enter the code provided by the requester:</Text>
-              <TextInput
-                style={styles.codeInput}
-                value={enteredCode}
-                onChangeText={setEnteredCode}
-                keyboardType="number-pad"
-                maxLength={4}
-              />
-              <TouchableOpacity style={styles.actionButton} onPress={handleVerifyCode}>
-                <Text style={styles.actionButtonText}>Verify Code</Text>
-              </TouchableOpacity>
+              <View style={styles.codeVerification}>
+                <TextInput
+                  style={styles.codeInput}
+                  value={enteredCode}
+                  onChangeText={setEnteredCode}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                />
+                <TouchableOpacity style={styles.actionButton} onPress={handleVerifyCode}>
+                  <Text style={styles.actionButtonText}>Verify Code</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
           {localSecurity.codeVerified && <Text style={styles.successText}>✅ Code Verified</Text>}
@@ -353,7 +356,7 @@ const maybeMarkReservationCompleted = async (updatedSecurity) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 16,
+    marginVertical: 0,
     padding: 18,
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
@@ -369,6 +372,7 @@ const styles = StyleSheet.create({
   lockedContainer: {
     backgroundColor: '#F9FAFB',
     borderColor: '#E5E7EB',
+    marginVertical: 10
   },
 
   title: {
@@ -410,28 +414,25 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 12,
   },
 
   actionButtonText: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 14,
     color: '#FFFFFF',
+    paddingHorizontal: 8
   },
 
   codeInput: {
+    flex: 1,
+    height: 50,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#DDD',
     borderRadius: 10,
-    paddingVertical: 10,
-    fontSize: 18,
-    fontFamily: 'Poppins-SemiBold',
-    textAlign: 'center',
-    letterSpacing: 4,
-    marginVertical: 10,
-    width: 120,
-    alignSelf: 'center',
-    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 12,
+    fontSize: 16,
+    fontFamily: 'Poppins-Regular',
+    backgroundColor: '#FFF',
   },
 
   lockedText: {
@@ -441,5 +442,12 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: 10,
     lineHeight: 18,
+  },
+  codeVerification: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 10,
+    gap: 50, // if unsupported on older RN, I’ll show fallback below
   },
 });

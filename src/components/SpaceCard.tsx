@@ -46,7 +46,6 @@ interface PriceData {
 
 
 
-
 const SpaceCard = ({
   item,
   onPress,
@@ -59,6 +58,7 @@ const SpaceCard = ({
   showEditButton = false,
 }: SpaceCardProps) => {
 
+  
 
 const publicPriceEntry = item.prices
   ? (Object.entries(item.prices) as [string, PriceData][]).find(

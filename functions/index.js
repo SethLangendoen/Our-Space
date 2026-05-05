@@ -11,13 +11,12 @@ const { handleStripePaymentWebhook } = require("./stripe/stripePaymentWebhook");
 const { cancelReservationEarly } = require("./payments/cancelReservationEarly");
 const { getStripeEarningsLogic } = require("./stripe/getStripeEarningsLogic");
 const { createStripeLoginLinkLogic } = require("./stripe/createStripeLoginLink");
-// const { sendPushNotificationLogic } = require("./notifications/sendPushNotifications");
-// const { onNewMessage } = require("./notifications/onNewMessage");
 
 const {
   ensureStripeCustomerLogic,
   createSetupIntentLogic,
 } = require("./stripe/renterCustomer");
+
 const {
   attachPaymentMethodLogic,
   setDefaultPaymentMethodLogic,
@@ -30,9 +29,6 @@ setGlobalOptions({
   runtime: "nodejs22",
   secrets: ["STRIPE_SECRET", "STRIPE_WEBHOOK_SECRET"],
 });
-
-
-
 
 
 // --- Create Stripe Account ---
@@ -282,3 +278,10 @@ exports.onSpaceRequestCreated =
 
 exports.onSpaceRequestUpdated =
   require("./notifications/onSpaceRequest").onSpaceRequestUpdated;
+
+  exports.onReservationUpdated =
+  require("./notifications/onReservationUpdated").onReservationUpdated;
+
+  exports.onReservationUpdated =
+  require("./notifications/onUpdateEndDate").onReservationEndDateRequested;
+  

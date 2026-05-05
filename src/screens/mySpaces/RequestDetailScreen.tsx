@@ -241,7 +241,16 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   }, [reservationId]);
 
 
-
+  const refreshReservation = async () => {
+    try {
+      const docSnap = await getDoc(doc(db, 'reservations', reservationId));
+      if (docSnap.exists()) {
+        setReservation({ id: docSnap.id, ...docSnap.data() });
+      }
+    } catch (err) {
+      console.error('Failed to refresh reservation', err);
+    }
+  };
 
   const sendCancellationMessage = async () => {
     if (!auth.currentUser || !reservation) return;
@@ -719,15 +728,19 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
           </View> */}
 
           <View style={styles.card}>
+
+
             <View style={styles.horizontalDates}>
               {isEditing ? (
-                <BlockedCalendar
-                singleSelect={true}
-                  onSelectRange={({ start, end }) => {
-                    setEditedStart(start);
-                    setEditedEnd(end);
-                  }}
-                />
+                      <View style={styles.calendarWrapper}>
+                        <BlockedCalendar
+                          singleSelect={true}
+                          onSelectRange={({ start, end }) => {
+                            setEditedStart(start);
+                            setEditedEnd(end);
+                          }}
+                        />
+                      </View>
               ) : (
                 <>
                   {/* START DATE */}
@@ -769,270 +782,77 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
                   </View>
                 </>
               )}
-            </View>
-          </View>
 
-
-          
-
-          <View style={styles.card}>
-          <View style={styles.detailBlock}>
-            <Text style={styles.detailTitle}>
-              {requesterInfo?.firstName}'s request
-            </Text>
-
-            {isEditing ? (
-              <TextInput
-                style={styles.input}
-                value={editedDescription}
-                onChangeText={setEditedDescription}
-                multiline
-              />
-            ) : (
-              <Text style={styles.detailDescription}>
-                {reservation.description}
-              </Text>
-            )}
-          </View>
-
-
-          {/* FREQUENCY */}
-          <View style={styles.detailBlock}>
-            <Text style={styles.detailTitle}>
-              Pick-up and Drop-off Frequency
-            </Text>
-
-            {isEditing ? (
-              <TextInput
-                style={styles.input}
-                value={editedFrequency}
-                onChangeText={setEditedFrequency}
-              />
-            ) : (
-              <Text style={styles.detailDescription}>
-                {reservation.frequency}
-              </Text>
-            )}
-          </View>
-
-
-          {/* DURATION */}
-          <View style={styles.detailBlock}>
-            <Text style={styles.detailTitle}>
-              Approximate Duration
-            </Text>
-
-            {isEditing ? (
-              <TextInput
-                style={styles.input}
-                value={editedDuration}
-                onChangeText={setEditedDuration}
-              />
-            ) : (
-              <Text style={styles.detailDescription}>
-                {reservation.storageDuration}
-              </Text>
-            )}
-          </View>
-
-
-
-
-          <View style={styles.detailBlock}>
-            <Text style={styles.detailTitle}>
-              Location
-            </Text>
-            <Text style={styles.detailDescription}>
-              {reservation?.status === 'confirmed' && space?.address
-                ? `${space.address}`
-                : reservation?.status === 'requested'
-                ? "Exact location displayed upon confirmation"
-                : "Location unavailable"}
-            </Text>
-          </View>
-          </View>
-
-
-          {isEditing ? (
-            <>
-              <Button title="Save Changes" onPress={handleSaveEdit} />
-              <Button title="Cancel Editing" onPress={() => setIsEditing(false)} />
-            </>
-          ) : canEdit ? (
-            <TouchableOpacity
-              onPress={() => setIsEditing(true)}
-              style={styles.editButton}
-            >
-              <Text style={styles.editButtonText}>Edit Request</Text>
-            </TouchableOpacity>
-          ) : null}
-
-
-        </View>
-
-        
-
-      {space && (
-        <View style={styles.card}>
-
-        <View >
-          {/* Next Payment Date */}
-          {reservation.nextPaymentDate && (
-            <View style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Next Payment Date:</Text>
-              <Text style={styles.pricingValue}>
-                {reservation.nextPaymentDate.toDate().toLocaleDateString()}
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>Rental Cycle:</Text>
-            <Text style={styles.pricingValue}>{reservation.pricePeriod}</Text>
-          </View>
-
-          <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>First Payment Date:</Text>
-
-            <Text style={styles.pricingValue}>
-              {getFirstPaymentDate()
-                ? getFirstPaymentDate()!.toLocaleDateString()
-                : '—'}
-            </Text>
-          </View>
-
-          <Text>*48 hours before booking begins </Text>
-
-          <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>Price:</Text>
-            <Text style={styles.pricingValue}>${Number(reservation.price).toFixed(2)}</Text>
-          </View>
-
-          {/* Host calculations */}
-          {role === 'host' && (() => {
-            const base = Number(reservation.price);
-            const platformFee = base * 0.095;
-            const payout = base - platformFee;
-            return (
-              <>
-                <View style={styles.pricingRow}>
-                  <Text style={styles.pricingLabel}>Service Fee</Text>
-                  <Text style={styles.pricingValue}>${platformFee.toFixed(2)}</Text>
-                </View>
-
-                <View style={styles.divider}/>
-
-
-                <View style={styles.pricingRow}>
-                  <Text style={styles.pricingLabel}>Total {reservation.pricePeriod} Payout</Text>
-                  <Text style={styles.pricingValue}>${payout.toFixed(2)}</Text>
-                </View>
-              </>
-            );
-          })()}
-
-          {/* Renter calculations */}
-          {role === 'renter' && (() => {
-            const base = Number(reservation.price);
-            const platformFee = base * 0.095;
-            const totalCost = base + platformFee;
-            return (
-              <>
-                <View style={styles.pricingRow}>
-                  <Text style={styles.pricingLabel}>Service Fee</Text>
-                  <Text style={styles.pricingValue}>{platformFee.toFixed(2)}</Text>
-                </View>
-
-                <View style={styles.divider}/>
-
-                <View style={styles.pricingRow}>
-                  <Text style={styles.pricingLabel}>Total {reservation.pricePeriod} Cost (CAD)</Text>
-                  <Text style={styles.pricingValue}>${totalCost.toFixed(2)}</Text>
-                </View>
-              </>
-            );
-          })()}
-        </View>
-        </View>
-      )}
-
-
-      </View>
-    
-
-      {reservation?.status === 'confirmed' &&
-        // reservation?.endDate &&
-        role === 'renter' && (
-          <View style={styles.endDateChange}>
-            {/* Toggle button */}
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => setIsCalendarOpen(prev => !prev)}
-            >
-              <Text style={styles.toggleButtonText}>
-                {isCalendarOpen ? 'Close Calendar' : 'Set End Date'}
-              </Text>
-            </TouchableOpacity>
-
-            {isCalendarOpen && (
-              <View style={{ marginTop: 15 }}>
-
-
-                <PaymentCalendar
-                  startDate={toJSDate(reservation.startDate)!}
-                  endDate={reservation.endDate ? toJSDate(reservation.endDate)! : undefined}
-                  blockedTimes={blockedTimesNormalized}
-                  reservedTimes={reservedTimesNormalized}
-                  selectableEndDate
-                  onSelectEndDate={setEditedEndDate}
-                />
-
-
-                  {/* Pending request display (inside calendar panel, above submit) */}
-                  {(() => {
-                    const pendingDate = toJSDate(reservation.endDateChangeRequest);
-                    const editedDate = toJSDate(editedEndDate);
-
-                    if (pendingDate) {
-                      return (
-                        <Text style={{ marginVertical: 10, color: '#8A6D3B', fontWeight: '500' }}>
-                          Pending End Date Request: {pendingDate.toDateString()}
-                        </Text>
-                      );
-                    }
-
-                    if (editedDate) {
-                      return (
-                        <Text style={{ marginVertical: 10, color: '#8A6D3B', fontWeight: '500' }}>
-                          Pending End Date Request: {editedDate.toDateString()}
-                        </Text>
-                      );
-                    }
-
-                    return null;
-                  })()}
-
-                <TouchableOpacity
-                  style={styles.confirmButton}
-                  disabled={!editedEndDate || editedEndDate <= new Date()}
-                  onPress={handleSubmitEndDateChange}
-                >
-                  <Text style={styles.confirmText}>Submit End Date Request</Text>
-                </TouchableOpacity>
               </View>
-            )}
-          </View>
-        )}
+                    
+            {reservation?.status === 'confirmed' &&
+              // reservation?.endDate &&
+              role === 'renter' && (
+                <View style={styles.endDateChange}>
+                  <TouchableOpacity
+                    style={styles.toggleButton}
+                    onPress={() => setIsCalendarOpen(prev => !prev)}
+                  >
+                  <Text style={styles.toggleButtonText}>
+                    {isCalendarOpen
+                      ? 'Close Calendar'
+                      : reservation?.endDate
+                        ? 'Update End Date'
+                        : 'Set End Date'}
+                  </Text>
+                  </TouchableOpacity>
+
+                  {isCalendarOpen && (
+                    <View style={{ marginTop: 15 }}>
 
 
+                      <PaymentCalendar
+                        startDate={toJSDate(reservation.startDate)!}
+                        endDate={reservation.endDate ? toJSDate(reservation.endDate)! : undefined}
+                        blockedTimes={blockedTimesNormalized}
+                        reservedTimes={reservedTimesNormalized}
+                        selectableEndDate
+                        onSelectEndDate={setEditedEndDate}
+                      />
 
 
+                        {(() => {
+                          const pendingDate = toJSDate(reservation.endDateChangeRequest);
+                          const editedDate = toJSDate(editedEndDate);
+
+                          if (pendingDate) {
+                            return (
+                              <Text style={{ marginVertical: 10, color: '#8A6D3B', fontWeight: '500' }}>
+                                Pending End Date Request: {pendingDate.toDateString()}
+                              </Text>
+                            );
+                          }
+
+                          if (editedDate) {
+                            return (
+                              <Text style={{ marginVertical: 10, color: '#8A6D3B', fontWeight: '500' }}>
+                                Pending End Date Request: {editedDate.toDateString()}
+                              </Text>
+                            );
+                          }
+
+                          return null;
+                        })()}
+
+                      <TouchableOpacity
+                        style={styles.confirmButton}
+                        disabled={!editedEndDate || editedEndDate <= new Date()}
+                        onPress={handleSubmitEndDateChange}
+                      >
+                        <Text style={styles.confirmText}>Submit End Date Request</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
 
 
-
-
-
-        {role === 'host' && reservation.endDateChangeRequest && (
+        {/* {role === 'host' && reservation.endDateChangeRequest && (
           <View style={{ marginTop: 20, padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 8 }}>
             <Text style={{ fontWeight: '600' }}>End Date Change Requested:</Text>
             <Text>Requested New End Date: {reservation.endDateChangeRequest.toDate().toDateString()}</Text>
@@ -1076,11 +896,315 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
               >
                 <Text style={styles.cancelText}>Decline</Text>
               </TouchableOpacity>
+
+              
             </View>
           </View>
-        )}
+        )} */}
+
+{role === 'host' && reservation.endDateChangeRequest && (
+  <View style={styles.endDateRequestContainer}>
+    <Text style={styles.endDateRequestTitle}>
+      End Date Change Requested:
+    </Text>
+
+    <Text style={styles.endDateRequestText}>
+      Requested New End Date:{' '}
+      {reservation.endDateChangeRequest.toDate().toDateString()}
+    </Text>
+
+    <View style={styles.endDateRequestButtons}>
+      <TouchableOpacity
+        style={styles.acceptButton}
+        // onPress={async () => {
+        //   try {
+        //     const reservationRef = doc(db, 'reservations', reservationId);
+
+        //     await updateDoc(reservationRef, {
+        //       endDate: reservation.endDateChangeRequest,
+        //       endDateChangeRequest: null,
+        //       updatedAt: Timestamp.now(),
+        //     });
+
+        //     Alert.alert(
+        //       'Accepted',
+        //       'The end date has been updated.'
+        //     );
+        //   } catch (err) {
+        //     console.error(err);
+        //     Alert.alert(
+        //       'Error',
+        //       'Could not accept the request.'
+        //     );
+        //   }
+        // }}
+        onPress={async () => {
+          try {
+            const reservationRef = doc(db, 'reservations', reservationId);
+        
+            await updateDoc(reservationRef, {
+              endDate: reservation.endDateChangeRequest,
+              endDateChangeRequest: null,
+              updatedAt: Timestamp.now(),
+            });
+        
+            await refreshReservation(); // 🔥 important
+        
+            Alert.alert('Accepted', 'The end date has been updated.');
+          } catch (err) {
+            console.error(err);
+            Alert.alert('Error', 'Could not accept the request.');
+          }
+        }}
+      >
+        <Text style={styles.acceptButtonText}>Accept</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.declineButton}
+        onPress={async () => {
+          try {
+            const reservationRef = doc(db, 'reservations', reservationId);
+        
+            await updateDoc(reservationRef, {
+              endDateChangeRequest: null,
+              updatedAt: Timestamp.now(),
+            });
+        
+            await refreshReservation(); // 🔥 important
+        
+            Alert.alert('Declined', 'The request has been declined.');
+          } catch (err) {
+            console.error(err);
+            Alert.alert('Error', 'Could not decline the request.');
+          }
+        }}
+      >
+        <Text style={styles.declineButtonText}>Decline</Text>
+      </TouchableOpacity>
+    </View>
+
+  </View>
+)}
+
+            {/* </View> */}
+          </View>
 
 
+          
+
+          <View style={styles.card}>
+          <View style={styles.detailBlock}>
+            <Text style={styles.detailTitle}>
+              {requesterInfo?.firstName}'s request
+            </Text>
+
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={editedDescription}
+                onChangeText={setEditedDescription}
+                multiline
+              />
+            ) : (
+              <Text style={styles.detailDescription}>
+                {reservation.description}
+              </Text>
+            )}
+          </View>
+
+
+          {/* FREQUENCY */}
+          <View style={styles.detailBlock}>
+            <Text style={styles.detailTitle}>
+              Pick-up and Drop-off Frequency
+            </Text>
+
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={editedFrequency}
+                onChangeText={setEditedFrequency}
+                multiline
+
+              />
+            ) : (
+              <Text style={styles.detailDescription}>
+                {reservation.frequency}
+              </Text>
+            )}
+          </View>
+
+
+          {/* DURATION */}
+          <View style={styles.detailBlock}>
+            <Text style={styles.detailTitle}>
+              Approximate Duration
+            </Text>
+
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                value={editedDuration}
+                onChangeText={setEditedDuration}
+                multiline
+
+              />
+            ) : (
+              <Text style={styles.detailDescription}>
+                {reservation.storageDuration}
+              </Text>
+            )}
+          </View>
+
+
+
+
+          <View style={styles.detailBlock}>
+  <Text style={styles.detailTitle}>Location</Text>
+
+  {reservation.status !== 'confirmed' && (
+    <Text style={styles.detailNote}>
+      *Exact location displayed upon booking confirmation
+    </Text>
+  )}
+
+  <Text style={styles.detailDescription}>
+    {reservation?.status === 'confirmed' && space?.address
+      ? space.address
+      : reservation?.status === 'requested'
+      ? [space?.location?.district, space?.location?.city]
+          .filter(Boolean)
+          .join(' ')
+      : 'Location unavailable'}
+  </Text>
+</View>
+
+
+          {isEditing ? (
+  <View style={styles.editActionButtons}>
+    <TouchableOpacity
+      onPress={handleSaveEdit}
+      style={styles.acceptButton}
+    >
+      <Text style={styles.acceptButtonText}>Save Changes</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      onPress={() => setIsEditing(false)}
+      style={styles.declineButton}
+    >
+      <Text style={styles.declineButtonText}>Cancel Editing</Text>
+    </TouchableOpacity>
+  </View>
+) : canEdit ? (
+  <TouchableOpacity
+    onPress={() => setIsEditing(true)}
+    style={styles.acceptButton}
+  >
+    <Text style={styles.acceptButtonText}>Edit Request</Text>
+  </TouchableOpacity>
+) : null}
+
+
+          </View>
+
+
+        </View>
+
+        
+
+      {space && (
+        <View style={styles.card}>
+
+        <View >
+          {/* Next Payment Date */}
+          {reservation.nextPaymentDate && (
+            <View style={styles.pricingRow}>
+              <Text style={styles.detailTitle}>Next Payment Date:</Text>
+              <Text style={styles.pricingValue}>
+                {reservation.nextPaymentDate.toDate().toLocaleDateString()}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.pricingRow}>
+            <Text style={styles.detailTitle}>Rental Cycle:</Text>
+            <Text style={styles.pricingValue}>{reservation.pricePeriod}</Text>
+          </View>
+
+          <View style={styles.pricingRow}>
+            <Text style={styles.detailTitle}>First Payment Date:</Text>
+
+            <Text style={styles.pricingValue}>
+              {getFirstPaymentDate()
+                ? getFirstPaymentDate()!.toLocaleDateString()
+                : '—'}
+            </Text>
+          </View>
+
+          <Text style={styles.preferenceText}>48 hours before booking begins </Text>
+
+          <View style={styles.pricingRow}>
+            <Text style={styles.detailTitle}>Price:</Text>
+            <Text style={styles.pricingValue}>${Number(reservation.price).toFixed(2)}</Text>
+          </View>
+
+          {/* Host calculations */}
+          {role === 'host' && (() => {
+            const base = Number(reservation.price);
+            const platformFee = base * 0.095;
+            const payout = base - platformFee;
+            return (
+              <>
+                <View style={styles.pricingRow}>
+                  <Text style={styles.detailTitle}>Service Fee:</Text>
+                  <Text style={styles.pricingValue}>${platformFee.toFixed(2)}</Text>
+                </View>
+
+                <View style={styles.divider}/>
+
+
+                <View style={styles.pricingRow}>
+                <Text style={styles.detailTitle}>
+                  {reservation.pricePeriod?.charAt(0).toUpperCase() + reservation.pricePeriod?.slice(1)} Total
+                </Text>
+                  <Text style={styles.pricingValue}>${payout.toFixed(2)}</Text>
+                </View>
+              </>
+            );
+          })()}
+
+          {/* Renter calculations */}
+          {role === 'renter' && (() => {
+            const base = Number(reservation.price);
+            const platformFee = base * 0.095;
+            const totalCost = base + platformFee;
+            return (
+              <>
+                <View style={styles.pricingRow}>
+                  <Text style={styles.detailTitle}>Service Fee:</Text>
+                  <Text style={styles.pricingValue}>${platformFee.toFixed(2)}</Text>
+                </View>
+
+                <View style={styles.divider}/>
+
+                <View style={styles.pricingRow}>
+                <Text style={styles.detailTitle}>
+                {reservation.pricePeriod?.charAt(0).toUpperCase() + reservation.pricePeriod?.slice(1)} Total (CAD)
+                </Text>                  
+                <Text style={styles.pricingValue}>${totalCost.toFixed(2)}</Text>
+                </View>
+              </>
+            );
+          })()}
+        </View>
+        </View>
+      )}
+
+
+      </View>
+  
 
 
 
@@ -1151,7 +1275,9 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
 
 
 
-
+    <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
+        <Text style={styles.messageButtonText}>Message User</Text>
+    </TouchableOpacity>
 
 
 
@@ -1290,9 +1416,9 @@ export default function RequestDetailScreen({ navigation, route }: Props) {
   })()
 )}
 
-    <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
+    {/* <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
         <Text style={styles.messageButtonText}>Message User</Text>
-      </TouchableOpacity>
+    </TouchableOpacity> */}
 
 
     {/* </View> */}
@@ -1353,6 +1479,16 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     width: '100%'
   },
+
+  preferenceText: {
+    marginTop: 0,
+    marginLeft: 0,
+    marginBottom: 5,
+    fontSize: 13,
+    color: '#606060',
+    fontFamily: 'Poppins-Italic', 
+    transform: [{ skewX: '-15deg' }],
+  },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
@@ -1390,9 +1526,10 @@ const styles = StyleSheet.create({
   },
   
   cancelRequestText: {
-    color: 'red', // text color
+    color: '#606060', // text color
     fontSize: 16,
     textAlign: 'center',
+    marginTop: 20,
     // fontWeight, padding, etc. can go here
   },
   pricingBox: {
@@ -1454,7 +1591,7 @@ const styles = StyleSheet.create({
 
   detailTitle: {
     fontFamily: 'Poppins-Medium',
-    fontSize: 14,
+    fontSize: 16,
     color: '#333',
     fontWeight: 'bold',
   },
@@ -1471,6 +1608,10 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
+  },
+  calendarWrapper: {
+    width: '100%',
+    alignSelf: 'stretch',
   },
   bold: {
     fontWeight: '600',
@@ -1560,6 +1701,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 20,
     textAlign: 'center'
+  },
+  detailNote: {
+    marginTop: 0,
+    marginLeft: 0,
+    marginBottom: 5,
+    fontSize: 13,
+    color: '#606060',
+    fontFamily: 'Poppins-Italic', 
+    transform: [{ skewX: '-15deg' }],
   },
   securityText: {
     fontSize: 14,
@@ -1651,7 +1801,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 0,
+    marginBottom: 10
   },
   
   messageButtonText: {
@@ -1707,12 +1858,10 @@ confirmButton: {
   paddingHorizontal: 16,
   borderRadius: 12,          // rounded edges
   alignItems: "center",
-  marginTop: 12,
   shadowColor: "#000",
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.15,
   shadowRadius: 4,
-  elevation: 2,              // Android shadow
 },
 
 confirmText: {
@@ -1728,7 +1877,113 @@ disabledButton: {
 disabledButtonText: {
   color: '#999',
 },
+
+
+endDateRequestContainer: {
+  marginTop: 20,
+  padding: 15,
+  borderWidth: 1,
+  borderColor: '#DADADA',
+  borderRadius: 12,
+  backgroundColor: '#FAFAFA',
+},
+
+endDateRequestTitle: {
+  fontSize: 16,
+  fontFamily: 'Poppins-SemiBold',
+  color: '#1F1F1F',
+  marginBottom: 6,
+},
+
+endDateRequestText: {
+  fontSize: 14,
+  fontFamily: 'Poppins-Regular',
+  color: '#444',
+},
+
+endDateRequestButtons: {
+  flexDirection: 'row',
+  marginTop: 15,
+},
+
+// acceptButton: {
+//   flex: 1,
+//   backgroundColor: '#4CAF50',
+//   paddingVertical: 12,
+//   borderRadius: 8,
+//   alignItems: 'center',
+//   justifyContent: 'center',
+//   marginRight: 8,
+// },
+
+// acceptButtonText: {
+//   color: '#FFF',
+//   fontSize: 14,
+//   fontFamily: 'Poppins-SemiBold',
+// },
+
+// declineButton: {
+//   flex: 1,
+//   backgroundColor: '#F44336',
+//   paddingVertical: 12,
+//   borderRadius: 8,
+//   alignItems: 'center',
+//   justifyContent: 'center',
+//   marginLeft: 8,
+// },
+
+// declineButtonText: {
+//   color: '#FFF',
+//   fontSize: 14,
+//   fontFamily: 'Poppins-SemiBold',
+// },
   
+acceptButton: {
+  flex: 1,
+  backgroundColor: '#FFFFFF',
+  borderWidth: 2,
+  borderColor: '#0F6B5B',
+  paddingVertical: 14,
+  borderRadius: 10,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 8,
+},
+
+acceptButtonText: {
+  color: '#0F6B5B',
+  fontSize: 16,
+  fontFamily: 'Poppins-Bold',
+  fontWeight: '800',
+},
+
+declineButton: {
+  flex: 1,
+  backgroundColor: '#FFFFFF',
+  borderWidth: 2,
+  borderColor: '#D32F2F',
+  paddingVertical: 14,
+  borderRadius: 10,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginLeft: 8,
+},
+
+declineButtonText: {
+  color: '#D32F2F',
+  fontSize: 16,
+  fontFamily: 'Poppins-Bold',
+  fontWeight: '800',
+},
+editActionButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginTop: 16,
+  width: '100%',
+},
+
+
+
   
 });
 

@@ -89,39 +89,6 @@ async function processRecurringPaymentsLogic() {
       const hostFee = Math.round(baseAmount * PLATFORM_FEE_RATE);
 
 
-      // const taxCalculation = await stripeClient.tax.calculations.create({
-      //   currency: "cad",
-      //   line_items: [
-      //     { amount: renterFee, reference: "renter_fee", tax_code: "txcd_10103000" },
-      //     { amount: hostFee, reference: "host_fee", tax_code: "txcd_10103000" }
-      //   ],
-      //   customer_details: {
-      //     address: {
-      //       line1: location.address,
-      //       city: location.city,
-      //       state: location.province,
-      //       postal_code: postalCode,
-      //       country: "CA",
-      //     },
-      //     address_source: "shipping",
-      //   }
-      // });
-      
-      // logger.info("Stripe tax calculation result", { taxCalculation });
-  
-      // if (!taxCalculation.line_items?.data) {
-      //   logger.error("Stripe returned no line_items.data", { taxCalculation });
-      // }
-  
-      // const renterItem = taxCalculation.line_items.data.find(
-      //   item => item.reference === "renter_fee"
-      // );
-      // const renterTax = renterItem?.tax_amounts?.[0]?.amount || 0;
-      
-      // const hostItem = taxCalculation.line_items.data.find(
-      //   item => item.reference === "host_fee"
-      // );
-      // const hostTax = hostItem?.tax_amounts?.[0]?.amount || 0;
 
       const taxCalculation = await stripeClient.tax.calculations.create({
         currency: "cad",
@@ -241,7 +208,7 @@ async function processRecurringPaymentsLogic() {
 
 const processRecurringPayments = onSchedule(
   { 
-    schedule: "0 * * * *", // 
+    schedule: "*/5 * * * *",
     timeZone: "America/Edmonton",
     secrets: ["STRIPE_SECRET"], // IMPORTANT: This injects the secret into process.env
     timeoutSeconds: 300 // Giving it 5 minutes to process the loop
