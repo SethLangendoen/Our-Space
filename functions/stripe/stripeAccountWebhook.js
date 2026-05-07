@@ -1,9 +1,15 @@
 
 
-
 const { https } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
+
+// ✅ Firebase init (safe)
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const db = admin.firestore();
 
 let stripe;
 function getStripe() {
@@ -15,82 +21,153 @@ function getStripe() {
   return stripe;
 }
 
+// -----------------------------
+// 🔥 Firestore Logging Helper
+// -----------------------------
+async function logOnboardingEvent(data) {
+  try {
+    await db.collection("onboardingLogs").add({
+      ...data,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    console.error("Failed to write onboarding log:", err);
+  }
+}
+
 const ACCOUNT_EVENTS = new Set([
-  "v2.core.account.created",
-  "v2.core.account.updated",
+  "account.updated",
+  "v2.core.account[requirements].updated",
+  "v2.core.account[identity].updated",
 ]);
 
 exports.handleStripeAccountUpdate = https.onRequest(
   {
     secrets: ["STRIPE_SECRET", "STRIPE_ACCOUNT_WEBHOOK_SECRET"],
     cors: false,
-    bodyParser: false,
   },
   async (req, res) => {
-    try {
-      console.log("Received Stripe webhook request");  // 🔹 log incoming request
+    const stripeClient = getStripe();
 
-      const stripe = getStripe();
+    try {
+      await logOnboardingEvent({
+        stage: "webhook_received",
+      });
+
+      if (!req.rawBody) {
+        await logOnboardingEvent({
+          stage: "error",
+          message: "Missing rawBody",
+        });
+        return res.status(400).send("Missing rawBody");
+      }
+
       const sig = req.headers["stripe-signature"];
       if (!sig) {
-        console.warn("Missing Stripe signature header");  // 🔹 log missing sig
+        await logOnboardingEvent({
+          stage: "error",
+          message: "Missing Stripe signature",
+        });
         return res.status(400).send("Missing Stripe signature");
       }
-      console.log("Incoming Stripe signature:", sig);
-      console.log("Raw body length:", req.rawBody.length);
-      console.log("Webhook secret env:", process.env.STRIPE_ACCOUNT_WEBHOOK_SECRET ? "set" : "NOT set");
 
       let event;
+
       try {
-        
-        event = stripe.webhooks.constructEvent(
+        event = stripeClient.webhooks.constructEvent(
           req.rawBody,
           sig,
           process.env.STRIPE_ACCOUNT_WEBHOOK_SECRET
         );
       } catch (err) {
-        console.error("Webhook signature verification failed:", err.message); // 🔹 log sig failure
+        await logOnboardingEvent({
+          stage: "signature_failed",
+          message: err.message,
+        });
+
         return res.status(400).send(`Webhook Error: ${err.message}`);
       }
 
-      console.log("Stripe event received:", event.type);  // 🔹 log event type
+      await logOnboardingEvent({
+        stage: "event_received",
+        eventType: event.type,
+      });
 
       if (!ACCOUNT_EVENTS.has(event.type)) {
-        console.log("Event type not in ACCOUNT_EVENTS, ignoring:", event.type); // 🔹 log ignored events
+        await logOnboardingEvent({
+          stage: "ignored_event",
+          eventType: event.type,
+        });
+
         return res.status(200).json({ received: true });
       }
 
       const account = event.data.object;
-      console.log("Account object received:", account.id);  // 🔹 log account ID
 
       const chargesEnabled = !!account.charges_enabled;
       const payoutsEnabled = !!account.payouts_enabled;
       const onboardingComplete = chargesEnabled && payoutsEnabled;
 
-      const db = admin.firestore();
-      const usersRef = db.collection("users");
+      await logOnboardingEvent({
+        stage: "account_parsed",
+        accountId: account.id,
+        chargesEnabled,
+        payoutsEnabled,
+        detailsSubmitted: account.details_submitted ?? false,
+      });
 
-      const snapshot = await usersRef
+      const snapshot = await db
+        .collection("users")
         .where("stripe.host.accountId", "==", account.id)
         .get();
 
-      console.log("Matching users found:", snapshot.size); // 🔹 log how many users matched
+      await logOnboardingEvent({
+        stage: "user_lookup",
+        accountId: account.id,
+        matchedUsers: snapshot.size,
+      });
 
-      snapshot.forEach(doc => {
-        console.log("Updating user:", doc.id);  // 🔹 log each document update
-        doc.ref.update({
+      if (snapshot.empty) {
+        await logOnboardingEvent({
+          stage: "warning",
+          message: "No users found for account",
+          accountId: account.id,
+        });
+      }
+
+      const updates = snapshot.docs.map((doc) => {
+        return doc.ref.update({
           "stripe.host.chargesEnabled": chargesEnabled,
           "stripe.host.payoutsEnabled": payoutsEnabled,
           "stripe.host.detailsSubmitted": account.details_submitted ?? false,
           "stripe.host.onboardingComplete": onboardingComplete,
           "stripe.host.lastUpdated": admin.firestore.FieldValue.serverTimestamp(),
+        }).then(() => {
+          return logOnboardingEvent({
+            stage: "user_updated",
+            userId: doc.id,
+            accountId: account.id,
+            onboardingComplete,
+          });
         });
       });
 
-      console.log("Finished processing event:", event.type);  // 🔹 final log
+      await Promise.all(updates);
+
+      await logOnboardingEvent({
+        stage: "completed",
+        accountId: account.id,
+        onboardingComplete,
+      });
+
       return res.status(200).json({ received: true });
+
     } catch (err) {
-      console.error("Stripe webhook error:", err);
+      await logOnboardingEvent({
+        stage: "fatal_error",
+        message: err.message,
+      });
+
       return res.status(500).send({ error: err.message });
     }
   }
